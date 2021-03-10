@@ -1,0 +1,58 @@
+repos:
+- repo: https://github.com/asottile/reorder_python_imports
+  rev: v2.4.0
+  hooks:
+  - id: reorder-python-imports
+    language_version: python3
+- repo: https://github.com/ambv/black
+  rev: 20.8b1
+  hooks:
+  - id: black
+    args: [--safe, --quiet]
+    language_version: python3
+    require_serial: true
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.4.0
+  hooks:
+  - id: trailing-whitespace
+    language_version: python3
+    exclude_types: [html]
+  - id: end-of-file-fixer
+    language_version: python3
+    exclude_types: [html]
+  - id: check-yaml
+    language_version: python3
+  - id: debug-statements
+    language_version: python3
+- repo: https://gitlab.com/pycqa/flake8.git
+  rev: 3.8.4
+  hooks:
+  - id: flake8
+    language_version: python3
+    additional_dependencies: [flake8-comprehensions]
+- repo: https://github.com/asottile/pyupgrade
+  rev: v2.10.0
+  hooks:
+  - id: pyupgrade
+    language_version: python3
+- repo: https://github.com/pycqa/pydocstyle
+  rev: 5.1.1
+  hooks:
+  - id: pydocstyle
+    language_version: python3
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.7.1.1
+  hooks:
+  - id: shellcheck
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    entry: pylint
+    language: system
+    types: [python]
+  - id: mypy
+    name: mypy
+    entry: mypy
+    language: system
+    types: [python]

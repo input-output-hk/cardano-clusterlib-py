@@ -1,0 +1,25 @@
+name: repo_lint
+
+on:
+  push:
+    branches-ignore:
+    # already tested in PR
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  lint:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: make install
+    - name: Run lint
+      run: make lint || { git diff; false; }
