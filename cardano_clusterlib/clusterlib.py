@@ -1,4 +1,4 @@
-"""Wrapper for cardano-cli."""
+"""Wrapper for cardano-cli for working with cardano cluster."""
 import functools
 import itertools
 import json
@@ -17,10 +17,10 @@ from typing import Set
 from typing import Tuple
 from typing import Union
 
-from cardano_node_tests.utils.types import FileType
-from cardano_node_tests.utils.types import FileTypeList
-from cardano_node_tests.utils.types import OptionalFiles
-from cardano_node_tests.utils.types import UnpackableSequence
+from cardano_clusterlib.types import FileType
+from cardano_clusterlib.types import FileTypeList
+from cardano_clusterlib.types import OptionalFiles
+from cardano_clusterlib.types import UnpackableSequence
 
 LOGGER = logging.getLogger(__name__)
 
