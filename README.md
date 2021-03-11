@@ -1,3 +1,6 @@
+[![Documentation Status](https://readthedocs.org/projects/cardano-clusterlib-py/badge/?version=latest)](https://cardano-clusterlib-py.readthedocs.io/en/latest/?badge=latest)
+[![PyPi Version](https://img.shields.io/pypi/v/cardano-clusterlib.svg)](https://pypi.org/project/cardano-clusterlib/)
+
 README for cardano-clusterlib
 =============================
 
@@ -41,6 +44,12 @@ cluster.get_utxo(src_address)
 ```
 
 See [cardano-node-tests](https://github.com/input-output-hk/cardano-node-tests) for more examples.
+
+
+Source Documentation
+--------------------
+
+<https://cardano-clusterlib-py.readthedocs.io/en/latest/cardano_clusterlib.html>
 
 
 Contributing
