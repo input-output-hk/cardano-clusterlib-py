@@ -9,9 +9,6 @@ SPHINXAPIDOC  ?= sphinx-apidoc
 SOURCEDIR     = source
 BUILDDIR      = build
 MODDIR        ?= ../cardano_clusterlib
-CARDANO_CLUSTERLIB_GIT_REV  ?= $(shell git rev-parse HEAD)
-
-export CARDANO_CLUSTERLIB_GIT_REV
 
 # Put it first so that "make" without argument is like "make help".
 help:

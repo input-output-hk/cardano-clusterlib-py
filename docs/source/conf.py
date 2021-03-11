@@ -7,6 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import inspect
 import os
+import subprocess
 import sys
 
 import cardano_clusterlib
@@ -43,9 +44,6 @@ extensions = [
     "m2r2",
 ]
 
-# see http://stackoverflow.com/q/12206334/562769
-numpydoc_show_class_members = False
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
@@ -71,6 +69,13 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 # Resolve function for the linkcode extension.
+
+if not os.environ.get("CARDANO_CLUSTERLIB_GIT_REV"):
+    p = subprocess.Popen(
+        ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    stdout, __ = p.communicate()
+    cardano_clusterlib._git_rev = stdout.decode().strip()
 
 
 def linkcode_resolve(domain, info):
@@ -107,5 +112,9 @@ def linkcode_resolve(domain, info):
         filename = info["module"].replace(".", "/") + ".py"
         # print(f"EXC: {filename}")
 
-    git_rev = os.environ.get("CARDANO_CLUSTERLIB_GIT_REV") or "master"
+    git_rev = (
+        os.environ.get("CARDANO_CLUSTERLIB_GIT_REV")
+        or getattr(cardano_clusterlib, "_git_rev", None)
+        or "master"
+    )
     return f"https://github.com/input-output-hk/cardano-clusterlib-py/blob/{git_rev}/{filename}"
