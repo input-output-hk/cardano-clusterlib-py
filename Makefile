@@ -1,5 +1,8 @@
 .PHONY: build
 
+.docs_build_dir:
+	mkdir -p docs/build
+
 install:
 	python3 -m pip install --upgrade pip
 	python3 -m pip install --upgrade wheel
@@ -9,11 +12,14 @@ install:
 lint:
 	pre-commit run -a
 
-
 build:
 	python setup.py -q sdist bdist_wheel
-
 
 release: build
 	python3 -m pip install --upgrade twine
 	twine upload --skip-existing dist/*
+
+# generate sphinx documentation
+doc: .docs_build_dir
+	$(MAKE) -C docs clean
+	$(MAKE) -C docs html
