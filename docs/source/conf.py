@@ -68,14 +68,20 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
 # Resolve function for the linkcode extension.
 
-if not os.environ.get("CARDANO_CLUSTERLIB_GIT_REV"):
+# store current git revision
+if os.environ.get("CARDANO_CLUSTERLIB_GIT_REV"):
+    cardano_clusterlib._git_rev = os.environ.get("CARDANO_CLUSTERLIB_GIT_REV")
+else:
     p = subprocess.Popen(
         ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, __ = p.communicate()
     cardano_clusterlib._git_rev = stdout.decode().strip()
+if not cardano_clusterlib._git_rev:
+    cardano_clusterlib._git_rev = "master"
 
 
 def linkcode_resolve(domain, info):
@@ -112,9 +118,7 @@ def linkcode_resolve(domain, info):
         filename = info["module"].replace(".", "/") + ".py"
         # print(f"EXC: {filename}")
 
-    git_rev = (
-        os.environ.get("CARDANO_CLUSTERLIB_GIT_REV")
-        or getattr(cardano_clusterlib, "_git_rev", None)
-        or "master"
+    return (
+        "https://github.com/input-output-hk/cardano-clusterlib-py/blob/"
+        f"{cardano_clusterlib._git_rev}/{filename}"
     )
-    return f"https://github.com/input-output-hk/cardano-clusterlib-py/blob/{git_rev}/{filename}"
