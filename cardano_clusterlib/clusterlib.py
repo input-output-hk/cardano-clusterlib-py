@@ -349,6 +349,8 @@ class ClusterLib:
 
         # re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
+        # or
+        # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"
         for __ in range(3):
             p = subprocess.Popen(cli_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
@@ -361,7 +363,7 @@ class ClusterLib:
                 f"An error occurred running a CLI command `{cmd_str}` on path "
                 f"`{os.getcwd()}`: {stderr_dec}"
             )
-            if "resource exhausted" in stderr_dec:
+            if "resource exhausted" in stderr_dec or "resource vanished" in stderr_dec:
                 LOGGER.error(err_msg)
                 time.sleep(0.4)
                 continue
@@ -1208,7 +1210,7 @@ class ClusterLib:
 
     def get_last_block_epoch(self) -> int:
         """Return epoch of last block that was successfully applied to the ledger."""
-        return int((self.get_last_block_slot_no() + self.slots_offset) // self.epoch_length)
+        return int(self.get_tip()["epoch"])
 
     def get_address_balance(self, address: str, coin: str = DEFAULT_COIN) -> int:
         """Get total balance of an address (sum of all UTxO balances).
@@ -1624,7 +1626,7 @@ class ClusterLib:
         if invalid_before is not None:
             bound_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is None:
-            # `--ttl` and `--upper-bound` are the same
+            # `--ttl` and `--invalid-hereafter` are the same
             bound_args.extend(["--ttl", str(ttl)])
         else:
             bound_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
@@ -2050,8 +2052,8 @@ class ClusterLib:
                 join_txouts=join_txouts,
                 destination_dir=destination_dir,
             )
-            # add 5% to the estimated fee, as the estimation is not precise enough
-            fee = int(fee + fee * 0.05)
+            # add 10% to the estimated fee, as the estimation is not precise enough
+            fee = int(fee + fee * 0.1)
 
         tx_raw_output = self.build_raw_tx(
             src_address=src_address,
@@ -2291,7 +2293,9 @@ class ClusterLib:
 
         LOGGER.debug(f"New block(s) were created; block number: {last_block_block_no}")
 
-    def wait_for_new_epoch(self, new_epochs: int = 1, padding_seconds: int = 0) -> None:
+    def wait_for_new_epoch(  # noqa: C901
+        self, new_epochs: int = 1, padding_seconds: int = 0
+    ) -> None:
         """Wait for new epoch(s).
 
         Args:
@@ -2310,18 +2314,57 @@ class ClusterLib:
         )
 
         # how many seconds to wait until start of the expected epoch
-        sleep_slots = (last_block_epoch + new_epochs) * self.epoch_length - (
-            self.get_last_block_slot_no() + self.slots_offset
+        boundary_slot = int(
+            (last_block_epoch + new_epochs) * self.epoch_length
+            - (self.get_last_block_slot_no() + self.slots_offset)
         )
-        sleep_time = int(sleep_slots * self.slot_length) + (padding_seconds or 1)
+        padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 5
+        finish_slot = boundary_slot + padding_slots
+        sleep_time = finish_slot * self.slot_length
 
         if sleep_time > 15:
             LOGGER.info(
-                f"Waiting for {sleep_time} sec for start of the epoch no {expected_epoch_no}"
+                f"Waiting for {sleep_time:.2f} sec for start of the epoch no {expected_epoch_no}"
             )
 
         time.sleep(sleep_time)
 
+        # sleep some more if the finish slot is not there yet
+        start_slot_no = self.get_last_block_slot_no()
+        for check_no in range(100):
+            wakeup_slot = self.get_last_block_slot_no()
+            if check_no == 10 and wakeup_slot == start_slot_no:
+                raise CLIError(
+                    f"Waited for epoch number {expected_epoch_no}, no new slots are being created"
+                )
+
+            slots_diff = finish_slot - wakeup_slot
+            if slots_diff <= 0:
+                break
+
+            diff_sleep_time = slots_diff * self.slot_length
+            time.sleep(diff_sleep_time if diff_sleep_time > 10 else 10)
+
+        # Still not in the correct epoch? Chances are the `slots_offset` is not set correctly.
+        # An attempt to get the epoch boundary as precisely as possible failed, now just
+        # query epoch number and wait.
+        for check_no in range(1000):
+            wakeup_epoch = self.get_last_block_epoch()
+            if check_no == 0:
+                if wakeup_epoch == expected_epoch_no:
+                    break
+                LOGGER.error(
+                    f"Waited for epoch number {expected_epoch_no} and current epoch is "
+                    f"number {wakeup_epoch}, wrong `slots_offset` ({self.slots_offset})?"
+                )
+            if padding_seconds and wakeup_epoch == expected_epoch_no:
+                time.sleep(padding_seconds)
+                break
+            if wakeup_epoch == expected_epoch_no:
+                break
+            time.sleep(10)
+
+        # Still not in the correct epoch? Something is wrong.
         wakeup_epoch = self.get_last_block_epoch()
         if wakeup_epoch != expected_epoch_no:
             raise CLIError(
@@ -2332,9 +2375,12 @@ class ClusterLib:
         LOGGER.debug(f"Expected epoch started; epoch number: {wakeup_epoch}")
 
     def time_to_next_epoch_start(self) -> float:
-        """How many seconds to start of new epoch."""
-        slots_to_go = (self.get_last_block_epoch() + 1) * self.epoch_length - (
-            self.get_last_block_slot_no() + self.slots_offset
+        """How many seconds to go to start of a new epoch."""
+        padding_slots = 5
+        slots_to_go = (
+            (self.get_last_block_epoch() + 1) * self.epoch_length
+            - (self.get_last_block_slot_no() + self.slots_offset)
+            + padding_slots
         )
         return float(slots_to_go * self.slot_length)
 
