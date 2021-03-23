@@ -820,7 +820,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{node_name}.opcert"
-        kes_period = kes_period if kes_period is not None else self.get_last_block_kes_period()
+        kes_period = kes_period if kes_period is not None else self.get_kes_period()
         self.cli(
             [
                 "node",
@@ -1200,15 +1200,15 @@ class ClusterLib:
             stake_distribution[pool_id] = stake
         return stake_distribution
 
-    def get_last_block_slot_no(self) -> int:
+    def get_slot_no(self) -> int:
         """Return slot number of last block that was successfully applied to the ledger."""
         return int(self.get_tip()["slot"])
 
-    def get_last_block_block_no(self) -> int:
+    def get_block_no(self) -> int:
         """Return block number of last block that was successfully applied to the ledger."""
         return int(self.get_tip()["block"])
 
-    def get_last_block_epoch(self) -> int:
+    def get_epoch(self) -> int:
         """Return epoch of last block that was successfully applied to the ledger."""
         return int(self.get_tip()["epoch"])
 
@@ -1240,11 +1240,11 @@ class ClusterLib:
 
     def calculate_tx_ttl(self) -> int:
         """Calculate ttl for a transaction."""
-        return self.get_last_block_slot_no() + self.ttl_length
+        return self.get_slot_no() + self.ttl_length
 
-    def get_last_block_kes_period(self) -> int:
+    def get_kes_period(self) -> int:
         """Return last block KES period."""
-        return int(self.get_last_block_slot_no() // self.slots_per_kes_period)
+        return int(self.get_slot_no() // self.slots_per_kes_period)
 
     def get_txid(self, tx_body_file: FileType) -> str:
         """Get the transaction identifier trom transaction body.
@@ -2208,7 +2208,7 @@ class ClusterLib:
             TxRawOutput: A tuple with transaction output details.
         """
         # TODO: assumption is update proposals submitted near beginning of epoch
-        epoch = epoch if epoch is not None else self.get_last_block_epoch()
+        epoch = epoch if epoch is not None else self.get_epoch()
 
         out_file = self.gen_update_proposal(
             cli_args=cli_args,
@@ -2276,14 +2276,14 @@ class ClusterLib:
 
         LOGGER.debug(f"Waiting for {new_blocks} new block(s) to be created.")
         timeout_no_of_slots = 200 * new_blocks
-        initial_block_no = self.get_last_block_block_no()
-        expected_block_no = initial_block_no + new_blocks
+        initial_block = self.get_block_no()
+        expected_block = initial_block + new_blocks
 
-        LOGGER.debug(f"Initial block no: {initial_block_no}")
+        LOGGER.debug(f"Initial block no: {initial_block}")
         for __ in range(timeout_no_of_slots):
             time.sleep(self.slot_length)
-            last_block_block_no = self.get_last_block_block_no()
-            if last_block_block_no >= expected_block_no:
+            this_block = self.get_block_no()
+            if this_block >= expected_block:
                 break
         else:
             raise CLIError(
@@ -2291,7 +2291,7 @@ class ClusterLib:
                 f"{new_blocks} block(s)."
             )
 
-        LOGGER.debug(f"New block(s) were created; block number: {last_block_block_no}")
+        LOGGER.debug(f"New block(s) were created; block number: {this_block}")
 
     def wait_for_new_epoch(  # noqa: C901
         self, new_epochs: int = 1, padding_seconds: int = 0
@@ -2305,18 +2305,17 @@ class ClusterLib:
         if new_epochs < 1:
             return
 
-        last_block_epoch = self.get_last_block_epoch()
-        expected_epoch_no = last_block_epoch + new_epochs
+        start_epoch = self.get_epoch()
+        expected_epoch = start_epoch + new_epochs
 
         LOGGER.debug(
-            f"Current epoch: {last_block_epoch}; Waiting for the beginning of epoch: "
-            "{expected_epoch_no}"
+            f"Current epoch: {start_epoch}; Waiting for the beginning of epoch: " "{expected_epoch}"
         )
 
         # how many seconds to wait until start of the expected epoch
         boundary_slot = int(
-            (last_block_epoch + new_epochs) * self.epoch_length
-            - (self.get_last_block_slot_no() + self.slots_offset)
+            (start_epoch + new_epochs) * self.epoch_length
+            - (self.get_slot_no() + self.slots_offset)
         )
         padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 5
         finish_slot = boundary_slot + padding_slots
@@ -2324,18 +2323,18 @@ class ClusterLib:
 
         if sleep_time > 15:
             LOGGER.info(
-                f"Waiting for {sleep_time:.2f} sec for start of the epoch no {expected_epoch_no}"
+                f"Waiting for {sleep_time:.2f} sec for start of the epoch no {expected_epoch}"
             )
 
         time.sleep(sleep_time)
 
         # sleep some more if the finish slot is not there yet
-        start_slot_no = self.get_last_block_slot_no()
+        start_slot = self.get_slot_no()
         for check_no in range(100):
-            wakeup_slot = self.get_last_block_slot_no()
-            if check_no == 10 and wakeup_slot == start_slot_no:
+            wakeup_slot = self.get_slot_no()
+            if check_no == 10 and wakeup_slot == start_slot:
                 raise CLIError(
-                    f"Waited for epoch number {expected_epoch_no}, no new slots are being created"
+                    f"Waited for epoch number {expected_epoch}, no new slots are being created"
                 )
 
             slots_diff = finish_slot - wakeup_slot
@@ -2349,26 +2348,26 @@ class ClusterLib:
         # An attempt to get the epoch boundary as precisely as possible failed, now just
         # query epoch number and wait.
         for check_no in range(1000):
-            wakeup_epoch = self.get_last_block_epoch()
+            wakeup_epoch = self.get_epoch()
             if check_no == 0:
-                if wakeup_epoch == expected_epoch_no:
+                if wakeup_epoch == expected_epoch:
                     break
                 LOGGER.error(
-                    f"Waited for epoch number {expected_epoch_no} and current epoch is "
+                    f"Waited for epoch number {expected_epoch} and current epoch is "
                     f"number {wakeup_epoch}, wrong `slots_offset` ({self.slots_offset})?"
                 )
-            if padding_seconds and wakeup_epoch == expected_epoch_no:
+            if padding_seconds and wakeup_epoch == expected_epoch:
                 time.sleep(padding_seconds)
                 break
-            if wakeup_epoch == expected_epoch_no:
+            if wakeup_epoch == expected_epoch:
                 break
             time.sleep(10)
 
         # Still not in the correct epoch? Something is wrong.
-        wakeup_epoch = self.get_last_block_epoch()
-        if wakeup_epoch != expected_epoch_no:
+        wakeup_epoch = self.get_epoch()
+        if wakeup_epoch != expected_epoch:
             raise CLIError(
-                f"Waited for epoch number {expected_epoch_no} and current epoch is "
+                f"Waited for epoch number {expected_epoch} and current epoch is "
                 f"number {wakeup_epoch}"
             )
 
@@ -2378,8 +2377,8 @@ class ClusterLib:
         """How many seconds to go to start of a new epoch."""
         padding_slots = 5
         slots_to_go = (
-            (self.get_last_block_epoch() + 1) * self.epoch_length
-            - (self.get_last_block_slot_no() + self.slots_offset)
+            (self.get_epoch() + 1) * self.epoch_length
+            - (self.get_slot_no() + self.slots_offset)
             + padding_slots
         )
         return float(slots_to_go * self.slot_length)
@@ -2468,7 +2467,7 @@ class ClusterLib:
         tx_name = f"{tx_name}_dereg_pool"
         LOGGER.debug(
             f"Deregistering stake pool starting with epoch: {epoch}; "
-            f"Current epoch is: {self.get_last_block_epoch()}"
+            f"Current epoch is: {self.get_epoch()}"
         )
         pool_dereg_cert_file = self.gen_pool_deregistration_cert(
             pool_name=pool_name,
