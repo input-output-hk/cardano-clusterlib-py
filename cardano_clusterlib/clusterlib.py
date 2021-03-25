@@ -190,7 +190,7 @@ class ClusterLib:
         self,
         state_dir: FileType,
         protocol: str = Protocols.CARDANO,
-        era: str = Eras.MARY,
+        era: str = "",
         tx_era: str = "",
         slots_offset: int = 0,
     ):
@@ -416,7 +416,7 @@ class ClusterLib:
 
     def refresh_pparams_file(self) -> None:
         """Refresh protocol parameters file."""
-        self.query_cli(["protocol-parameters", *self.era_arg, "--out-file", str(self.pparams_file)])
+        self.query_cli(["protocol-parameters", "--out-file", str(self.pparams_file)])
 
     def get_utxo(self, address: str, coins: UnpackableSequence = ()) -> List[UTXOData]:
         """Return UTxO info for payment address.
@@ -429,9 +429,7 @@ class ClusterLib:
             List[UTXOData]: A list of UTxO data.
         """
         utxo_dict = json.loads(
-            self.query_cli(
-                ["utxo", "--address", address, *self.era_arg, "--out-file", "/dev/stdout"]
-            )
+            self.query_cli(["utxo", "--address", address, "--out-file", "/dev/stdout"])
         )
 
         utxo = []
@@ -1095,7 +1093,7 @@ class ClusterLib:
 
     def get_ledger_state(self) -> dict:
         """Return the current ledger state info."""
-        ledger_state: dict = json.loads(self.query_cli(["ledger-state", *self.era_arg]))
+        ledger_state: dict = json.loads(self.query_cli(["ledger-state"]))
         return ledger_state
 
     def save_ledger_state(
@@ -1114,7 +1112,7 @@ class ClusterLib:
         """
         json_file = Path(destination_dir) / f"{state_name}_ledger_state.json"
         # TODO: workaround for https://github.com/input-output-hk/cardano-node/issues/2461
-        # self.query_cli(["ledger-state", *self.era_arg, "--out-file", str(json_file)])
+        # self.query_cli(["ledger-state", "--out-file", str(json_file)])
         ledger_state = self.get_ledger_state()
         with open(json_file, "w") as fp_out:
             json.dump(ledger_state, fp_out, indent=4)
@@ -1122,7 +1120,7 @@ class ClusterLib:
 
     def get_protocol_state(self) -> dict:
         """Return the current protocol state info."""
-        protocol_state: dict = json.loads(self.query_cli(["protocol-state", *self.era_arg]))
+        protocol_state: dict = json.loads(self.query_cli(["protocol-state"]))
         return protocol_state
 
     def get_protocol_params(self) -> dict:
@@ -1164,9 +1162,7 @@ class ClusterLib:
         Returns:
             StakeAddrInfo: A tuple containing stake address info.
         """
-        output_json = json.loads(
-            self.query_cli(["stake-address-info", *self.era_arg, "--address", stake_addr])
-        )
+        output_json = json.loads(self.query_cli(["stake-address-info", "--address", stake_addr]))
         if not output_json:
             return StakeAddrInfo(address="", delegation="", reward_account_balance=0)
 
@@ -1193,7 +1189,7 @@ class ClusterLib:
     def get_stake_distribution(self) -> dict:
         """Return current aggregated stake distribution per stake pool."""
         # stake pool values are displayed starting with line 2 from the command output
-        result = self.query_cli(["stake-distribution", *self.era_arg]).splitlines()[2:]
+        result = self.query_cli(["stake-distribution"]).splitlines()[2:]
         stake_distribution = {}
         for pool in result:
             pool_id, *__, stake = pool.split(" ")
@@ -1652,6 +1648,7 @@ class ClusterLib:
                 *self._prepend_flag("--withdrawal", withdrawals_combined),
                 *bound_args,
                 *mint_args,
+                *self.era_arg,
                 *self.tx_era_arg,
             ]
         )
