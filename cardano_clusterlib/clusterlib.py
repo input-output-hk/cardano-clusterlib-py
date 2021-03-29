@@ -2302,6 +2302,7 @@ class ClusterLib:
         if new_epochs < 1:
             return
 
+        poll_sleep = 3
         start_epoch = self.get_epoch()
         expected_epoch = start_epoch + new_epochs
 
@@ -2314,7 +2315,7 @@ class ClusterLib:
             (start_epoch + new_epochs) * self.epoch_length
             - (self.get_slot_no() + self.slots_offset)
         )
-        padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 5
+        padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 3
         finish_slot = boundary_slot + padding_slots
         sleep_time = finish_slot * self.slot_length
 
@@ -2339,7 +2340,7 @@ class ClusterLib:
                 break
 
             diff_sleep_time = slots_diff * self.slot_length
-            time.sleep(diff_sleep_time if diff_sleep_time > 10 else 10)
+            time.sleep(diff_sleep_time if diff_sleep_time > poll_sleep else poll_sleep)
 
         # Still not in the correct epoch? Chances are the `slots_offset` is not set correctly.
         # An attempt to get the epoch boundary as precisely as possible failed, now just
@@ -2358,7 +2359,7 @@ class ClusterLib:
                 break
             if wakeup_epoch == expected_epoch:
                 break
-            time.sleep(10)
+            time.sleep(poll_sleep)
 
         # Still not in the correct epoch? Something is wrong.
         wakeup_epoch = self.get_epoch()
