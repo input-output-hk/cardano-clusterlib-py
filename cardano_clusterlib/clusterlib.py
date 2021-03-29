@@ -2371,13 +2371,10 @@ class ClusterLib:
 
         LOGGER.debug(f"Expected epoch started; epoch number: {wakeup_epoch}")
 
-    def time_to_next_epoch_start(self) -> float:
+    def time_to_epoch_end(self) -> float:
         """How many seconds to go to start of a new epoch."""
-        padding_slots = 5
-        slots_to_go = (
-            (self.get_epoch() + 1) * self.epoch_length
-            - (self.get_slot_no() + self.slots_offset)
-            + padding_slots
+        slots_to_go = (self.get_epoch() + 1) * self.epoch_length - (
+            self.get_slot_no() + self.slots_offset - 1
         )
         return float(slots_to_go * self.slot_length)
 
