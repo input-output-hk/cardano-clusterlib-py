@@ -2290,9 +2290,54 @@ class ClusterLib:
 
         LOGGER.debug(f"New block(s) were created; block number: {this_block}")
 
-    def wait_for_new_epoch(  # noqa: C901
-        self, new_epochs: int = 1, padding_seconds: int = 0
-    ) -> None:
+    def wait_for_slot(self, slot: int) -> None:
+        """Wait for slot number.
+
+        Args:
+            slot: A slot number to wait for.
+        """
+        min_sleep = 1.5
+        start_slot = -1
+        printed = False
+        for check_no in range(100):
+            this_slot = self.get_slot_no()
+            if check_no == 0:
+                start_slot = this_slot
+            if check_no == 10 and this_slot == start_slot:
+                raise CLIError(f"Waited for slot number {slot}, no new slots are being created")
+
+            slots_diff = slot - this_slot
+            if slots_diff <= 0:
+                break
+
+            sleep_time = slots_diff * self.slot_length
+            if not printed and sleep_time > 15:
+                LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}")
+                printed = True
+            time.sleep(sleep_time if sleep_time > min_sleep else min_sleep)
+
+    def poll_new_epoch(self, exp_epoch: int, padding_seconds: int = 0) -> None:
+        """Wait for new epoch(s) by polling current epoch every 3 sec.
+
+        Can be used only for waiting up to 3000 sec + padding seconds.
+
+        Args:
+            exp_epoch: An epoch number to wait for.
+            padding_seconds: A number of additional seconds to wait for (optional).
+        """
+        for check_no in range(1000):
+            wakeup_epoch = self.get_epoch()
+            if wakeup_epoch != exp_epoch:
+                time.sleep(3)
+                continue
+            # we are in the expected epoch right from the beginning, we'll skip padding seconds
+            if check_no == 0:
+                break
+            if padding_seconds:
+                time.sleep(padding_seconds)
+                break
+
+    def wait_for_new_epoch(self, new_epochs: int = 1, padding_seconds: int = 0) -> None:
         """Wait for new epoch(s).
 
         Args:
@@ -2302,74 +2347,37 @@ class ClusterLib:
         if new_epochs < 1:
             return
 
-        poll_sleep = 3
         start_epoch = self.get_epoch()
-        expected_epoch = start_epoch + new_epochs
+        exp_epoch = start_epoch + new_epochs
 
         LOGGER.debug(
-            f"Current epoch: {start_epoch}; Waiting for the beginning of epoch: " "{expected_epoch}"
+            f"Current epoch: {start_epoch}; Waiting for the beginning of epoch: {exp_epoch}"
         )
 
-        # how many seconds to wait until start of the expected epoch
-        boundary_slot = int(
-            (start_epoch + new_epochs) * self.epoch_length
-            - (self.get_slot_no() + self.slots_offset)
-        )
-        padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 3
-        finish_slot = boundary_slot + padding_slots
-        sleep_time = finish_slot * self.slot_length
+        # calculate and wait for the expected slot
+        boundary_slot = int((start_epoch + new_epochs) * self.epoch_length - self.slots_offset)
+        padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 5
+        exp_slot = boundary_slot + padding_slots
+        self.wait_for_slot(slot=exp_slot)
 
-        if sleep_time > 15:
-            LOGGER.info(
-                f"Waiting for {sleep_time:.2f} sec for start of the epoch no {expected_epoch}"
+        this_epoch = self.get_epoch()
+        if this_epoch != exp_epoch:
+            LOGGER.error(
+                f"Waited for epoch number {exp_epoch} and current epoch is "
+                f"number {this_epoch}, wrong `slots_offset` ({self.slots_offset})?"
             )
-
-        time.sleep(sleep_time)
-
-        # sleep some more if the finish slot is not there yet
-        start_slot = self.get_slot_no()
-        for check_no in range(100):
-            wakeup_slot = self.get_slot_no()
-            if check_no == 10 and wakeup_slot == start_slot:
-                raise CLIError(
-                    f"Waited for epoch number {expected_epoch}, no new slots are being created"
-                )
-
-            slots_diff = finish_slot - wakeup_slot
-            if slots_diff <= 0:
-                break
-
-            diff_sleep_time = slots_diff * self.slot_length
-            time.sleep(diff_sleep_time if diff_sleep_time > poll_sleep else poll_sleep)
-
-        # Still not in the correct epoch? Chances are the `slots_offset` is not set correctly.
-        # An attempt to get the epoch boundary as precisely as possible failed, now just
-        # query epoch number and wait.
-        for check_no in range(1000):
-            wakeup_epoch = self.get_epoch()
-            if check_no == 0:
-                if wakeup_epoch == expected_epoch:
-                    break
-                LOGGER.error(
-                    f"Waited for epoch number {expected_epoch} and current epoch is "
-                    f"number {wakeup_epoch}, wrong `slots_offset` ({self.slots_offset})?"
-                )
-            if padding_seconds and wakeup_epoch == expected_epoch:
-                time.sleep(padding_seconds)
-                break
-            if wakeup_epoch == expected_epoch:
-                break
-            time.sleep(poll_sleep)
+            # attempt to get the epoch boundary as precisely as possible failed, now just
+            # query epoch number and wait
+            self.poll_new_epoch(exp_epoch=exp_epoch, padding_seconds=padding_seconds)
 
         # Still not in the correct epoch? Something is wrong.
-        wakeup_epoch = self.get_epoch()
-        if wakeup_epoch != expected_epoch:
+        this_epoch = self.get_epoch()
+        if this_epoch != exp_epoch:
             raise CLIError(
-                f"Waited for epoch number {expected_epoch} and current epoch is "
-                f"number {wakeup_epoch}"
+                f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}"
             )
 
-        LOGGER.debug(f"Expected epoch started; epoch number: {wakeup_epoch}")
+        LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
 
     def time_to_epoch_end(self) -> float:
         """How many seconds to go to start of a new epoch."""
