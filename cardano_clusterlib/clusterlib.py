@@ -1566,7 +1566,7 @@ class ClusterLib:
         txouts: List[TxOut],
         tx_files: TxFiles,
         fee: int,
-        ttl: Optional[int],
+        ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
@@ -1707,11 +1707,7 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         tx_files = tx_files or TxFiles()
-        if (
-            ttl is None
-            and invalid_hereafter is None
-            and self.tx_era in [Eras.SHELLEY, Eras.ALLEGRA]
-        ):
+        if ttl is None and invalid_hereafter is None and self.tx_era == Eras.SHELLEY:
             ttl = self.calculate_tx_ttl()
         withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
