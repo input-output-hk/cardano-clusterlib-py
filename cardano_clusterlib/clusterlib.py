@@ -111,7 +111,7 @@ class TxRawOutput(NamedTuple):
     tx_files: TxFiles
     out_file: Path
     fee: int
-    ttl: int
+    ttl: Optional[int]
     withdrawals: OptionalTxOuts
 
 
@@ -1566,7 +1566,7 @@ class ClusterLib:
         txouts: List[TxOut],
         tx_files: TxFiles,
         fee: int,
-        ttl: int,
+        ttl: Optional[int],
         withdrawals: OptionalTxOuts = (),
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
@@ -1582,7 +1582,7 @@ class ClusterLib:
             tx_files: A `TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
             ttl: A last block when the transaction is still valid
-                (deprecated in favor of `invalid_hereafter`).
+                (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
@@ -1621,11 +1621,11 @@ class ClusterLib:
         bound_args = []
         if invalid_before is not None:
             bound_args.extend(["--invalid-before", str(invalid_before)])
-        if invalid_hereafter is None:
+        if invalid_hereafter is not None:
+            bound_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
+        elif ttl is not None:
             # `--ttl` and `--invalid-hereafter` are the same
             bound_args.extend(["--ttl", str(ttl)])
-        else:
-            bound_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
 
         mint_records = [f"{m.amount} {m.coin}" for m in mint]
         mint_args = ["--mint", "+".join(mint_records)] if mint_records else []
@@ -1707,7 +1707,12 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         tx_files = tx_files or TxFiles()
-        ttl = ttl or self.calculate_tx_ttl()
+        if (
+            ttl is None
+            and invalid_hereafter is None
+            and self.tx_era in [Eras.SHELLEY, Eras.ALLEGRA]
+        ):
+            ttl = self.calculate_tx_ttl()
         withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
         txins_copy, txouts_copy = self.get_tx_ins_outs(
