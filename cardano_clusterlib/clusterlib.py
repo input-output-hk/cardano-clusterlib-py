@@ -2303,7 +2303,7 @@ class ClusterLib:
             this_slot = self.get_slot_no()
             if check_no == 0:
                 start_slot = this_slot
-            if check_no == 10 and this_slot == start_slot:
+            if check_no == 30 and this_slot == start_slot:
                 raise CLIError(f"Waited for slot number {slot}, no new slots are being created")
 
             slots_diff = slot - this_slot
