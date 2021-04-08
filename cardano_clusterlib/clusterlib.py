@@ -190,7 +190,6 @@ class ClusterLib:
         self,
         state_dir: FileType,
         protocol: str = Protocols.CARDANO,
-        era: str = "",
         tx_era: str = "",
         slots_offset: int = 0,
     ):
@@ -220,9 +219,7 @@ class ClusterLib:
 
         self.ttl_length = 1000
 
-        self.era = era
-        self.era_arg = [f"--{self.era}-era"] if self.era else []
-        self.tx_era = tx_era or self.era
+        self.tx_era = tx_era
         self.tx_era_arg = [f"--{self.tx_era}-era"] if self.tx_era else []
 
         self.protocol = protocol
@@ -1208,6 +1205,11 @@ class ClusterLib:
         """Return epoch of last block that was successfully applied to the ledger."""
         return int(self.get_tip()["epoch"])
 
+    def get_era(self) -> str:
+        """Return network era."""
+        era: str = self.get_tip()["era"]
+        return era
+
     def get_address_balance(self, address: str, coin: str = DEFAULT_COIN) -> int:
         """Get total balance of an address (sum of all UTxO balances).
 
@@ -1648,7 +1650,6 @@ class ClusterLib:
                 *self._prepend_flag("--withdrawal", withdrawals_combined),
                 *bound_args,
                 *mint_args,
-                *self.era_arg,
                 *self.tx_era_arg,
             ]
         )
@@ -2613,4 +2614,4 @@ class ClusterLib:
             raise AssertionError(f"Incorrect balance for destination address `{dst_address}`")
 
     def __repr__(self) -> str:
-        return f"<ClusterLib: protocol={self.protocol}, era={self.era}, tx_era={self.tx_era}>"
+        return f"<ClusterLib: protocol={self.protocol}, tx_era={self.tx_era}>"
