@@ -178,7 +178,6 @@ class ClusterLib:
     Attributes:
         state_dir: A directory with cluster state files (keys, config files, logs, ...).
         protocol: A cluster protocol - full cardano mode by default.
-        era: An era the cluster is using (Shelley, Allegra, Mary, ...).
         tx_era: An era used for transactions, by default same as `era`.
         slots_offset: Difference in slots between cluster's start era and current era
             (e.g. Byron->Mary)
