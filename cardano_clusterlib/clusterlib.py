@@ -457,7 +457,7 @@ class ClusterLib:
                             utxo_ix=utxo_ix,
                             amount=amount,
                             address=addr,
-                            coin=f"{policyid}.{asset_name}",
+                            coin=f"{policyid}.{asset_name}" if asset_name else policyid,
                         )
                     )
 
