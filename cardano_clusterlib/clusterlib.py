@@ -79,12 +79,23 @@ OptionalTxOuts = Union[List[TxOut], Tuple[()]]
 OptionalUTXOData = Union[List[UTXOData], Tuple[()]]
 
 
+class ScriptFiles(NamedTuple):
+    txin_scripts: OptionalFiles = ()
+    minting_scripts: OptionalFiles = ()
+    certificate_scripts: OptionalFiles = ()
+    withdrawal_scripts: OptionalFiles = ()
+    auxiliary_scripts: OptionalFiles = ()
+
+
+OptionalScriptFiles = Union[ScriptFiles, Tuple[()]]
+
+
 class TxFiles(NamedTuple):
     certificate_files: OptionalFiles = ()
     proposal_files: OptionalFiles = ()
     metadata_json_files: OptionalFiles = ()
     metadata_cbor_files: OptionalFiles = ()
-    script_files: OptionalFiles = ()
+    script_files: OptionalScriptFiles = ()
     signing_key_files: OptionalFiles = ()
 
 
@@ -178,7 +189,7 @@ class ClusterLib:
     Attributes:
         state_dir: A directory with cluster state files (keys, config files, logs, ...).
         protocol: A cluster protocol - full cardano mode by default.
-        tx_era: An era used for transactions, by default same as `era`.
+        tx_era: An era used for transactions, by default same as network Era.
         slots_offset: Difference in slots between cluster's start era and current era
             (e.g. Byron->Mary)
     """
@@ -1398,7 +1409,7 @@ class ClusterLib:
         deposit: Optional[int],
         withdrawals: OptionalTxOuts,
     ) -> List[TxOut]:
-        """Ballance the transaction by adding change output for each coin."""
+        """Balance the transaction by adding change output for each coin."""
         txouts_result: List[TxOut] = []
 
         # iterate over coins both in txins and txouts
@@ -1631,6 +1642,22 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint]
         mint_args = ["--mint", "+".join(mint_records)] if mint_records else []
 
+        script_args = []
+        if tx_files.script_files:
+            script_args = [
+                *self._prepend_flag("--txin-script-file", tx_files.script_files.txin_scripts),
+                *self._prepend_flag("--minting-script-file", tx_files.script_files.minting_scripts),
+                *self._prepend_flag(
+                    "--certificate-script-file", tx_files.script_files.certificate_scripts
+                ),
+                *self._prepend_flag(
+                    "--withdrawal-script-file", tx_files.script_files.withdrawal_scripts
+                ),
+                *self._prepend_flag(
+                    "--auxiliary-script-file", tx_files.script_files.auxiliary_scripts
+                ),
+            ]
+
         self.cli(
             [
                 "transaction",
@@ -1645,10 +1672,10 @@ class ClusterLib:
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *self._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *self._prepend_flag("--script-file", tx_files.script_files),
                 *self._prepend_flag("--withdrawal", withdrawals_combined),
                 *bound_args,
                 *mint_args,
+                *script_args,
                 *self.tx_era_arg,
             ]
         )
@@ -1859,7 +1886,6 @@ class ClusterLib:
         tx_body_file: FileType,
         signing_key_files: OptionalFiles,
         tx_name: str,
-        script_files: OptionalFiles = (),
         destination_dir: FileType = ".",
     ) -> Path:
         """Sign a transaction.
@@ -1868,7 +1894,6 @@ class ClusterLib:
             tx_body_file: A path to file with transaction body.
             signing_key_files: A list of paths to signing key files.
             tx_name: A name of the transaction.
-            script_files: A list of paths to script files (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -1887,7 +1912,6 @@ class ClusterLib:
                 str(out_file),
                 *self.magic_args,
                 *self._prepend_flag("--signing-key-file", signing_key_files),
-                *self._prepend_flag("--script-file", script_files),
             ]
         )
 
@@ -1899,7 +1923,6 @@ class ClusterLib:
         tx_body_file: FileType,
         witness_name: str,
         signing_key_files: OptionalFiles = (),
-        script_file: Optional[FileType] = None,
         destination_dir: FileType = ".",
     ) -> Path:
         """Create a transaction witness.
@@ -1908,7 +1931,6 @@ class ClusterLib:
             tx_body_file: A path to file with transaction body.
             witness_name: A name of the transaction witness.
             signing_key_files: A list of paths to signing key files (optional).
-            script_file: A path to script file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -1916,10 +1938,6 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{witness_name}_tx.witness"
-
-        cli_args = []
-        if script_file:
-            cli_args = ["--script-file", str(script_file)]
 
         self.cli(
             [
@@ -1931,7 +1949,6 @@ class ClusterLib:
                 str(out_file),
                 *self.magic_args,
                 *self._prepend_flag("--signing-key-file", signing_key_files),
-                *cli_args,
             ]
         )
 
@@ -2004,7 +2021,6 @@ class ClusterLib:
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
-        script_files: OptionalFiles = (),
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
@@ -2023,7 +2039,6 @@ class ClusterLib:
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
-            script_files: A list of paths to script files (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -2036,9 +2051,10 @@ class ClusterLib:
 
         if fee is None:
             witness_count_add = 0
-            if script_files:
+            if tx_files and tx_files.script_files:
                 # TODO: workaround for https://github.com/input-output-hk/cardano-node/issues/1892
-                witness_count_add += 5 * len(script_files)
+                all_scripts = list(itertools.chain.from_iterable(tx_files.script_files))
+                witness_count_add += 5 * len(all_scripts)
             fee = self.calculate_tx_fee(
                 src_address=src_address,
                 tx_name=tx_name,
@@ -2072,7 +2088,6 @@ class ClusterLib:
             tx_body_file=tx_raw_output.out_file,
             tx_name=tx_name,
             signing_key_files=tx_files.signing_key_files,
-            script_files=script_files,
             destination_dir=destination_dir,
         )
         self.submit_tx(tx_signed_file)
