@@ -1482,7 +1482,7 @@ class ClusterLib:
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_files: A `TxFiles` tuple containing files needed for the transaction.
-            txins: An interable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             fee: A fee amount (optional).
             deposit: A deposit amount needed by the transaction (optional).
@@ -1598,7 +1598,7 @@ class ClusterLib:
 
         Args:
             out_file: An output file.
-            txins: An interable of `UTXOData`, specifying input UTxOs.
+            txins: An iterable of `UTXOData`, specifying input UTxOs.
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs.
             tx_files: A `TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
@@ -1721,7 +1721,7 @@ class ClusterLib:
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            txins: An interable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
             fee: A fee amount (optional).
@@ -1839,7 +1839,7 @@ class ClusterLib:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
             dst_addresses: A list of destination addresses (optional)
-            txins: An interable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
             ttl: A last block when the transaction is still valid
@@ -2022,10 +2022,14 @@ class ClusterLib:
 
         Args:
             tx_file: A path to signed transaction file.
-            txins: An interable of `UTXOData`, specifying input UTxOs.
+            txins: An iterable of `UTXOData`, specifying input UTxOs.
         """
         txid = ""
-        for __ in range(3):
+        for r in range(3):
+            if r != 0:
+                txid = txid or self.get_txid_signed(tx_file)
+                LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
+
             self.submit_tx_bare(tx_file)
             self.wait_for_new_block(2)
             # check that one of the input UTxOs was spent to verify the TX was
@@ -2036,8 +2040,6 @@ class ClusterLib:
             utxo_hashes = [u.utxo_hash for u in utxo_data]
             if txin.utxo_hash not in utxo_hashes:
                 break
-            txid = txid or self.get_txid_signed(tx_file)
-            LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
         else:
             raise CLIError(f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}').")
 
@@ -2058,12 +2060,12 @@ class ClusterLib:
         verify_tx: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
-        """Build, Sign and Send a transaction.
+        """Build, Sign and Submit a transaction.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            txins: An interable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
             fee: A fee amount (optional).
