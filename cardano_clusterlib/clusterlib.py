@@ -63,7 +63,7 @@ class UTXOData(NamedTuple):
     utxo_hash: str
     utxo_ix: str
     amount: int
-    address: Optional[str] = None
+    address: str
     coin: str = DEFAULT_COIN
 
 
@@ -442,13 +442,7 @@ class ClusterLib:
         utxo = []
         for utxo_rec, utxo_data in utxo_dict.items():
             utxo_hash, utxo_ix = utxo_rec.split("#")
-            # TODO: workaround for https://github.com/input-output-hk/cardano-node/issues/2460
-            if "address" not in utxo_data:
-                addr = next(iter(utxo_data))  # first key
-                addr_data = next(iter(utxo_data.values()))  # first value
-            else:
-                addr = utxo_data["address"]
-                addr_data = utxo_data["value"]
+            addr_data = utxo_data["value"]
             for policyid, coin_data in addr_data.items():
                 if policyid == DEFAULT_COIN:
                     utxo.append(
@@ -456,7 +450,7 @@ class ClusterLib:
                             utxo_hash=utxo_hash,
                             utxo_ix=utxo_ix,
                             amount=coin_data,
-                            address=addr,
+                            address=address,
                             coin=DEFAULT_COIN,
                         )
                     )
@@ -467,7 +461,7 @@ class ClusterLib:
                             utxo_hash=utxo_hash,
                             utxo_ix=utxo_ix,
                             amount=amount,
-                            address=addr,
+                            address=address,
                             coin=f"{policyid}.{asset_name}" if asset_name else policyid,
                         )
                     )
@@ -1254,8 +1248,8 @@ class ClusterLib:
         """Return last block KES period."""
         return int(self.get_slot_no() // self.slots_per_kes_period)
 
-    def get_txid(self, tx_body_file: FileType) -> str:
-        """Get the transaction identifier trom transaction body.
+    def get_txid_body(self, tx_body_file: FileType) -> str:
+        """Get the transaction identifier from transaction body (JSON TxBody).
 
         Args:
             tx_body_file: A path to the transaction body file.
@@ -1265,6 +1259,21 @@ class ClusterLib:
         """
         return (
             self.cli(["transaction", "txid", "--tx-body-file", str(tx_body_file)])
+            .stdout.rstrip()
+            .decode("ascii")
+        )
+
+    def get_txid_signed(self, tx_file: FileType) -> str:
+        """Get the transaction identifier from signed transaction (JSON Tx).
+
+        Args:
+            tx_file: A path to the signed transaction file.
+
+        Returns:
+            str: A transaction ID.
+        """
+        return (
+            self.cli(["transaction", "txid", "--tx-file", str(tx_file)])
             .stdout.rstrip()
             .decode("ascii")
         )
@@ -1991,8 +2000,8 @@ class ClusterLib:
         self._check_outfiles(out_file)
         return out_file
 
-    def submit_tx(self, tx_file: FileType) -> None:
-        """Submit a transaction.
+    def submit_tx_bare(self, tx_file: FileType) -> None:
+        """Submit a transaction, don't do any verification that it made it to the chain.
 
         Args:
             tx_file: A path to signed transaction file.
@@ -2008,6 +2017,30 @@ class ClusterLib:
             ]
         )
 
+    def submit_tx(self, tx_file: FileType, txins: List[UTXOData]) -> None:
+        """Submit a transaction, resubmit if the transaction didn't make it to the chain.
+
+        Args:
+            tx_file: A path to signed transaction file.
+            txins: An interable of `UTXOData`, specifying input UTxOs.
+        """
+        txid = ""
+        for __ in range(3):
+            self.submit_tx_bare(tx_file)
+            self.wait_for_new_block(2)
+            # check that one of the input UTxOs was spent to verify the TX was
+            # successfully submitted to the chain
+            # TODO: check that the transaction is 1-block deep (can't be done in CLI alone)
+            txin = txins[0]
+            utxo_data = self.get_utxo(txin.address)
+            utxo_hashes = [u.utxo_hash for u in utxo_data]
+            if txin.utxo_hash not in utxo_hashes:
+                break
+            txid = txid or self.get_txid_signed(tx_file)
+            LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
+        else:
+            raise CLIError(f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}').")
+
     def send_tx(
         self,
         src_address: str,
@@ -2022,6 +2055,7 @@ class ClusterLib:
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
         join_txouts: bool = True,
+        verify_tx: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
         """Build, Sign and Send a transaction.
@@ -2041,6 +2075,8 @@ class ClusterLib:
             invalid_before: A first block when the transaction is valid (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
+            verify_tx: A bool indicating whether to verify the transaction made it to chain
+                and resubmit the transaction if not (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -2090,7 +2126,10 @@ class ClusterLib:
             signing_key_files=tx_files.signing_key_files,
             destination_dir=destination_dir,
         )
-        self.submit_tx(tx_signed_file)
+        if verify_tx:
+            self.submit_tx(tx_file=tx_signed_file, txins=tx_raw_output.txins)
+        else:
+            self.submit_tx_bare(tx_file=tx_signed_file)
 
         return tx_raw_output
 
@@ -2249,6 +2288,7 @@ class ClusterLib:
         fee: Optional[int] = None,
         ttl: Optional[int] = None,
         deposit: Optional[int] = None,
+        verify_tx: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
         """Send funds - convenience function for `send_tx`.
@@ -2262,6 +2302,8 @@ class ClusterLib:
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             deposit: A deposit amount needed by the transaction (optional).
+            verify_tx: A bool indicating whether to verify the transaction made it to chain
+                and resubmit the transaction if not (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -2276,6 +2318,7 @@ class ClusterLib:
             fee=fee,
             deposit=deposit,
             destination_dir=destination_dir,
+            verify_tx=verify_tx,
         )
 
     def wait_for_new_block(self, new_blocks: int = 1) -> None:
