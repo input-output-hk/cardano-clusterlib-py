@@ -2017,12 +2017,13 @@ class ClusterLib:
             ]
         )
 
-    def submit_tx(self, tx_file: FileType, txins: List[UTXOData]) -> None:
+    def submit_tx(self, tx_file: FileType, txins: List[UTXOData], wait_blocks: int = 2) -> None:
         """Submit a transaction, resubmit if the transaction didn't make it to the chain.
 
         Args:
             tx_file: A path to signed transaction file.
             txins: An iterable of `UTXOData`, specifying input UTxOs.
+            wait_blocks: A number of new blocks to wait for (default = 2).
         """
         txid = ""
         for r in range(3):
@@ -2031,14 +2032,26 @@ class ClusterLib:
                 LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
 
             self.submit_tx_bare(tx_file)
-            self.wait_for_new_block(2)
-            # check that one of the input UTxOs was spent to verify the TX was
-            # successfully submitted to the chain
+            self.wait_for_new_block(wait_blocks)
+
+            # Check that one of the input UTxOs was spent to verify the TX was
+            # successfully submitted to the chain.
+            # An input is spent when its combination of hash and ix is not found in the list
+            # of current UTxOs.
             # TODO: check that the transaction is 1-block deep (can't be done in CLI alone)
             txin = txins[0]
+            txin_hash = txin.utxo_hash
+            txin_ix = txin.utxo_ix
             utxo_data = self.get_utxo(txin.address)
-            utxo_hashes = [u.utxo_hash for u in utxo_data]
-            if txin.utxo_hash not in utxo_hashes:
+            is_spent = False
+            for u in utxo_data:
+                if txin_hash == u.utxo_hash and txin_ix == u.utxo_ix:
+                    # input was found
+                    break
+            else:
+                # input was not found
+                is_spent = True
+            if is_spent:
                 break
         else:
             raise CLIError(f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}').")
