@@ -122,8 +122,10 @@ class TxRawOutput(NamedTuple):
     tx_files: TxFiles
     out_file: Path
     fee: int
-    ttl: Optional[int]
-    withdrawals: OptionalTxOuts
+    invalid_hereafter: Optional[int] = None
+    invalid_before: Optional[int] = None
+    withdrawals: OptionalTxOuts = ()
+    mint: OptionalTxOuts = ()
 
 
 class PoolCreationOutput(NamedTuple):
@@ -359,11 +361,11 @@ class ClusterLib:
         # or
         # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"
         for __ in range(3):
-            p = subprocess.Popen(cli_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
+            with subprocess.Popen(cli_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as p:
+                stdout, stderr = p.communicate()
 
-            if p.returncode == 0:
-                break
+                if p.returncode == 0:
+                    break
 
             stderr_dec = stderr.decode()
             err_msg = (
@@ -1695,8 +1697,10 @@ class ClusterLib:
             tx_files=tx_files,
             out_file=out_file,
             fee=fee,
-            ttl=ttl,
+            invalid_hereafter=invalid_hereafter or ttl,
+            invalid_before=invalid_before,
             withdrawals=withdrawals,
+            mint=mint,
         )
 
     def build_raw_tx(
@@ -1716,7 +1720,7 @@ class ClusterLib:
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
-        """Figure out all the missing data and build a raw transaction.
+        """Balance inputs and outputs and build a raw transaction.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
@@ -1744,7 +1748,7 @@ class ClusterLib:
         out_file = destination_dir / f"{tx_name}_tx.body"
         tx_files = tx_files or TxFiles()
         if ttl is None and invalid_hereafter is None and self.tx_era == Eras.SHELLEY:
-            ttl = self.calculate_tx_ttl()
+            invalid_hereafter = self.calculate_tx_ttl()
         withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
         txins_copy, txouts_copy = self.get_tx_ins_outs(
@@ -1764,9 +1768,8 @@ class ClusterLib:
             txouts=txouts_copy,
             tx_files=tx_files,
             fee=fee,
-            ttl=ttl,
             withdrawals=withdrawals,
-            invalid_hereafter=invalid_hereafter,
+            invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             mint=mint,
             join_txouts=join_txouts,
@@ -1828,6 +1831,7 @@ class ClusterLib:
         tx_files: Optional[TxFiles] = None,
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
+        invalid_hereafter: Optional[int] = None,
         mint: OptionalTxOuts = (),
         witness_count_add: int = 0,
         join_txouts: bool = True,
@@ -1845,6 +1849,7 @@ class ClusterLib:
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            invalid_hereafter: A last block when the transaction is still valid (optional).
             mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
                 calculation more precise.
@@ -1873,8 +1878,8 @@ class ClusterLib:
             txouts=txouts_filled,
             tx_files=tx_files,
             fee=0,
-            ttl=ttl,
             withdrawals=withdrawals,
+            invalid_hereafter=invalid_hereafter or ttl,
             deposit=0,
             mint=mint,
             join_txouts=join_txouts,
@@ -2112,13 +2117,13 @@ class ClusterLib:
                 txins=txins,
                 txouts=txouts,
                 tx_files=tx_files,
-                ttl=invalid_hereafter or ttl,
+                invalid_hereafter=invalid_hereafter or ttl,
                 witness_count_add=witness_count_add,
                 join_txouts=join_txouts,
                 destination_dir=destination_dir,
             )
             # add 10% to the estimated fee, as the estimation is not precise enough
-            fee = int(fee + fee * 0.1)
+            fee = int(fee * 1.1)
 
         tx_raw_output = self.build_raw_tx(
             src_address=src_address,
@@ -2127,10 +2132,9 @@ class ClusterLib:
             txouts=txouts,
             tx_files=tx_files,
             fee=fee,
-            ttl=ttl,
             withdrawals=withdrawals,
             deposit=deposit,
-            invalid_hereafter=invalid_hereafter,
+            invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             join_txouts=join_txouts,
             destination_dir=destination_dir,
@@ -2303,6 +2307,7 @@ class ClusterLib:
         fee: Optional[int] = None,
         ttl: Optional[int] = None,
         deposit: Optional[int] = None,
+        invalid_hereafter: Optional[int] = None,
         verify_tx: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
@@ -2317,6 +2322,7 @@ class ClusterLib:
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             deposit: A deposit amount needed by the transaction (optional).
+            invalid_hereafter: A last block when the transaction is still valid (optional).
             verify_tx: A bool indicating whether to verify the transaction made it to chain
                 and resubmit the transaction if not (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -2324,14 +2330,15 @@ class ClusterLib:
         Returns:
             TxRawOutput: A tuple with transaction output details.
         """
+        # pylint: disable=too-many-arguments
         return self.send_tx(
             src_address=src_address,
             tx_name=tx_name,
             txouts=destinations,
             tx_files=tx_files,
-            ttl=ttl,
             fee=fee,
             deposit=deposit,
+            invalid_hereafter=invalid_hereafter or ttl,
             destination_dir=destination_dir,
             verify_tx=verify_tx,
         )
