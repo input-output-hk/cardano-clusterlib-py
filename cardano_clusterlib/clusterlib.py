@@ -1491,7 +1491,7 @@ class ClusterLib:
                 if change < 0:
                     LOGGER.error(
                         "Not enough funds to make the transaction - "
-                        f"available: {total_input_amount}; needed {funds_needed}"
+                        f"available: {total_input_amount}; needed: {funds_needed}"
                     )
             else:
                 coin_txouts_minted = txouts_mint_db.get(coin) or []
@@ -1909,7 +1909,7 @@ class ClusterLib:
 
         if dst_addresses and txouts:
             LOGGER.warning(
-                "The value of `dst_addresses` is ignored when value for `txouts` is available"
+                "The value of `dst_addresses` is ignored when value for `txouts` is available."
             )
 
         txouts_filled = txouts or [TxOut(address=r, amount=1) for r in (dst_addresses or ())]
@@ -2432,7 +2432,7 @@ class ClusterLib:
             if check_no == 0:
                 start_slot = this_slot
             if check_no == 30 and this_slot == start_slot:
-                raise CLIError(f"Waited for slot number {slot}, no new slots are being created")
+                raise CLIError(f"Waited for slot number {slot}, no new slots are being created.")
 
             slots_diff = slot - this_slot
             if slots_diff <= 0:
@@ -2440,7 +2440,7 @@ class ClusterLib:
 
             sleep_time = slots_diff * self.slot_length
             if not printed and sleep_time > 15:
-                LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}")
+                LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}.")
                 printed = True
             time.sleep(sleep_time if sleep_time > min_sleep else min_sleep)
 
@@ -2502,7 +2502,7 @@ class ClusterLib:
         this_epoch = self.get_epoch()
         if this_epoch != exp_epoch:
             raise CLIError(
-                f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}"
+                f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}."
             )
 
         LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
@@ -2727,7 +2727,7 @@ class ClusterLib:
 
         # check that reward is 0
         if self.get_stake_addr_info(stake_addr_record.address).reward_account_balance != 0:
-            raise AssertionError("Not all rewards were transferred")
+            raise AssertionError("Not all rewards were transferred.")
 
         # check that rewards were transferred
         src_reward_balance = self.get_address_balance(dst_address)
@@ -2737,7 +2737,7 @@ class ClusterLib:
             - tx_raw_withdrawal_output.fee
             + tx_raw_withdrawal_output.withdrawals[0].amount  # type: ignore
         ):
-            raise AssertionError(f"Incorrect balance for destination address `{dst_address}`")
+            raise AssertionError(f"Incorrect balance for destination address `{dst_address}`.")
 
     def __repr__(self) -> str:
         return f"<ClusterLib: protocol={self.protocol}, tx_era={self.tx_era}>"
