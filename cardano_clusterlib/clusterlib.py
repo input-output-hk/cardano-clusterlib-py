@@ -240,6 +240,8 @@ class ClusterLib:
         self._genesis_keys: Optional[GenesisKeys] = None
         self._genesis_utxo_addr: str = ""
 
+        self.overwrite_outfiles = True
+
     def _check_state_dir(self) -> None:
         """Check that all files expected by `__init__` are present."""
         if not self.state_dir.exists():
@@ -305,6 +307,20 @@ class ClusterLib:
         )
 
         return self._genesis_utxo_addr
+
+    def _check_files_exist(self, *out_files: FileType) -> None:
+        """Check that the output files don't already exist.
+
+        Args:
+            *out_files: Variable length list of expected output files.
+        """
+        if self.overwrite_outfiles:
+            return
+
+        for out_file in out_files:
+            out_file = Path(out_file).expanduser()
+            if out_file.exists():
+                raise CLIError(f"The expected file `{out_file}` already exist.")
 
     def _check_outfiles(self, *out_files: FileType) -> None:
         """Check that the expected output files were created.
@@ -494,6 +510,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_genesis.addr"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -530,6 +547,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}.addr"
+        self._check_files_exist(out_file)
 
         cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
         if stake_vkey_file:
@@ -564,6 +582,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake.addr"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -595,6 +614,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_script.addr"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -624,6 +644,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}.vkey"
         skey = destination_dir / f"{key_name}.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "address",
@@ -651,6 +673,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_stake.vkey"
         skey = destination_dir / f"{key_name}_stake.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "stake-address",
@@ -722,6 +746,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_kes.vkey"
         skey = destination_dir / f"{node_name}_kes.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "node",
@@ -749,6 +775,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_vrf.vkey"
         skey = destination_dir / f"{node_name}_vrf.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "node",
@@ -779,6 +807,8 @@ class ClusterLib:
         vkey = destination_dir / f"{node_name}_cold.vkey"
         skey = destination_dir / f"{node_name}_cold.skey"
         counter = destination_dir / f"{node_name}_cold.counter"
+        self._check_files_exist(vkey, skey, counter)
+
         self.cli(
             [
                 "node",
@@ -821,7 +851,10 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{node_name}.opcert"
+        self._check_files_exist(out_file)
+
         kes_period = kes_period if kes_period is not None else self.get_kes_period()
+
         self.cli(
             [
                 "node",
@@ -857,6 +890,8 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
+        self._check_files_exist(out_file)
+
         self.cli(
             [
                 "stake-address",
@@ -886,6 +921,8 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
+        self._check_files_exist(out_file)
+
         self.cli(
             [
                 "stake-address",
@@ -922,6 +959,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
+        self._check_files_exist(out_file)
 
         if cold_vkey_file:
             pool_args = [
@@ -992,6 +1030,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_data.pool_name}_pool_reg.cert"
+        self._check_files_exist(out_file)
 
         metadata_cmd = []
         if pool_data.pool_metadata_url and pool_data.pool_metadata_hash:
@@ -1058,6 +1097,8 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_name}_pool_dereg.cert"
+        self._check_files_exist(out_file)
+
         self.cli(
             [
                 "stake-pool",
@@ -1746,6 +1787,8 @@ class ClusterLib:
         # pylint: disable=too-many-arguments
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
+        self._check_files_exist(out_file)
+
         tx_files = tx_files or TxFiles()
         if ttl is None and invalid_hereafter is None and self.tx_era == Eras.SHELLEY:
             invalid_hereafter = self.calculate_tx_ttl()
@@ -1915,6 +1958,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.signed"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -1952,6 +1996,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{witness_name}_tx.witness"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -1989,6 +2034,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.witnessed"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -2237,6 +2283,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_update.proposal"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
