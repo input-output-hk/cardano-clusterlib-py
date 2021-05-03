@@ -61,7 +61,7 @@ class StakeAddrInfo(NamedTuple):
 
 class UTXOData(NamedTuple):
     utxo_hash: str
-    utxo_ix: str
+    utxo_ix: int
     amount: int
     address: str
     coin: str = DEFAULT_COIN
@@ -240,6 +240,8 @@ class ClusterLib:
         self._genesis_keys: Optional[GenesisKeys] = None
         self._genesis_utxo_addr: str = ""
 
+        self.overwrite_outfiles = True
+
     def _check_state_dir(self) -> None:
         """Check that all files expected by `__init__` are present."""
         if not self.state_dir.exists():
@@ -305,6 +307,20 @@ class ClusterLib:
         )
 
         return self._genesis_utxo_addr
+
+    def _check_files_exist(self, *out_files: FileType) -> None:
+        """Check that the output files don't already exist.
+
+        Args:
+            *out_files: Variable length list of expected output files.
+        """
+        if self.overwrite_outfiles:
+            return
+
+        for out_file in out_files:
+            out_file = Path(out_file).expanduser()
+            if out_file.exists():
+                raise CLIError(f"The expected file `{out_file}` already exist.")
 
     def _check_outfiles(self, *out_files: FileType) -> None:
         """Check that the expected output files were created.
@@ -450,7 +466,7 @@ class ClusterLib:
                     utxo.append(
                         UTXOData(
                             utxo_hash=utxo_hash,
-                            utxo_ix=utxo_ix,
+                            utxo_ix=int(utxo_ix),
                             amount=coin_data,
                             address=address,
                             coin=DEFAULT_COIN,
@@ -461,7 +477,7 @@ class ClusterLib:
                     utxo.append(
                         UTXOData(
                             utxo_hash=utxo_hash,
-                            utxo_ix=utxo_ix,
+                            utxo_ix=int(utxo_ix),
                             amount=amount,
                             address=address,
                             coin=f"{policyid}.{asset_name}" if asset_name else policyid,
@@ -494,6 +510,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_genesis.addr"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -530,6 +547,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}.addr"
+        self._check_files_exist(out_file)
 
         cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
         if stake_vkey_file:
@@ -564,6 +582,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake.addr"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -595,6 +614,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_script.addr"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -624,6 +644,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}.vkey"
         skey = destination_dir / f"{key_name}.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "address",
@@ -651,6 +673,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_stake.vkey"
         skey = destination_dir / f"{key_name}_stake.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "stake-address",
@@ -722,6 +746,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_kes.vkey"
         skey = destination_dir / f"{node_name}_kes.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "node",
@@ -749,6 +775,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_vrf.vkey"
         skey = destination_dir / f"{node_name}_vrf.skey"
+        self._check_files_exist(vkey, skey)
+
         self.cli(
             [
                 "node",
@@ -779,6 +807,8 @@ class ClusterLib:
         vkey = destination_dir / f"{node_name}_cold.vkey"
         skey = destination_dir / f"{node_name}_cold.skey"
         counter = destination_dir / f"{node_name}_cold.counter"
+        self._check_files_exist(vkey, skey, counter)
+
         self.cli(
             [
                 "node",
@@ -821,7 +851,10 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{node_name}.opcert"
+        self._check_files_exist(out_file)
+
         kes_period = kes_period if kes_period is not None else self.get_kes_period()
+
         self.cli(
             [
                 "node",
@@ -857,6 +890,8 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
+        self._check_files_exist(out_file)
+
         self.cli(
             [
                 "stake-address",
@@ -886,6 +921,8 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
+        self._check_files_exist(out_file)
+
         self.cli(
             [
                 "stake-address",
@@ -922,6 +959,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
+        self._check_files_exist(out_file)
 
         if cold_vkey_file:
             pool_args = [
@@ -992,6 +1030,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_data.pool_name}_pool_reg.cert"
+        self._check_files_exist(out_file)
 
         metadata_cmd = []
         if pool_data.pool_metadata_url and pool_data.pool_metadata_hash:
@@ -1058,6 +1097,8 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_name}_pool_dereg.cert"
+        self._check_files_exist(out_file)
+
         self.cli(
             [
                 "stake-pool",
@@ -1450,7 +1491,7 @@ class ClusterLib:
                 if change < 0:
                     LOGGER.error(
                         "Not enough funds to make the transaction - "
-                        f"available: {total_input_amount}; needed {funds_needed}"
+                        f"available: {total_input_amount}; needed: {funds_needed}"
                     )
             else:
                 coin_txouts_minted = txouts_mint_db.get(coin) or []
@@ -1555,8 +1596,6 @@ class ClusterLib:
 
         if not txins_filtered:
             LOGGER.error("Cannot build transaction, empty `txins`.")
-        if not txouts_balanced:
-            LOGGER.error("Cannot build transaction, empty `txouts`.")
 
         return txins_filtered, txouts_balanced
 
@@ -1746,6 +1785,8 @@ class ClusterLib:
         # pylint: disable=too-many-arguments
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
+        self._check_files_exist(out_file)
+
         tx_files = tx_files or TxFiles()
         if ttl is None and invalid_hereafter is None and self.tx_era == Eras.SHELLEY:
             invalid_hereafter = self.calculate_tx_ttl()
@@ -1866,7 +1907,7 @@ class ClusterLib:
 
         if dst_addresses and txouts:
             LOGGER.warning(
-                "The value of `dst_addresses` is ignored when value for `txouts` is available"
+                "The value of `dst_addresses` is ignored when value for `txouts` is available."
             )
 
         txouts_filled = txouts or [TxOut(address=r, amount=1) for r in (dst_addresses or ())]
@@ -1915,6 +1956,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.signed"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -1952,6 +1994,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{witness_name}_tx.witness"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -1989,6 +2032,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.witnessed"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -2237,6 +2281,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_update.proposal"
+        self._check_files_exist(out_file)
 
         self.cli(
             [
@@ -2385,7 +2430,7 @@ class ClusterLib:
             if check_no == 0:
                 start_slot = this_slot
             if check_no == 30 and this_slot == start_slot:
-                raise CLIError(f"Waited for slot number {slot}, no new slots are being created")
+                raise CLIError(f"Waited for slot number {slot}, no new slots are being created.")
 
             slots_diff = slot - this_slot
             if slots_diff <= 0:
@@ -2393,7 +2438,7 @@ class ClusterLib:
 
             sleep_time = slots_diff * self.slot_length
             if not printed and sleep_time > 15:
-                LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}")
+                LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}.")
                 printed = True
             time.sleep(sleep_time if sleep_time > min_sleep else min_sleep)
 
@@ -2455,7 +2500,7 @@ class ClusterLib:
         this_epoch = self.get_epoch()
         if this_epoch != exp_epoch:
             raise CLIError(
-                f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}"
+                f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}."
             )
 
         LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
@@ -2680,7 +2725,7 @@ class ClusterLib:
 
         # check that reward is 0
         if self.get_stake_addr_info(stake_addr_record.address).reward_account_balance != 0:
-            raise AssertionError("Not all rewards were transferred")
+            raise AssertionError("Not all rewards were transferred.")
 
         # check that rewards were transferred
         src_reward_balance = self.get_address_balance(dst_address)
@@ -2690,7 +2735,7 @@ class ClusterLib:
             - tx_raw_withdrawal_output.fee
             + tx_raw_withdrawal_output.withdrawals[0].amount  # type: ignore
         ):
-            raise AssertionError(f"Incorrect balance for destination address `{dst_address}`")
+            raise AssertionError(f"Incorrect balance for destination address `{dst_address}`.")
 
     def __repr__(self) -> str:
         return f"<ClusterLib: protocol={self.protocol}, tx_era={self.tx_era}>"
