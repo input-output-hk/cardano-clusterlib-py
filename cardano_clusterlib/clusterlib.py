@@ -61,7 +61,7 @@ class StakeAddrInfo(NamedTuple):
 
 class UTXOData(NamedTuple):
     utxo_hash: str
-    utxo_ix: str
+    utxo_ix: int
     amount: int
     address: str
     coin: str = DEFAULT_COIN
@@ -450,7 +450,7 @@ class ClusterLib:
                     utxo.append(
                         UTXOData(
                             utxo_hash=utxo_hash,
-                            utxo_ix=utxo_ix,
+                            utxo_ix=int(utxo_ix),
                             amount=coin_data,
                             address=address,
                             coin=DEFAULT_COIN,
@@ -461,7 +461,7 @@ class ClusterLib:
                     utxo.append(
                         UTXOData(
                             utxo_hash=utxo_hash,
-                            utxo_ix=utxo_ix,
+                            utxo_ix=int(utxo_ix),
                             amount=amount,
                             address=address,
                             coin=f"{policyid}.{asset_name}" if asset_name else policyid,
