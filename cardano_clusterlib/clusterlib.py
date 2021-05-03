@@ -1596,8 +1596,6 @@ class ClusterLib:
 
         if not txins_filtered:
             LOGGER.error("Cannot build transaction, empty `txins`.")
-        if not txouts_balanced:
-            LOGGER.error("Cannot build transaction, empty `txouts`.")
 
         return txins_filtered, txouts_balanced
 
