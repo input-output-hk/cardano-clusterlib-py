@@ -1197,6 +1197,40 @@ class ClusterLib:
         )
         return pool_id
 
+    def get_stake_snapshot(
+        self,
+        stake_pool_id: str,
+    ) -> Dict[str, int]:
+        """Return the three stake snapshots for a pool, plus the total active stake.
+
+        Args:
+            stake_pool_id: An ID of the stake pool (Bech32-encoded or hex-encoded).
+
+        Returns:
+            Dict: A stake snapshot data.
+        """
+        stake_snapshot: Dict[str, int] = json.loads(
+            self.query_cli(["stake-snapshot", "--stake-pool-id", stake_pool_id])
+        )
+        return stake_snapshot
+
+    def get_pool_params(
+        self,
+        stake_pool_id: str,
+    ) -> dict:
+        """Return a pool parameters.
+
+        Args:
+            stake_pool_id: An ID of the stake pool (Bech32-encoded or hex-encoded).
+
+        Returns:
+            dict: A pool parameters.
+        """
+        pool_params: dict = json.loads(
+            self.query_cli(["pool-params", "--stake-pool-id", stake_pool_id])
+        )
+        return pool_params
+
     def get_stake_addr_info(self, stake_addr: str) -> StakeAddrInfo:
         """Return the current delegations and reward accounts filtered by stake address.
 
@@ -1291,35 +1325,41 @@ class ClusterLib:
         """Return last block KES period."""
         return int(self.get_slot_no() // self.slots_per_kes_period)
 
-    def get_txid_body(self, tx_body_file: FileType) -> str:
-        """Get the transaction identifier from transaction body (JSON TxBody).
+    def get_txid(self, tx_body_file: FileType = "", tx_file: FileType = "") -> str:
+        """Return the transaction identifier.
 
         Args:
-            tx_body_file: A path to the transaction body file.
+            tx_body_file: A path to the transaction body file (JSON TxBody - optional).
+            tx_file: A path to the signed transaction file (JSON Tx - optional).
 
         Returns:
             str: A transaction ID.
         """
-        return (
-            self.cli(["transaction", "txid", "--tx-body-file", str(tx_body_file)])
-            .stdout.rstrip()
-            .decode("ascii")
-        )
+        cli_args = []
+        if tx_body_file:
+            cli_args = ["--tx-body-file", str(tx_body_file)]
+        elif tx_file:
+            cli_args = ["--tx-file", str(tx_file)]
 
-    def get_txid_signed(self, tx_file: FileType) -> str:
-        """Get the transaction identifier from signed transaction (JSON Tx).
+        return self.cli(["transaction", "txid", *cli_args]).stdout.rstrip().decode("ascii")
+
+    def view_tx(self, tx_body_file: FileType = "", tx_file: FileType = "") -> str:
+        """View a transaction.
 
         Args:
-            tx_file: A path to the signed transaction file.
+            tx_body_file: A path to the transaction body file (JSON TxBody - optional).
+            tx_file: A path to the signed transaction file (JSON Tx - optional).
 
         Returns:
-            str: A transaction ID.
+            str: A transaction.
         """
-        return (
-            self.cli(["transaction", "txid", "--tx-file", str(tx_file)])
-            .stdout.rstrip()
-            .decode("ascii")
-        )
+        cli_args = []
+        if tx_body_file:
+            cli_args = ["--tx-body-file", str(tx_body_file)]
+        elif tx_file:
+            cli_args = ["--tx-file", str(tx_file)]
+
+        return self.cli(["transaction", "view", *cli_args]).stdout.rstrip().decode("utf-8")
 
     def get_tx_deposit(self, tx_files: TxFiles) -> int:
         """Get deposit amount for a transaction (based on certificates used for the TX).
@@ -1600,7 +1640,7 @@ class ClusterLib:
         return txins_filtered, txouts_balanced
 
     def get_withdrawals(self, withdrawals: List[TxOut]) -> List[TxOut]:
-        """Get list of resolved reward withdrawals.
+        """Return list of resolved reward withdrawals.
 
         The `TxOut.amount` can be '-1', meaning all available funds.
 
@@ -2077,7 +2117,7 @@ class ClusterLib:
         txid = ""
         for r in range(3):
             if r != 0:
-                txid = txid or self.get_txid_signed(tx_file)
+                txid = txid or self.get_txid(tx_file=tx_file)
                 LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
 
             self.submit_tx_bare(tx_file)
