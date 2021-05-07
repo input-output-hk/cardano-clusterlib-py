@@ -146,6 +146,12 @@ class GenesisKeys(NamedTuple):
     delegate_skeys: List[Path]
 
 
+class PoolParamsTop(NamedTuple):
+    pool_params: dict
+    future_pool_params: dict
+    retiring: Optional[int]
+
+
 class Protocols:
     CARDANO = "cardano"
     SHELLEY = "shelley"
@@ -1217,7 +1223,7 @@ class ClusterLib:
     def get_pool_params(
         self,
         stake_pool_id: str,
-    ) -> dict:
+    ) -> PoolParamsTop:
         """Return a pool parameters.
 
         Args:
@@ -1229,7 +1235,13 @@ class ClusterLib:
         pool_params: dict = json.loads(
             self.query_cli(["pool-params", "--stake-pool-id", stake_pool_id])
         )
-        return pool_params
+        retiring = pool_params.get("retiring")  # pool retiring epoch
+        pparams_top = PoolParamsTop(
+            pool_params=pool_params.get("poolParams") or {},
+            future_pool_params=pool_params.get("futurePoolParams") or {},
+            retiring=int(retiring) if retiring is not None else None,
+        )
+        return pparams_top
 
     def get_stake_addr_info(self, stake_addr: str) -> StakeAddrInfo:
         """Return the current delegations and reward accounts filtered by stake address.
