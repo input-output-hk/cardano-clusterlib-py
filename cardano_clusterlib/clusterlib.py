@@ -2353,6 +2353,120 @@ class ClusterLib:
         self._check_outfiles(out_file)
         return out_file
 
+    def gen_mir_cert_to_treasury(
+        self,
+        transfer: int,
+        tx_name: str,
+        destination_dir: FileType = ".",
+    ) -> Path:
+        """Create an MIR certificate to transfer from the reserves pot to the treasury pot.
+
+        Args:
+            transfer: An amount of Lovelace to transfer.
+            tx_name: A name of the transaction.
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            Path: A path to the MIR certificate file.
+        """
+        destination_dir = Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{tx_name}_mir_to_treasury.cert"
+        self._check_files_exist(out_file)
+
+        self.cli(
+            [
+                "governance",
+                "create-mir-certificate",
+                "transfer-to-treasury",
+                "--transfer",
+                str(transfer),
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        self._check_outfiles(out_file)
+        return out_file
+
+    def gen_mir_cert_to_rewards(
+        self,
+        transfer: int,
+        tx_name: str,
+        destination_dir: FileType = ".",
+    ) -> Path:
+        """Create an MIR certificate to transfer from the treasury pot to the reserves pot.
+
+        Args:
+            transfer: An amount of Lovelace to transfer.
+            tx_name: A name of the transaction.
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            Path: A path to the MIR certificate file.
+        """
+        destination_dir = Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{tx_name}_mir_to_rewards.cert"
+        self._check_files_exist(out_file)
+
+        self.cli(
+            [
+                "governance",
+                "create-mir-certificate",
+                "transfer-to-rewards",
+                "--transfer",
+                str(transfer),
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        self._check_outfiles(out_file)
+        return out_file
+
+    def gen_mir_cert_stake_addr(
+        self,
+        stake_addr: str,
+        reward: int,
+        tx_name: str,
+        use_treasury: bool = False,
+        destination_dir: FileType = ".",
+    ) -> Path:
+        """Create an MIR certificate to pay stake addresses.
+
+        Args:
+            stake_addr: A stake address string.
+            reward: An amount of Lovelace to transfer.
+            tx_name: A name of the transaction.
+            use_treasury: A bool indicating whether to use treasury or reserves (default).
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            Path: A path to the MIR certificate file.
+        """
+        destination_dir = Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{tx_name}_mir_stake.cert"
+        self._check_files_exist(out_file)
+
+        funds_src = ["--treasury"] if use_treasury else ["--reserves"]
+
+        self.cli(
+            [
+                "governance",
+                "create-mir-certificate",
+                "stake-addresses",
+                *funds_src,
+                "--stake-address",
+                str(stake_addr),
+                "--reward",
+                str(reward),
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        self._check_outfiles(out_file)
+        return out_file
+
     def submit_update_proposal(
         self,
         cli_args: UnpackableSequence,
@@ -2563,6 +2677,11 @@ class ClusterLib:
             self.get_slot_no() + self.slots_offset - 1
         )
         return float(slots_to_go * self.slot_length)
+
+    def time_from_epoch_start(self) -> float:
+        """How many seconds passed from start of the current epoch."""
+        s_to_epoch_stop = self.time_to_epoch_end()
+        return float(self.epoch_length_sec - s_to_epoch_stop)
 
     def register_stake_pool(
         self,
