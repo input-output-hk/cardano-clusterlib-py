@@ -819,11 +819,11 @@ class ClusterLib:
             [
                 "node",
                 "key-gen",
-                "--verification-key-file",
+                "--cold-verification-key-file",
                 str(vkey),
-                "--signing-key-file",
+                "--cold-signing-key-file",
                 str(skey),
-                "--operational-certificate-issue-counter",
+                "--operational-certificate-issue-counter-file",
                 str(counter),
             ]
         )
