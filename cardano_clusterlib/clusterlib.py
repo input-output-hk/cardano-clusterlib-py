@@ -191,6 +191,35 @@ def read_address_from_file(addr_file: FileType) -> str:
         return in_file.read().strip()
 
 
+def record_cli_coverage(cli_args: List[str], coverage_dict: dict) -> None:
+    """Record coverage info for CLI commands.
+
+    Args:
+        cli_args: A list of command and it's arguments.
+        coverage_dict: A dictionary with coverage info.
+    """
+    parent_dict = coverage_dict
+    prev_arg = ""
+    for arg in cli_args:
+        # if the current argument is a parameter to an option, skip it
+        if prev_arg.startswith("--") and not arg.startswith("--"):
+            continue
+        prev_arg = arg
+
+        cur_dict = parent_dict.get(arg)
+        # initialize record if it doesn't exist yet
+        if not cur_dict:
+            parent_dict[arg] = {"_count": 0}
+            cur_dict = parent_dict[arg]
+
+        # increment count
+        cur_dict["_count"] += 1
+
+        # set new parent dict
+        if not arg.startswith("--"):
+            parent_dict = cur_dict
+
+
 class ClusterLib:
     """Methods for working with cardano cluster using `cardano-cli`..
 
@@ -339,33 +368,6 @@ class ClusterLib:
             if not out_file.exists():
                 raise CLIError(f"The expected file `{out_file}` doesn't exist.")
 
-    def record_cli_coverage(self, cli_args: List[str]) -> None:
-        """Record coverage info for CLI commands.
-
-        Args:
-            cli_args: A list of command and it's arguments.
-        """
-        parent_dict = self.cli_coverage
-        prev_arg = ""
-        for arg in cli_args:
-            # if the current argument is a parameter to an option, skip it
-            if prev_arg.startswith("--") and not arg.startswith("--"):
-                continue
-            prev_arg = arg
-
-            cur_dict = parent_dict.get(arg)
-            # initialize record if it doesn't exist yet
-            if not cur_dict:
-                parent_dict[arg] = {"_count": 0}
-                cur_dict = parent_dict[arg]
-
-            # increment count
-            cur_dict["_count"] += 1
-
-            # set new parent dict
-            if not arg.startswith("--"):
-                parent_dict = cur_dict
-
     def cli_base(self, cli_args: List[str]) -> CLIOut:
         """Run a command.
 
@@ -414,7 +416,7 @@ class ClusterLib:
             CLIOut: A tuple containing command stdout and stderr.
         """
         cmd = ["cardano-cli", *cli_args]
-        self.record_cli_coverage(cmd)
+        record_cli_coverage(cli_args=cmd, coverage_dict=self.cli_coverage)
         return self.cli_base(cmd)
 
     def _prepend_flag(self, flag: str, contents: UnpackableSequence) -> List[str]:
@@ -819,11 +821,11 @@ class ClusterLib:
             [
                 "node",
                 "key-gen",
-                "--verification-key-file",
+                "--cold-verification-key-file",
                 str(vkey),
-                "--signing-key-file",
+                "--cold-signing-key-file",
                 str(skey),
-                "--operational-certificate-issue-counter",
+                "--operational-certificate-issue-counter-file",
                 str(counter),
             ]
         )
