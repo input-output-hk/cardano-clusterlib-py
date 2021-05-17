@@ -152,6 +152,14 @@ class PoolParamsTop(NamedTuple):
     retiring: Optional[int]
 
 
+class AddressInfo(NamedTuple):
+    address: str
+    era: str
+    encoding: str
+    type: str
+    base16: str
+
+
 class Protocols:
     CARDANO = "cardano"
     SHELLEY = "shelley"
@@ -980,7 +988,7 @@ class ClusterLib:
                 str(stake_pool_id),
             ]
         else:
-            raise CLIError("Either `--cold-verification-key-file` or `--stake-pool-id` is needed.")
+            raise CLIError("Either `cold_vkey_file` or `stake_pool_id` is needed.")
 
         self.cli(
             [
@@ -1367,13 +1375,31 @@ class ClusterLib:
         Returns:
             str: A transaction.
         """
-        cli_args = []
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
         elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
+        else:
+            raise CLIError("Either ``tx_body_file` or `tx_file` is needed.")
 
         return self.cli(["transaction", "view", *cli_args]).stdout.rstrip().decode("utf-8")
+
+    def address_info(
+        self,
+        address: str,
+    ) -> AddressInfo:
+        """View a transaction.
+
+        Args:
+            address: A Cardano address.
+
+        Returns:
+            AddressInfo: A tuple containing address info.
+        """
+        addr_dict: Dict[str, str] = json.loads(
+            self.cli(["address", "info", "--address", str(address)]).stdout.rstrip().decode("utf-8")
+        )
+        return AddressInfo(**addr_dict)
 
     def get_tx_deposit(self, tx_files: TxFiles) -> int:
         """Get deposit amount for a transaction (based on certificates used for the TX).
