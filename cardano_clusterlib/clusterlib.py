@@ -160,6 +160,11 @@ class AddressInfo(NamedTuple):
     base16: str
 
 
+class Value(NamedTuple):
+    value: int
+    coin: str
+
+
 class Protocols:
     CARDANO = "cardano"
     SHELLEY = "shelley"
@@ -2015,6 +2020,34 @@ class ClusterLib:
         )
 
         return fee
+
+    def calculate_min_value(
+        self,
+        multi_assets: List[TxOut],
+    ) -> Value:
+        """Calculate the minimum value in for a transaction.
+
+        Args:
+            multi_assets: A list of `TxOuts`, specifying multi-assets.
+
+        Returns:
+            Value: A tuple describing the value.
+        """
+        ma_records = [f"{m.amount} {m.coin}" for m in multi_assets]
+        ma_args = ["--multi-asset", "+".join(ma_records)] if ma_records else []
+
+        self.refresh_pparams_file()
+        stdout = self.cli(
+            [
+                "transaction",
+                "calculate-min-value",
+                "--protocol-params-file",
+                str(self.pparams_file),
+                *ma_args,
+            ]
+        ).stdout
+        coin, value = stdout.decode().split(" ")
+        return Value(value=int(value), coin=coin)
 
     def sign_tx(
         self,
