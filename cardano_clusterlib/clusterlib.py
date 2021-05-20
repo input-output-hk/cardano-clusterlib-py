@@ -2926,7 +2926,7 @@ class ClusterLib:
         tx_name: str,
         verify: bool = True,
         destination_dir: FileType = ".",
-    ) -> None:
+    ) -> TxRawOutput:
         """Withdraw reward to payment address.
 
         Args:
@@ -2953,7 +2953,7 @@ class ClusterLib:
         self.wait_for_new_block(new_blocks=2)
 
         if not verify:
-            return
+            return tx_raw_withdrawal_output
 
         # check that reward is 0
         if self.get_stake_addr_info(stake_addr_record.address).reward_account_balance != 0:
@@ -2968,6 +2968,8 @@ class ClusterLib:
             + tx_raw_withdrawal_output.withdrawals[0].amount  # type: ignore
         ):
             raise AssertionError(f"Incorrect balance for destination address `{dst_address}`.")
+
+        return tx_raw_withdrawal_output
 
     def __repr__(self) -> str:
         return f"<ClusterLib: protocol={self.protocol}, tx_era={self.tx_era}>"
