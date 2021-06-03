@@ -278,6 +278,7 @@ class ClusterLib:
             self.magic_args = ["--testnet-magic", str(self.network_magic)]
 
         self.ttl_length = 1000
+        self._min_change_value = 0  # TODO: proper calculation based on `minUTxOValue` needed
 
         self.tx_era = tx_era
         self.tx_era_arg = [f"--{self.tx_era}-era"] if self.tx_era else []
@@ -1476,8 +1477,13 @@ class ClusterLib:
         """Collect UTxOs so their total combined amount >= `amount`."""
         collected_utxos: List[UTXOData] = []
         collected_amount = 0
+        amount_plus_change = amount + self._min_change_value
         for utxo in utxos:
-            if collected_amount >= amount:
+            # if we were able to collect exact amount, no change is needed
+            if collected_amount == amount:
+                break
+            # make sure the change is higher than `_min_change_value`
+            if collected_amount >= amount_plus_change:
                 break
             collected_utxos.append(utxo)
             collected_amount += utxo.amount
@@ -2014,7 +2020,8 @@ class ClusterLib:
 
         fee = self.estimate_fee(
             txbody_file=tx_raw_output.out_file,
-            txin_count=len(tx_raw_output.txins),
+            # +1 as possibly one more input will be needed for the fee amount
+            txin_count=len(tx_raw_output.txins) + 1,
             txout_count=len(tx_raw_output.txouts),
             witness_count=len(tx_files.signing_key_files) + witness_count_add,
         )
