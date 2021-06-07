@@ -1292,14 +1292,14 @@ class ClusterLib:
         pparams = self.get_protocol_params()
         return pparams.get("stakePoolDeposit") or 0
 
-    def get_stake_distribution(self) -> dict:
+    def get_stake_distribution(self) -> Dict[str, float]:
         """Return current aggregated stake distribution per stake pool."""
         # stake pool values are displayed starting with line 2 from the command output
         result = self.query_cli(["stake-distribution"]).splitlines()[2:]
-        stake_distribution = {}
+        stake_distribution: Dict[str, float] = {}
         for pool in result:
             pool_id, *__, stake = pool.split(" ")
-            stake_distribution[pool_id] = stake
+            stake_distribution[pool_id] = float(stake)
         return stake_distribution
 
     def get_slot_no(self) -> int:
