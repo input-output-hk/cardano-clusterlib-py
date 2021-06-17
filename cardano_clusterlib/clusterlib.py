@@ -65,23 +65,38 @@ class UTXOData(NamedTuple):
     amount: int
     address: str
     coin: str = DEFAULT_COIN
+    datum_hash: str = ""
 
 
 class TxOut(NamedTuple):
     address: str
     amount: int
     coin: str = DEFAULT_COIN
+    datum_hash: str = ""
+
+
+class PlutusTxIn(NamedTuple):
+    txin: UTXOData
+    collateral: UTXOData
+    script_file: FileType
+    execution_units: Tuple[int, int]
+    datum_file: FileType = ""
+    datum_value: str = ""
+    redeemer_file: FileType = ""
+    redeemer_value: str = ""
 
 
 # list of `TxOut`s, empty list, or empty tuple
 OptionalTxOuts = Union[List[TxOut], Tuple[()]]
 # list of `UTXOData`s, empty list, or empty tuple
 OptionalUTXOData = Union[List[UTXOData], Tuple[()]]
+# list of `PlutusTxIn`s, empty list, or empty tuple
+OptionalPlutusTxIns = Union[List[PlutusTxIn], Tuple[()]]
 
 
 class ScriptFiles(NamedTuple):
     txin_scripts: OptionalFiles = ()
-    minting_scripts: OptionalFiles = ()
+    minting_scripts: OptionalFiles = ()  # TODO: rename to `mint_scripts`
     certificate_scripts: OptionalFiles = ()
     withdrawal_scripts: OptionalFiles = ()
     auxiliary_scripts: OptionalFiles = ()
@@ -122,6 +137,7 @@ class TxRawOutput(NamedTuple):
     tx_files: TxFiles
     out_file: Path
     fee: int
+    plutus_txins: OptionalPlutusTxIns = ()
     invalid_hereafter: Optional[int] = None
     invalid_before: Optional[int] = None
     withdrawals: OptionalTxOuts = ()
@@ -483,6 +499,7 @@ class ClusterLib:
         for utxo_rec, utxo_data in utxo_dict.items():
             utxo_hash, utxo_ix = utxo_rec.split("#")
             addr_data = utxo_data["value"]
+            datum_hash = utxo_data.get("data") or ""
             for policyid, coin_data in addr_data.items():
                 if policyid == DEFAULT_COIN:
                     utxo.append(
@@ -492,6 +509,7 @@ class ClusterLib:
                             amount=coin_data,
                             address=address,
                             coin=DEFAULT_COIN,
+                            datum_hash=datum_hash,
                         )
                     )
                     continue
@@ -503,6 +521,7 @@ class ClusterLib:
                             amount=amount,
                             address=address,
                             coin=f"{policyid}.{asset_name}" if asset_name else policyid,
+                            datum_hash=datum_hash,
                         )
                     )
 
@@ -641,8 +660,8 @@ class ClusterLib:
         self.cli(
             [
                 "address",
-                "build-script",
-                "--script-file",
+                "build",
+                "--payment-script-file",
                 str(script_file),
                 *self.magic_args,
                 "--out-file",
@@ -1363,11 +1382,12 @@ class ClusterLib:
         Returns:
             str: A transaction ID.
         """
-        cli_args = []
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
         elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
+        else:
+            raise CLIError("Either `tx_body_file` or `tx_file` is needed.")
 
         return self.cli(["transaction", "txid", *cli_args]).stdout.rstrip().decode("ascii")
 
@@ -1386,9 +1406,32 @@ class ClusterLib:
         elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
-            raise CLIError("Either ``tx_body_file` or `tx_file` is needed.")
+            raise CLIError("Either `tx_body_file` or `tx_file` is needed.")
 
         return self.cli(["transaction", "view", *cli_args]).stdout.rstrip().decode("utf-8")
+
+    def get_hash_script_data(
+        self, script_data_file: FileType = "", script_data_value: str = ""
+    ) -> str:
+        """Return the hash of script data.
+
+        Args:
+            script_data_file: A path to the file containing the script data (optional).
+            script_data_value: A value (in JSON syntax) for the script data (optional).
+
+        Returns:
+            str: A hash of script data.
+        """
+        if script_data_file:
+            cli_args = ["--script-data-file", str(script_data_file)]
+        elif script_data_value:
+            cli_args = ["--script-data-value", str(script_data_value)]
+        else:
+            raise CLIError("Either `script_data_file` or `script_data_value` is needed.")
+
+        return (
+            self.cli(["transaction", "hash-script-data", *cli_args]).stdout.rstrip().decode("ascii")
+        )
 
     def address_info(
         self,
@@ -1712,13 +1755,14 @@ class ClusterLib:
 
         return resolved_withdrawals
 
-    def build_raw_tx_bare(
+    def build_raw_tx_bare(  # noqa: C901
         self,
         out_file: FileType,
-        txins: List[UTXOData],
         txouts: List[TxOut],
         tx_files: TxFiles,
         fee: int,
+        txins: OptionalUTXOData = (),
+        plutus_txins: OptionalPlutusTxIns = (),
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
         invalid_hereafter: Optional[int] = None,
@@ -1730,10 +1774,11 @@ class ClusterLib:
 
         Args:
             out_file: An output file.
-            txins: An iterable of `UTXOData`, specifying input UTxOs.
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs.
             tx_files: A `TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
+            txins: An iterable of `UTXOData`, specifying input UTxOs.
+            plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs.
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -1746,13 +1791,16 @@ class ClusterLib:
         Returns:
             TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
         out_file = Path(out_file)
+
+        # exclude TxOuts with datum_hash for now
+        txouts_no_datum = [t for t in txouts if not t.datum_hash]
 
         if join_txouts:
             # aggregate TX outputs by address
             txouts_by_addr: Dict[str, List[str]] = {}
-            for rec in txouts:
+            for rec in txouts_no_datum:
                 if rec.address not in txouts_by_addr:
                     txouts_by_addr[rec.address] = []
                 coin = f" {rec.coin}" if rec.coin and rec.coin != DEFAULT_COIN else ""
@@ -1764,7 +1812,7 @@ class ClusterLib:
                 amounts_joined = "+".join(amounts)
                 txout_args.append(f"{addr}+{amounts_joined}")
         else:
-            txout_args = [f"{rec.address}+{rec.amount}" for rec in txouts]
+            txout_args = [f"{rec.address}+{rec.amount}" for rec in txouts_no_datum]
 
         # filter out duplicate txins
         txins_combined = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
@@ -1787,7 +1835,7 @@ class ClusterLib:
         if tx_files.script_files:
             script_args = [
                 *self._prepend_flag("--txin-script-file", tx_files.script_files.txin_scripts),
-                *self._prepend_flag("--minting-script-file", tx_files.script_files.minting_scripts),
+                *self._prepend_flag("--mint-script-file", tx_files.script_files.minting_scripts),
                 *self._prepend_flag(
                     "--certificate-script-file", tx_files.script_files.certificate_scripts
                 ),
@@ -1799,6 +1847,53 @@ class ClusterLib:
                 ),
             ]
 
+        plutus_txout_args = []
+        for tout in txouts:
+            if not tout.datum_hash:
+                continue
+            plutus_txout_args.extend(
+                [
+                    "--tx-out",
+                    f"{tout.address}+{tout.amount}",
+                    "--tx-out-datum-hash",
+                    tout.datum_hash,
+                ]
+            )
+
+        plutus_txin_args = []
+        for tin in plutus_txins:
+            tin_args = []
+            tin_args.extend(
+                [
+                    "--tx-in",
+                    f"{tin.txin.utxo_hash}#{tin.txin.utxo_ix}",
+                    "--tx-in-collateral",
+                    f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
+                    "--tx-in-script-file",
+                    str(tin.script_file),
+                    "--tx-in-execution-units",
+                    f"({tin.execution_units[0]},{tin.execution_units[1]})",
+                ]
+            )
+            if tin.datum_file:
+                tin_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+            if tin.datum_value:
+                tin_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
+            if tin.redeemer_file:
+                tin_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+            if tin.redeemer_value:
+                tin_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
+
+            plutus_txin_args.extend(tin_args)
+
+        if plutus_txin_args:
+            plutus_txin_args.extend(
+                [
+                    "--protocol-params-file",
+                    str(self.pparams_file),
+                ]
+            )
+
         self.cli(
             [
                 "transaction",
@@ -1807,7 +1902,9 @@ class ClusterLib:
                 str(fee),
                 "--out-file",
                 str(out_file),
+                *plutus_txin_args,
                 *self._prepend_flag("--tx-in", txins_combined),
+                *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
@@ -1822,7 +1919,8 @@ class ClusterLib:
         )
 
         return TxRawOutput(
-            txins=txins,
+            txins=list(txins),
+            plutus_txins=plutus_txins,
             txouts=txouts,
             tx_files=tx_files,
             out_file=out_file,
@@ -1896,10 +1994,10 @@ class ClusterLib:
 
         tx_raw_output = self.build_raw_tx_bare(
             out_file=out_file,
-            txins=txins_copy,
             txouts=txouts_copy,
             tx_files=tx_files,
             fee=fee,
+            txins=txins_copy,
             withdrawals=withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
