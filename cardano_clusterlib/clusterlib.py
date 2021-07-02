@@ -1,4 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
+import datetime
 import functools
 import itertools
 import json
@@ -271,6 +272,7 @@ class ClusterLib:
     ):
         self.cli_coverage: dict = {}
         self._rand_str = get_rand_str(4)
+        self._cli_log = ""
 
         self.state_dir = Path(state_dir).expanduser().resolve()
         self.genesis_json = self.state_dir / "shelley" / "genesis.json"
@@ -398,6 +400,13 @@ class ClusterLib:
             if not out_file.exists():
                 raise CLIError(f"The expected file `{out_file}` doesn't exist.")
 
+    def _write_cli_log(self, command: str) -> None:
+        if not self._cli_log:
+            return
+
+        with open(self._cli_log, "a") as logfile:
+            logfile.write(f"{datetime.datetime.now()}: {command}\n")
+
     def cli_base(self, cli_args: List[str]) -> CLIOut:
         """Run a command.
 
@@ -409,6 +418,7 @@ class ClusterLib:
         """
         cmd_str = " ".join(cli_args)
         LOGGER.debug("Running `%s`", cmd_str)
+        self._write_cli_log(cmd_str)
 
         # re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
