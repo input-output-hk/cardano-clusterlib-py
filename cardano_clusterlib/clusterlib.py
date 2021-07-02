@@ -1574,12 +1574,13 @@ class ClusterLib:
 
             if coin == DEFAULT_COIN:
                 tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
-                tx_fee = fee if fee > 0 else 0
+                tx_fee = fee if fee > 1 else 1
                 funds_needed = total_output_amount + tx_fee + tx_deposit
                 total_withdrawals_amount = functools.reduce(
                     lambda x, y: x + y.amount, withdrawals, 0
                 )
-                input_funds_needed = funds_needed - total_withdrawals_amount
+                # fee needs an input, even if withdrawal would cover all needed funds
+                input_funds_needed = max(funds_needed - total_withdrawals_amount, tx_fee)
             else:
                 coin_txouts_minted = txouts_mint_db.get(coin) or []
                 total_minted_amount = functools.reduce(
@@ -1715,12 +1716,7 @@ class ClusterLib:
                 utxo for uid, utxo in txins_by_id.items() if uid in selected_utxo_ids
             ]
 
-            if _txins_filtered:
-                txins_filtered = list(itertools.chain.from_iterable(_txins_filtered))
-            else:
-                # there's always a txin needed, if only for the fee
-                txins_filtered = [txins_all[0]] if txins_all else []
-
+            txins_filtered = list(itertools.chain.from_iterable(_txins_filtered))
             txins_db_filtered = self._organize_tx_ins_outs_by_coin(txins_filtered)
 
         # balance the transaction
