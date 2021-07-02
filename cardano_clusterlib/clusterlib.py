@@ -1,4 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
+import datetime
 import functools
 import itertools
 import json
@@ -271,6 +272,7 @@ class ClusterLib:
     ):
         self.cli_coverage: dict = {}
         self._rand_str = get_rand_str(4)
+        self._cli_log = ""
 
         self.state_dir = Path(state_dir).expanduser().resolve()
         self.genesis_json = self.state_dir / "shelley" / "genesis.json"
@@ -398,6 +400,13 @@ class ClusterLib:
             if not out_file.exists():
                 raise CLIError(f"The expected file `{out_file}` doesn't exist.")
 
+    def _write_cli_log(self, command: str) -> None:
+        if not self._cli_log:
+            return
+
+        with open(self._cli_log, "a") as logfile:
+            logfile.write(f"{datetime.datetime.now()}: {command}\n")
+
     def cli_base(self, cli_args: List[str]) -> CLIOut:
         """Run a command.
 
@@ -409,6 +418,7 @@ class ClusterLib:
         """
         cmd_str = " ".join(cli_args)
         LOGGER.debug("Running `%s`", cmd_str)
+        self._write_cli_log(cmd_str)
 
         # re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
@@ -1739,7 +1749,7 @@ class ClusterLib:
         The `TxOut.amount` can be '-1', meaning all available funds.
 
         Args:
-            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals.
 
         Returns:
             List[TxOut]: A list of `TxOuts`, specifying resolved reward withdrawals.
@@ -1747,9 +1757,9 @@ class ClusterLib:
         resolved_withdrawals = []
         for rec in withdrawals:
             # the amount with value "-1" means all available balance
-            if rec[1] == -1:
-                balance = self.get_stake_addr_info(rec[0]).reward_account_balance
-                resolved_withdrawals.append(TxOut(address=rec[0], amount=balance))
+            if rec.amount == -1:
+                balance = self.get_stake_addr_info(rec.address).reward_account_balance
+                resolved_withdrawals.append(TxOut(address=rec.address, amount=balance))
             else:
                 resolved_withdrawals.append(rec)
 
@@ -2903,7 +2913,6 @@ class ClusterLib:
             deposit=deposit,
             destination_dir=destination_dir,
         )
-        self.wait_for_new_block(new_blocks=2)
 
         return pool_reg_cert_file, tx_raw_output
 
@@ -2958,7 +2967,6 @@ class ClusterLib:
             tx_files=tx_files,
             destination_dir=destination_dir,
         )
-        self.wait_for_new_block(new_blocks=2)
 
         return pool_dereg_cert_file, tx_raw_output
 
@@ -3055,7 +3063,6 @@ class ClusterLib:
             withdrawals=[TxOut(address=stake_addr_record.address, amount=-1)],
             destination_dir=destination_dir,
         )
-        self.wait_for_new_block(new_blocks=2)
 
         if not verify:
             return tx_raw_withdrawal_output
