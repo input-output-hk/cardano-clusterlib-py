@@ -1,5 +1,6 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
 import datetime
+import decimal
 import functools
 import itertools
 import json
@@ -80,7 +81,7 @@ class PlutusTxIn(NamedTuple):
     txin: UTXOData
     collateral: UTXOData
     script_file: FileType
-    execution_units: Tuple[int, int]
+    execution_units: Optional[Tuple[decimal.Decimal, decimal.Decimal]] = None
     datum_file: FileType = ""
     datum_value: str = ""
     redeemer_file: FileType = ""
@@ -1877,10 +1878,15 @@ class ClusterLib:
                     f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
                     "--tx-in-script-file",
                     str(tin.script_file),
-                    "--tx-in-execution-units",
-                    f"({tin.execution_units[0]},{tin.execution_units[1]})",
                 ]
             )
+            if tin.execution_units:
+                tin_args.extend(
+                    [
+                        "--tx-in-execution-units",
+                        f"({tin.execution_units[0]},{tin.execution_units[1]})",
+                    ]
+                )
             if tin.datum_file:
                 tin_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
             if tin.datum_value:
