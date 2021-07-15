@@ -87,12 +87,23 @@ class PlutusTxIn(NamedTuple):
     redeemer_value: str = ""
 
 
+class PlutusMint(NamedTuple):
+    txin: UTXOData
+    collateral: UTXOData
+    script_file: FileType
+    execution_units: Optional[Tuple[int, int]] = None
+    redeemer_file: FileType = ""
+    redeemer_value: str = ""
+
+
 # list of `TxOut`s, empty list, or empty tuple
 OptionalTxOuts = Union[List[TxOut], Tuple[()]]
 # list of `UTXOData`s, empty list, or empty tuple
 OptionalUTXOData = Union[List[UTXOData], Tuple[()]]
 # list of `PlutusTxIn`s, empty list, or empty tuple
 OptionalPlutusTxIns = Union[List[PlutusTxIn], Tuple[()]]
+# list of `PlutusMint`s, empty list, or empty tuple
+OptionalPlutusMintData = Union[List[PlutusMint], Tuple[()]]
 
 
 class ScriptFiles(NamedTuple):
@@ -139,6 +150,7 @@ class TxRawOutput(NamedTuple):
     out_file: Path
     fee: int
     plutus_txins: OptionalPlutusTxIns = ()
+    plutus_mint: OptionalPlutusMintData = ()
     invalid_hereafter: Optional[int] = None
     invalid_before: Optional[int] = None
     withdrawals: OptionalTxOuts = ()
@@ -1769,6 +1781,7 @@ class ClusterLib:
         fee: int,
         txins: OptionalUTXOData = (),
         plutus_txins: OptionalPlutusTxIns = (),
+        plutus_mint: OptionalPlutusMintData = (),
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
         invalid_hereafter: Optional[int] = None,
@@ -1785,6 +1798,7 @@ class ClusterLib:
             fee: A fee amount.
             txins: An iterable of `UTXOData`, specifying input UTxOs.
             plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs.
+            plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data.
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -1897,7 +1911,34 @@ class ClusterLib:
 
             plutus_txin_args.extend(tin_args)
 
-        if plutus_txin_args:
+        plutus_mint_args = []
+        for pmint in plutus_mint:
+            pmint_args = []
+            pmint_args.extend(
+                [
+                    "--tx-in",
+                    f"{pmint.txin.utxo_hash}#{pmint.txin.utxo_ix}",
+                    "--tx-in-collateral",
+                    f"{pmint.collateral.utxo_hash}#{pmint.collateral.utxo_ix}",
+                    "--mint-script-file",
+                    str(pmint.script_file),
+                ]
+            )
+            if pmint.execution_units:
+                pmint_args.extend(
+                    [
+                        "--mint-execution-units",
+                        f"({pmint.execution_units[0]},{pmint.execution_units[1]})",
+                    ]
+                )
+            if pmint.redeemer_file:
+                pmint_args.extend(["--mint-redeemer-file", str(pmint.redeemer_file)])
+            if pmint.redeemer_value:
+                pmint_args.extend(["--mint-redeemer-value", str(pmint.redeemer_value)])
+
+            plutus_mint_args.extend(pmint_args)
+
+        if plutus_txin_args or plutus_mint_args:
             plutus_txin_args.extend(
                 [
                     "--protocol-params-file",
@@ -1914,6 +1955,7 @@ class ClusterLib:
                 "--out-file",
                 str(out_file),
                 *plutus_txin_args,
+                *plutus_mint_args,
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
@@ -1932,6 +1974,7 @@ class ClusterLib:
         return TxRawOutput(
             txins=list(txins),
             plutus_txins=plutus_txins,
+            plutus_mint=plutus_mint,
             txouts=txouts,
             tx_files=tx_files,
             out_file=out_file,
