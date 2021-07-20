@@ -2347,13 +2347,23 @@ class ClusterLib:
             wait_blocks: A number of new blocks to wait for (default = 2).
         """
         txid = ""
+        err = None
         for r in range(3):
-            if r != 0:
+            if r == 0:
+                self.submit_tx_bare(tx_file)
+                self.wait_for_new_block(wait_blocks)
+            else:
                 txid = txid or self.get_txid(tx_file=tx_file)
                 LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
-
-            self.submit_tx_bare(tx_file)
-            self.wait_for_new_block(wait_blocks)
+                try:
+                    self.submit_tx_bare(tx_file)
+                except CLIError as exc:
+                    # check if resubmitting failed because an input UTxO was already spent
+                    if "UtxoFailure (BadInputsUTxO" not in str(exc):
+                        raise
+                    err = exc
+                else:
+                    self.wait_for_new_block(wait_blocks)
 
             # Check that one of the input UTxOs was spent to verify the TX was
             # successfully submitted to the chain.
@@ -2372,8 +2382,13 @@ class ClusterLib:
             else:
                 # input was not found
                 is_spent = True
+
             if is_spent:
                 break
+            if err is not None:
+                # Submitting the TX raised an exception as if the input was already
+                # spent, but it was not the case. Reraising the exception.
+                raise err
         else:
             raise CLIError(f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}').")
 
