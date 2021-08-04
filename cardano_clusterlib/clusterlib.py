@@ -155,6 +155,7 @@ class TxRawOutput(NamedTuple):
     invalid_before: Optional[int] = None
     withdrawals: OptionalTxOuts = ()
     mint: OptionalTxOuts = ()
+    change_address: str = ""
 
 
 class PoolCreationOutput(NamedTuple):
@@ -1664,6 +1665,9 @@ class ClusterLib:
 
             txouts_result.extend(coin_txouts)
 
+        # filter out negative token amounts (tokens burning)
+        txouts_result = [r for r in txouts_result if r.amount > 0]
+
         return txouts_result
 
     def get_tx_ins_outs(
@@ -1731,6 +1735,9 @@ class ClusterLib:
             txins_filtered = list(itertools.chain.from_iterable(_txins_filtered))
             txins_db_filtered = self._organize_tx_ins_outs_by_coin(txins_filtered)
 
+        if not txins_filtered:
+            LOGGER.error("Cannot build transaction, empty `txins`.")
+
         # balance the transaction
         txouts_balanced = self._balance_txouts(
             src_address=src_address,
@@ -1742,12 +1749,6 @@ class ClusterLib:
             deposit=deposit,
             withdrawals=withdrawals,
         )
-
-        # filter out negative token amounts (tokens burning)
-        txouts_balanced = [r for r in txouts_balanced if r.amount > 0]
-
-        if not txins_filtered:
-            LOGGER.error("Cannot build transaction, empty `txins`.")
 
         return txins_filtered, txouts_balanced
 
@@ -1796,9 +1797,9 @@ class ClusterLib:
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs.
             tx_files: A `TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
-            txins: An iterable of `UTXOData`, specifying input UTxOs.
-            plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs.
-            plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data.
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
+            plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -2207,6 +2208,232 @@ class ClusterLib:
         ).stdout
         coin, value = stdout.decode().split(" ")
         return Value(value=int(value), coin=coin)
+
+    def build_tx(  # noqa: C901
+        self,
+        src_address: str,
+        tx_name: str,
+        tx_files: TxFiles,
+        txins: OptionalUTXOData = (),
+        txouts: OptionalTxOuts = (),
+        change_address: str = "",
+        fee_buffer: Optional[int] = None,
+        plutus_txins: OptionalPlutusTxIns = (),
+        plutus_mint: OptionalPlutusMintData = (),
+        withdrawals: OptionalTxOuts = (),
+        deposit: Optional[int] = None,
+        invalid_hereafter: Optional[int] = None,
+        invalid_before: Optional[int] = None,
+        mint: OptionalTxOuts = (),
+        join_txouts: bool = True,
+        destination_dir: FileType = ".",
+    ) -> TxRawOutput:
+        """Build a transaction.
+
+        Args:
+            src_address: An address used for fee and inputs (if inputs not specified by `txins`).
+            tx_name: A name of the transaction.
+            tx_files: A `TxFiles` tuple containing files needed for the transaction.
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            change_address: A string with address where ADA in excess of the transaction fee
+                will go to (optional).
+            fee_buffer: A buffer for fee amount (optional).
+            plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
+            plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
+            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            deposit: A deposit amount needed by the transaction (optional).
+            invalid_hereafter: A last block when the transaction is still valid (optional).
+            invalid_before: A first block when the transaction is valid (optional).
+            mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+            join_txouts: A bool indicating whether to aggregate transaction outputs
+                by payment address (True by default).
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            TxRawOutput: A tuple with transaction output details.
+        """
+        # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
+        destination_dir = Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{tx_name}_tx.body"
+        self._check_files_exist(out_file)
+
+        # combine txins and make sure we have enough funds to satisfy all txouts
+        combined_txins = [*txins, *[r.txin for r in plutus_txins], *[r.txin for r in plutus_mint]]
+        txins_copy, __ = self.get_tx_ins_outs(
+            src_address=src_address,
+            tx_files=tx_files,
+            txins=combined_txins,
+            txouts=txouts,
+            fee=fee_buffer or 0,
+            deposit=deposit,
+            withdrawals=withdrawals,
+            mint=mint,
+        )
+
+        # exclude TxOuts with datum_hash for now
+        txouts_no_datum = [t for t in txouts if not t.datum_hash]
+
+        if join_txouts:
+            # aggregate TX outputs by address
+            txouts_by_addr: Dict[str, List[str]] = {}
+            for rec in txouts_no_datum:
+                if rec.address not in txouts_by_addr:
+                    txouts_by_addr[rec.address] = []
+                coin = f" {rec.coin}" if rec.coin and rec.coin != DEFAULT_COIN else ""
+                txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
+
+            # join txouts with the same address
+            txout_args: List[str] = []
+            for addr, amounts in txouts_by_addr.items():
+                amounts_joined = "+".join(amounts)
+                txout_args.append(f"{addr}+{amounts_joined}")
+        else:
+            txout_args = [f"{rec.address}+{rec.amount}" for rec in txouts_no_datum]
+
+        # filter out duplicate txins
+        txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins_copy}
+        plutus_txins_utxos = {f"{x.txin.utxo_hash}#{x.txin.utxo_ix}" for x in plutus_txins}
+        plutus_mint_utxos = {f"{x.txin.utxo_hash}#{x.txin.utxo_ix}" for x in plutus_mint}
+        txins_combined = txins_utxos.difference(plutus_txins_utxos.union(plutus_mint_utxos))
+
+        withdrawals_combined = [f"{x.address}+{x.amount}" for x in withdrawals]
+
+        bound_args = []
+        if invalid_before is not None:
+            bound_args.extend(["--invalid-before", str(invalid_before)])
+        if invalid_hereafter is not None:
+            bound_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
+
+        mint_records = [f"{m.amount} {m.coin}" for m in mint]
+        mint_args = ["--mint", "+".join(mint_records)] if mint_records else []
+
+        script_args = []
+        if tx_files.script_files:
+            script_args = [
+                *self._prepend_flag("--txin-script-file", tx_files.script_files.txin_scripts),
+                *self._prepend_flag("--mint-script-file", tx_files.script_files.minting_scripts),
+                *self._prepend_flag(
+                    "--certificate-script-file", tx_files.script_files.certificate_scripts
+                ),
+                *self._prepend_flag(
+                    "--withdrawal-script-file", tx_files.script_files.withdrawal_scripts
+                ),
+                *self._prepend_flag(
+                    "--auxiliary-script-file", tx_files.script_files.auxiliary_scripts
+                ),
+            ]
+
+        plutus_txout_args = []
+        for tout in txouts:
+            if not tout.datum_hash:
+                continue
+            plutus_txout_args.extend(
+                [
+                    "--tx-out",
+                    f"{tout.address}+{tout.amount}",
+                    "--tx-out-datum-hash",
+                    tout.datum_hash,
+                ]
+            )
+
+        plutus_txin_args = []
+        for tin in plutus_txins:
+            tin_args = []
+            tin_args.extend(
+                [
+                    "--tx-in",
+                    f"{tin.txin.utxo_hash}#{tin.txin.utxo_ix}",
+                    "--tx-in-collateral",
+                    f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
+                    "--tx-in-script-file",
+                    str(tin.script_file),
+                ]
+            )
+            if tin.datum_file:
+                tin_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+            if tin.datum_value:
+                tin_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
+            if tin.redeemer_file:
+                tin_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+            if tin.redeemer_value:
+                tin_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
+
+            plutus_txin_args.extend(tin_args)
+
+        plutus_mint_args = []
+        for pmint in plutus_mint:
+            pmint_args = []
+            pmint_args.extend(
+                [
+                    "--tx-in",
+                    f"{pmint.txin.utxo_hash}#{pmint.txin.utxo_ix}",
+                    "--tx-in-collateral",
+                    f"{pmint.collateral.utxo_hash}#{pmint.collateral.utxo_ix}",
+                    "--mint-script-file",
+                    str(pmint.script_file),
+                ]
+            )
+            if pmint.redeemer_file:
+                pmint_args.extend(["--mint-redeemer-file", str(pmint.redeemer_file)])
+            if pmint.redeemer_value:
+                pmint_args.extend(["--mint-redeemer-value", str(pmint.redeemer_value)])
+
+            plutus_mint_args.extend(pmint_args)
+
+        if plutus_txin_args or plutus_mint_args or plutus_txout_args:
+            plutus_txin_args.extend(
+                [
+                    "--protocol-params-file",
+                    str(self.pparams_file),
+                ]
+            )
+
+        change_addr_args = ["--change-address"]
+        if change_address:
+            change_addr_args.append(change_address)
+        else:
+            change_addr_args.append(src_address)
+
+        self.cli(
+            [
+                "transaction",
+                "build",
+                *plutus_txin_args,
+                *plutus_mint_args,
+                *self._prepend_flag("--tx-in", txins_combined),
+                *plutus_txout_args,
+                *self._prepend_flag("--tx-out", txout_args),
+                *self._prepend_flag("--certificate-file", tx_files.certificate_files),
+                *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+                *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
+                *self._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
+                *self._prepend_flag("--withdrawal", withdrawals_combined),
+                *bound_args,
+                *change_addr_args,
+                *mint_args,
+                *script_args,
+                *self.tx_era_arg,
+                *self.magic_args,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        return TxRawOutput(
+            txins=list(txins_copy),
+            plutus_txins=plutus_txins,
+            plutus_mint=plutus_mint,
+            txouts=list(txouts),
+            tx_files=tx_files,
+            out_file=out_file,
+            fee=-1,
+            invalid_hereafter=invalid_hereafter,
+            invalid_before=invalid_before,
+            withdrawals=withdrawals,
+            mint=mint,
+            change_address=change_address,
+        )
 
     def sign_tx(
         self,
