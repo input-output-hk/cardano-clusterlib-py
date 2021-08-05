@@ -1709,7 +1709,9 @@ class ClusterLib:
 
         if not txins_all:
             LOGGER.error("No input UTxO.")
-        elif not all(c in txins_db_all for c in outcoins_passed):
+        # all output coins, except those minted by this transaction, need to be present in
+        # transaction inputs
+        elif not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
             LOGGER.error("Not all output coins are present in input UTxO.")
 
         if txins:
@@ -2257,6 +2259,8 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         self._check_files_exist(out_file)
+
+        withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
         # combine txins and make sure we have enough funds to satisfy all txouts
         combined_txins = [*txins, *[r.txin for r in plutus_txins], *[r.txin for r in plutus_mint]]
