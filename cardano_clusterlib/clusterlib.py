@@ -2227,6 +2227,7 @@ class ClusterLib:
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
         mint: OptionalTxOuts = (),
+        witness_override: Optional[int] = None,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
@@ -2399,6 +2400,10 @@ class ClusterLib:
         else:
             change_addr_args.append(src_address)
 
+        witness_override_args = []
+        if witness_override is not None:
+            witness_override_args = ["--witness-override", str(witness_override)]
+
         self.cli(
             [
                 "transaction",
@@ -2417,6 +2422,7 @@ class ClusterLib:
                 *change_addr_args,
                 *mint_args,
                 *script_args,
+                *witness_override_args,
                 *self.tx_era_arg,
                 *self.magic_args,
                 "--out-file",
@@ -2436,7 +2442,7 @@ class ClusterLib:
             invalid_before=invalid_before,
             withdrawals=withdrawals,
             mint=mint,
-            change_address=change_address,
+            change_address=change_address or src_address,
         )
 
     def sign_tx(
