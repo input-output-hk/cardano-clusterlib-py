@@ -1543,7 +1543,10 @@ class ClusterLib:
         """Collect UTxOs so their total combined amount >= `amount`."""
         collected_utxos: List[UTXOData] = []
         collected_amount = 0
-        amount_plus_change = amount + self._min_change_value
+        # `_min_change_value` applies only to ADA
+        amount_plus_change = (
+            amount + self._min_change_value if utxos and utxos[0].coin == DEFAULT_COIN else amount
+        )
         for utxo in utxos:
             # if we were able to collect exact amount, no change is needed
             if collected_amount == amount:
@@ -1599,6 +1602,9 @@ class ClusterLib:
                 total_minted_amount = functools.reduce(
                     lambda x, y: x + y.amount, coin_txouts_minted, 0
                 )
+                # In case of token burning, `total_minted_amount` might be negative.
+                # Try to collect enough funds to satisfy both token burning and token
+                # transfers, even though there might be an overlap.
                 input_funds_needed = total_output_amount - total_minted_amount
 
             filtered_coin_utxos = self._collect_utxos_amount(
@@ -1618,6 +1624,7 @@ class ClusterLib:
         fee: int,
         deposit: Optional[int],
         withdrawals: OptionalTxOuts,
+        lovelace_balanced: bool = False,
     ) -> List[TxOut]:
         """Balance the transaction by adding change output for each coin."""
         txouts_result: List[TxOut] = []
@@ -1638,7 +1645,10 @@ class ClusterLib:
             total_input_amount = functools.reduce(lambda x, y: x + y.amount, coin_txins, 0)
             total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
 
-            if coin == DEFAULT_COIN:
+            if coin == DEFAULT_COIN and lovelace_balanced:
+                # balancing is done elsewhere (by the `transaction build` command)
+                change = 0
+            elif coin == DEFAULT_COIN:
                 tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
                 tx_fee = fee if fee > 0 else 0
                 funds_needed = total_output_amount + tx_fee + tx_deposit
@@ -1680,6 +1690,7 @@ class ClusterLib:
         deposit: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
         mint: OptionalTxOuts = (),
+        lovelace_balanced: bool = False,
     ) -> Tuple[list, list]:
         """Return list of transaction's inputs and outputs.
 
@@ -1750,6 +1761,7 @@ class ClusterLib:
             fee=fee,
             deposit=deposit,
             withdrawals=withdrawals,
+            lovelace_balanced=lovelace_balanced,
         )
 
         return txins_filtered, txouts_balanced
@@ -2265,7 +2277,7 @@ class ClusterLib:
 
         # combine txins and make sure we have enough funds to satisfy all txouts
         combined_txins = [*txins, *[r.txin for r in plutus_txins], *[r.txin for r in plutus_mint]]
-        txins_copy, __ = self.get_tx_ins_outs(
+        txins_copy, txouts_copy = self.get_tx_ins_outs(
             src_address=src_address,
             tx_files=tx_files,
             txins=combined_txins,
@@ -2274,10 +2286,11 @@ class ClusterLib:
             deposit=deposit,
             withdrawals=withdrawals,
             mint=mint,
+            lovelace_balanced=True,
         )
 
         # exclude TxOuts with datum_hash for now
-        txouts_no_datum = [t for t in txouts if not t.datum_hash]
+        txouts_no_datum = [t for t in txouts_copy if not t.datum_hash]
 
         if join_txouts:
             # aggregate TX outputs by address
@@ -2330,7 +2343,7 @@ class ClusterLib:
             ]
 
         plutus_txout_args = []
-        for tout in txouts:
+        for tout in txouts_copy:
             if not tout.datum_hash:
                 continue
             plutus_txout_args.extend(
@@ -2434,7 +2447,7 @@ class ClusterLib:
             txins=list(txins_copy),
             plutus_txins=plutus_txins,
             plutus_mint=plutus_mint,
-            txouts=list(txouts),
+            txouts=list(txouts_copy),
             tx_files=tx_files,
             out_file=out_file,
             fee=-1,
