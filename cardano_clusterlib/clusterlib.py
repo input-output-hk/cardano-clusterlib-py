@@ -1802,6 +1802,7 @@ class ClusterLib:
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
         mint: OptionalTxOuts = (),
+        script_valid: bool = True,
         join_txouts: bool = True,
     ) -> TxRawOutput:
         """Build a raw transaction.
@@ -1820,6 +1821,7 @@ class ClusterLib:
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
             mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+            script_valid: A bool indicating that the script is valid (True by default).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
 
@@ -1869,7 +1871,7 @@ class ClusterLib:
         script_args = []
         if tx_files.script_files:
             script_args = [
-                *self._prepend_flag("--txin-script-file", tx_files.script_files.txin_scripts),
+                *self._prepend_flag("--tx-in-script-file", tx_files.script_files.txin_scripts),
                 *self._prepend_flag("--mint-script-file", tx_files.script_files.minting_scripts),
                 *self._prepend_flag(
                     "--certificate-script-file", tx_files.script_files.certificate_scripts
@@ -1881,6 +1883,9 @@ class ClusterLib:
                     "--auxiliary-script-file", tx_files.script_files.auxiliary_scripts
                 ),
             ]
+
+        if not script_valid:
+            script_args.append("--script-invalid")
 
         plutus_txout_args = []
         for tout in txouts:
@@ -2240,6 +2245,7 @@ class ClusterLib:
         invalid_before: Optional[int] = None,
         mint: OptionalTxOuts = (),
         witness_override: Optional[int] = None,
+        script_valid: bool = True,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
@@ -2252,7 +2258,7 @@ class ClusterLib:
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             change_address: A string with address where ADA in excess of the transaction fee
-                will go to (optional).
+                will go to (`src_address` by default).
             fee_buffer: A buffer for fee amount (optional).
             plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
             plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
@@ -2261,6 +2267,7 @@ class ClusterLib:
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
             mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+            script_valid: A bool indicating that the script is valid (True by default).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -2329,7 +2336,7 @@ class ClusterLib:
         script_args = []
         if tx_files.script_files:
             script_args = [
-                *self._prepend_flag("--txin-script-file", tx_files.script_files.txin_scripts),
+                *self._prepend_flag("--tx-in-script-file", tx_files.script_files.txin_scripts),
                 *self._prepend_flag("--mint-script-file", tx_files.script_files.minting_scripts),
                 *self._prepend_flag(
                     "--certificate-script-file", tx_files.script_files.certificate_scripts
@@ -2341,6 +2348,9 @@ class ClusterLib:
                     "--auxiliary-script-file", tx_files.script_files.auxiliary_scripts
                 ),
             ]
+
+        if not script_valid:
+            script_args.append("--script-invalid")
 
         plutus_txout_args = []
         for tout in txouts_copy:
