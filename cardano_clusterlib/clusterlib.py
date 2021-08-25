@@ -230,7 +230,7 @@ def get_rand_str(length: int = 8) -> str:
 
 def read_address_from_file(addr_file: FileType) -> str:
     """Read address stored in file."""
-    with open(Path(addr_file).expanduser()) as in_file:
+    with open(Path(addr_file).expanduser(), encoding="utf-8") as in_file:
         return in_file.read().strip()
 
 
@@ -292,7 +292,7 @@ class ClusterLib:
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
         self._check_state_dir()
 
-        with open(self.genesis_json) as in_json:
+        with open(self.genesis_json, encoding="utf-8") as in_json:
             self.genesis = json.load(in_json)
 
         self.slot_length = self.genesis["slotLength"]
@@ -417,7 +417,7 @@ class ClusterLib:
         if not self._cli_log:
             return
 
-        with open(self._cli_log, "a") as logfile:
+        with open(self._cli_log, "a", encoding="utf-8") as logfile:
             logfile.write(f"{datetime.datetime.now()}: {command}\n")
 
     def cli_base(self, cli_args: List[str]) -> CLIOut:
@@ -1222,7 +1222,7 @@ class ClusterLib:
         # TODO: workaround for https://github.com/input-output-hk/cardano-node/issues/2461
         # self.query_cli(["ledger-state", "--out-file", str(json_file)])
         ledger_state = self.get_ledger_state()
-        with open(json_file, "w") as fp_out:
+        with open(json_file, "w", encoding="utf-8") as fp_out:
             json.dump(ledger_state, fp_out, indent=4)
         return json_file
 
@@ -1234,7 +1234,7 @@ class ClusterLib:
     def get_protocol_params(self) -> dict:
         """Return the current protocol parameters."""
         self.refresh_pparams_file()
-        with open(self.pparams_file) as in_json:
+        with open(self.pparams_file, encoding="utf-8") as in_json:
             pparams: dict = json.load(in_json)
         return pparams
 
@@ -1491,7 +1491,7 @@ class ClusterLib:
 
         deposit = 0
         for cert in tx_files.certificate_files:
-            with open(cert) as in_json:
+            with open(cert, encoding="utf-8") as in_json:
                 content = json.load(in_json)
             description = content.get("description", "")
             if "Stake Address Registration" in description:
@@ -2785,7 +2785,7 @@ class ClusterLib:
         if script_type_arg == MultiSigTypeArgs.AT_LEAST:
             script["required"] = required
 
-        with open(out_file, "w") as fp_out:
+        with open(out_file, "w", encoding="utf-8") as fp_out:
             json.dump(script, fp_out, indent=4)
 
         return out_file
