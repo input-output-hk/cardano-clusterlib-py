@@ -77,7 +77,7 @@ class TxOut(NamedTuple):
 
 
 class PlutusTxIn(NamedTuple):
-    txin: UTXOData
+    txins: List[UTXOData]
     collateral: UTXOData
     script_file: FileType
     execution_units: Optional[Tuple[int, int]] = None
@@ -88,7 +88,7 @@ class PlutusTxIn(NamedTuple):
 
 
 class PlutusMint(NamedTuple):
-    txin: UTXOData
+    txins: List[UTXOData]
     collateral: UTXOData
     script_file: FileType
     execution_units: Optional[Tuple[int, int]] = None
@@ -504,23 +504,34 @@ class ClusterLib:
         """Refresh protocol parameters file."""
         self.query_cli(["protocol-parameters", "--out-file", str(self.pparams_file)])
 
-    def get_utxo(self, address: str, coins: UnpackableSequence = ()) -> List[UTXOData]:
+    def get_utxo(
+        self, address: str = "", txin: str = "", coins: UnpackableSequence = ()
+    ) -> List[UTXOData]:
         """Return UTxO info for payment address.
 
         Args:
             address: A payment address.
+            txin: A transaction input (TxId#TxIx).
             coins: A list (iterable) of coin names (asset IDs).
 
         Returns:
             List[UTXOData]: A list of UTxO data.
         """
-        utxo_dict = json.loads(
-            self.query_cli(["utxo", "--address", address, "--out-file", "/dev/stdout"])
-        )
+        if not (address or txin):
+            raise AssertionError("Either `address` or `txin` need to be specified.")
+
+        cli_args = ["utxo", "--out-file", "/dev/stdout"]
+        if address:
+            cli_args.extend(["--address", address])
+        elif txin:
+            cli_args.extend(["--tx-in", txin])
+
+        utxo_dict = json.loads(self.query_cli(cli_args))
 
         utxo = []
         for utxo_rec, utxo_data in utxo_dict.items():
             utxo_hash, utxo_ix = utxo_rec.split("#")
+            utxo_address = utxo_data.get("address") or ""
             addr_data = utxo_data["value"]
             datum_hash = utxo_data.get("data") or ""
             for policyid, coin_data in addr_data.items():
@@ -530,7 +541,7 @@ class ClusterLib:
                             utxo_hash=utxo_hash,
                             utxo_ix=int(utxo_ix),
                             amount=coin_data,
-                            address=address,
+                            address=address or utxo_address,
                             coin=DEFAULT_COIN,
                             datum_hash=datum_hash,
                         )
@@ -542,7 +553,7 @@ class ClusterLib:
                             utxo_hash=utxo_hash,
                             utxo_ix=int(utxo_ix),
                             amount=amount,
-                            address=address,
+                            address=address or utxo_address,
                             coin=f"{policyid}.{asset_name}" if asset_name else policyid,
                             datum_hash=datum_hash,
                         )
@@ -1370,7 +1381,7 @@ class ClusterLib:
         Returns:
             int: A total balance.
         """
-        utxo = self.get_utxo(address, coins=[coin])
+        utxo = self.get_utxo(address=address, coins=[coin])
         address_balance = functools.reduce(lambda x, y: x + y.amount, utxo, 0)
         return int(address_balance)
 
@@ -1383,7 +1394,7 @@ class ClusterLib:
         Returns:
             UTXOData: An UTxO record with the highest amount.
         """
-        utxo = self.get_utxo(address, coins=[coin])
+        utxo = self.get_utxo(address=address, coins=[coin])
         highest_amount_rec = max(utxo, key=lambda x: x.amount)
         return highest_amount_rec
 
@@ -1526,7 +1537,7 @@ class ClusterLib:
 
     def _get_utxos_with_coins(self, src_address: str, coins: Set[str]) -> List[UTXOData]:
         """Get all UTxOs that contain any of the required coins (`coins`)."""
-        txins_all = self.get_utxo(src_address)
+        txins_all = self.get_utxo(address=src_address)
         txins_by_id = self._organize_utxos_by_id(txins_all)
 
         txins = []
@@ -1788,6 +1799,69 @@ class ClusterLib:
 
         return resolved_withdrawals
 
+    def _join_txouts(self, txouts: List[TxOut]) -> Tuple[List[str], List[str]]:
+        plutus_txout_args: List[str] = []
+        txout_args: List[str] = []
+
+        txouts_by_datum: Dict[str, Dict[str, List[str]]] = {}
+        # aggregate TX outputs by datum hash and address
+        for rec in txouts:
+            if rec.datum_hash not in txouts_by_datum:
+                txouts_by_datum[rec.datum_hash] = {}
+            txouts_by_addr = txouts_by_datum[rec.datum_hash]
+            if rec.address not in txouts_by_addr:
+                txouts_by_addr[rec.address] = []
+            coin = f" {rec.coin}" if rec.coin and rec.coin != DEFAULT_COIN else ""
+            txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
+
+        # join txouts with the same address
+        simple_txouts = txouts_by_datum.get("") or {}
+        for addr, amounts in simple_txouts.items():
+            amounts_joined = "+".join(amounts)
+            txout_args.append(f"{addr}+{amounts_joined}")
+
+        for datum_hash, txouts_by_addr in txouts_by_datum.items():
+            if not datum_hash:
+                continue
+            for addr, amounts in txouts_by_addr.items():
+                amounts_joined = "+".join(amounts)
+                plutus_txout_args.extend(
+                    [
+                        "--tx-out",
+                        f"{addr}+{amounts_joined}",
+                        "--tx-out-datum-hash",
+                        datum_hash,
+                    ]
+                )
+
+        return plutus_txout_args, txout_args
+
+    def _list_txouts(self, txouts: List[TxOut]) -> Tuple[List[str], List[str]]:
+        plutus_txout_args: List[str] = []
+        txout_args: List[str] = []
+
+        for rec in txouts:
+            if rec.datum_hash:
+                plutus_txout_args.extend(
+                    [
+                        "--tx-out",
+                        f"{rec.address}+{rec.amount}",
+                        "--tx-out-datum-hash",
+                        rec.datum_hash,
+                    ]
+                )
+            else:
+                txout_args.append(f"{rec.address}+{rec.amount}")
+
+        return plutus_txout_args, txout_args
+
+    def _process_txouts(
+        self, txouts: List[TxOut], join_txouts: bool
+    ) -> Tuple[List[str], List[str]]:
+        if join_txouts:
+            return self._join_txouts(txouts=txouts)
+        return self._list_txouts(txouts=txouts)
+
     def build_raw_tx_bare(  # noqa: C901
         self,
         out_file: FileType,
@@ -1831,25 +1905,7 @@ class ClusterLib:
         # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
         out_file = Path(out_file)
 
-        # exclude TxOuts with datum_hash for now
-        txouts_no_datum = [t for t in txouts if not t.datum_hash]
-
-        if join_txouts:
-            # aggregate TX outputs by address
-            txouts_by_addr: Dict[str, List[str]] = {}
-            for rec in txouts_no_datum:
-                if rec.address not in txouts_by_addr:
-                    txouts_by_addr[rec.address] = []
-                coin = f" {rec.coin}" if rec.coin and rec.coin != DEFAULT_COIN else ""
-                txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
-
-            # join txouts with the same address
-            txout_args: List[str] = []
-            for addr, amounts in txouts_by_addr.items():
-                amounts_joined = "+".join(amounts)
-                txout_args.append(f"{addr}+{amounts_joined}")
-        else:
-            txout_args = [f"{rec.address}+{rec.amount}" for rec in txouts_no_datum]
+        plutus_txout_args, txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
 
         # filter out duplicate txins
         txins_combined = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
@@ -1887,26 +1943,14 @@ class ClusterLib:
         if not script_valid:
             script_args.append("--script-invalid")
 
-        plutus_txout_args = []
-        for tout in txouts:
-            if not tout.datum_hash:
-                continue
-            plutus_txout_args.extend(
-                [
-                    "--tx-out",
-                    f"{tout.address}+{tout.amount}",
-                    "--tx-out-datum-hash",
-                    tout.datum_hash,
-                ]
-            )
-
         plutus_txin_args = []
         for tin in plutus_txins:
             tin_args = []
             tin_args.extend(
                 [
                     "--tx-in",
-                    f"{tin.txin.utxo_hash}#{tin.txin.utxo_ix}",
+                    # assume that all txin records are for the same UTxO and use the first one
+                    f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
                     "--tx-in-collateral",
                     f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
                     "--tx-in-script-file",
@@ -1937,7 +1981,8 @@ class ClusterLib:
             pmint_args.extend(
                 [
                     "--tx-in",
-                    f"{pmint.txin.utxo_hash}#{pmint.txin.utxo_ix}",
+                    # assume that all txin records are for the same UTxO and use the first one
+                    f"{pmint.txins[0].utxo_hash}#{pmint.txins[0].utxo_ix}",
                     "--tx-in-collateral",
                     f"{pmint.collateral.utxo_hash}#{pmint.collateral.utxo_ix}",
                     "--mint-script-file",
@@ -2283,7 +2328,11 @@ class ClusterLib:
         withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
         # combine txins and make sure we have enough funds to satisfy all txouts
-        combined_txins = [*txins, *[r.txin for r in plutus_txins], *[r.txin for r in plutus_mint]]
+        combined_txins = [
+            *txins,
+            *itertools.chain.from_iterable(r.txins for r in plutus_txins),
+            *itertools.chain.from_iterable(r.txins for r in plutus_mint),
+        ]
         txins_copy, txouts_copy = self.get_tx_ins_outs(
             src_address=src_address,
             tx_files=tx_files,
@@ -2296,30 +2345,15 @@ class ClusterLib:
             lovelace_balanced=True,
         )
 
-        # exclude TxOuts with datum_hash for now
-        txouts_no_datum = [t for t in txouts_copy if not t.datum_hash]
-
-        if join_txouts:
-            # aggregate TX outputs by address
-            txouts_by_addr: Dict[str, List[str]] = {}
-            for rec in txouts_no_datum:
-                if rec.address not in txouts_by_addr:
-                    txouts_by_addr[rec.address] = []
-                coin = f" {rec.coin}" if rec.coin and rec.coin != DEFAULT_COIN else ""
-                txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
-
-            # join txouts with the same address
-            txout_args: List[str] = []
-            for addr, amounts in txouts_by_addr.items():
-                amounts_joined = "+".join(amounts)
-                txout_args.append(f"{addr}+{amounts_joined}")
-        else:
-            txout_args = [f"{rec.address}+{rec.amount}" for rec in txouts_no_datum]
+        plutus_txout_args, txout_args = self._process_txouts(
+            txouts=txouts_copy, join_txouts=join_txouts
+        )
 
         # filter out duplicate txins
         txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins_copy}
-        plutus_txins_utxos = {f"{x.txin.utxo_hash}#{x.txin.utxo_ix}" for x in plutus_txins}
-        plutus_mint_utxos = {f"{x.txin.utxo_hash}#{x.txin.utxo_ix}" for x in plutus_mint}
+        # assume that all plutus txin records are for the same UTxO and use the first one
+        plutus_txins_utxos = {f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in plutus_txins}
+        plutus_mint_utxos = {f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in plutus_mint}
         txins_combined = txins_utxos.difference(plutus_txins_utxos.union(plutus_mint_utxos))
 
         withdrawals_combined = [f"{x.address}+{x.amount}" for x in withdrawals]
@@ -2352,26 +2386,14 @@ class ClusterLib:
         if not script_valid:
             script_args.append("--script-invalid")
 
-        plutus_txout_args = []
-        for tout in txouts_copy:
-            if not tout.datum_hash:
-                continue
-            plutus_txout_args.extend(
-                [
-                    "--tx-out",
-                    f"{tout.address}+{tout.amount}",
-                    "--tx-out-datum-hash",
-                    tout.datum_hash,
-                ]
-            )
-
         plutus_txin_args = []
         for tin in plutus_txins:
             tin_args = []
             tin_args.extend(
                 [
                     "--tx-in",
-                    f"{tin.txin.utxo_hash}#{tin.txin.utxo_ix}",
+                    # assume that all txin records are for the same UTxO and use the first one
+                    f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
                     "--tx-in-collateral",
                     f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
                     "--tx-in-script-file",
@@ -2395,7 +2417,7 @@ class ClusterLib:
             pmint_args.extend(
                 [
                     "--tx-in",
-                    f"{pmint.txin.utxo_hash}#{pmint.txin.utxo_ix}",
+                    f"{pmint.txins[0].utxo_hash}#{pmint.txins[0].utxo_ix}",
                     "--tx-in-collateral",
                     f"{pmint.collateral.utxo_hash}#{pmint.collateral.utxo_ix}",
                     "--mint-script-file",
@@ -2633,17 +2655,9 @@ class ClusterLib:
             txin = txins[0]
             txin_hash = txin.utxo_hash
             txin_ix = txin.utxo_ix
-            utxo_data = self.get_utxo(txin.address)
-            is_spent = False
-            for u in utxo_data:
-                if txin_hash == u.utxo_hash and txin_ix == u.utxo_ix:
-                    # input was found
-                    break
-            else:
-                # input was not found
-                is_spent = True
+            utxo_data = self.get_utxo(txin=f"{txin_hash}#{txin_ix}")
 
-            if is_spent:
+            if not utxo_data:
                 break
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
