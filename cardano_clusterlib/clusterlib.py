@@ -504,23 +504,34 @@ class ClusterLib:
         """Refresh protocol parameters file."""
         self.query_cli(["protocol-parameters", "--out-file", str(self.pparams_file)])
 
-    def get_utxo(self, address: str, coins: UnpackableSequence = ()) -> List[UTXOData]:
+    def get_utxo(
+        self, address: str = "", txin: str = "", coins: UnpackableSequence = ()
+    ) -> List[UTXOData]:
         """Return UTxO info for payment address.
 
         Args:
             address: A payment address.
+            txin: A transaction input (TxId#TxIx).
             coins: A list (iterable) of coin names (asset IDs).
 
         Returns:
             List[UTXOData]: A list of UTxO data.
         """
-        utxo_dict = json.loads(
-            self.query_cli(["utxo", "--address", address, "--out-file", "/dev/stdout"])
-        )
+        if not (address or txin):
+            raise AssertionError("Either `address` or `txin` need to be specified.")
+
+        cli_args = ["utxo", "--out-file", "/dev/stdout"]
+        if address:
+            cli_args.extend(["--address", address])
+        elif txin:
+            cli_args.extend(["--tx-in", txin])
+
+        utxo_dict = json.loads(self.query_cli(cli_args))
 
         utxo = []
         for utxo_rec, utxo_data in utxo_dict.items():
             utxo_hash, utxo_ix = utxo_rec.split("#")
+            utxo_address = utxo_data.get("address") or ""
             addr_data = utxo_data["value"]
             datum_hash = utxo_data.get("data") or ""
             for policyid, coin_data in addr_data.items():
@@ -530,7 +541,7 @@ class ClusterLib:
                             utxo_hash=utxo_hash,
                             utxo_ix=int(utxo_ix),
                             amount=coin_data,
-                            address=address,
+                            address=address or utxo_address,
                             coin=DEFAULT_COIN,
                             datum_hash=datum_hash,
                         )
@@ -542,7 +553,7 @@ class ClusterLib:
                             utxo_hash=utxo_hash,
                             utxo_ix=int(utxo_ix),
                             amount=amount,
-                            address=address,
+                            address=address or utxo_address,
                             coin=f"{policyid}.{asset_name}" if asset_name else policyid,
                             datum_hash=datum_hash,
                         )
@@ -1370,7 +1381,7 @@ class ClusterLib:
         Returns:
             int: A total balance.
         """
-        utxo = self.get_utxo(address, coins=[coin])
+        utxo = self.get_utxo(address=address, coins=[coin])
         address_balance = functools.reduce(lambda x, y: x + y.amount, utxo, 0)
         return int(address_balance)
 
@@ -1383,7 +1394,7 @@ class ClusterLib:
         Returns:
             UTXOData: An UTxO record with the highest amount.
         """
-        utxo = self.get_utxo(address, coins=[coin])
+        utxo = self.get_utxo(address=address, coins=[coin])
         highest_amount_rec = max(utxo, key=lambda x: x.amount)
         return highest_amount_rec
 
@@ -1526,7 +1537,7 @@ class ClusterLib:
 
     def _get_utxos_with_coins(self, src_address: str, coins: Set[str]) -> List[UTXOData]:
         """Get all UTxOs that contain any of the required coins (`coins`)."""
-        txins_all = self.get_utxo(src_address)
+        txins_all = self.get_utxo(address=src_address)
         txins_by_id = self._organize_utxos_by_id(txins_all)
 
         txins = []
@@ -2633,17 +2644,9 @@ class ClusterLib:
             txin = txins[0]
             txin_hash = txin.utxo_hash
             txin_ix = txin.utxo_ix
-            utxo_data = self.get_utxo(txin.address)
-            is_spent = False
-            for u in utxo_data:
-                if txin_hash == u.utxo_hash and txin_ix == u.utxo_ix:
-                    # input was found
-                    break
-            else:
-                # input was not found
-                is_spent = True
+            utxo_data = self.get_utxo(txin=f"{txin_hash}#{txin_ix}")
 
-            if is_spent:
+            if not utxo_data:
                 break
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
