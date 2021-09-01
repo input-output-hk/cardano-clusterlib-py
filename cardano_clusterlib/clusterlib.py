@@ -78,7 +78,7 @@ class TxOut(NamedTuple):
 
 class PlutusTxIn(NamedTuple):
     txins: List[UTXOData]
-    collateral: UTXOData
+    collaterals: List[UTXOData]
     script_file: FileType
     execution_units: Optional[Tuple[int, int]] = None
     datum_file: FileType = ""
@@ -89,7 +89,7 @@ class PlutusTxIn(NamedTuple):
 
 class PlutusMint(NamedTuple):
     txins: List[UTXOData]
-    collateral: UTXOData
+    collaterals: List[UTXOData]
     script_file: FileType
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
@@ -1946,13 +1946,13 @@ class ClusterLib:
         plutus_txin_args = []
         for tin in plutus_txins:
             tin_args = []
+            tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
             tin_args.extend(
                 [
                     "--tx-in",
                     # assume that all txin records are for the same UTxO and use the first one
                     f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
-                    "--tx-in-collateral",
-                    f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
+                    *self._prepend_flag("--tx-in-collateral", tin_collaterals),
                     "--tx-in-script-file",
                     str(tin.script_file),
                 ]
@@ -1978,13 +1978,13 @@ class ClusterLib:
         plutus_mint_args = []
         for pmint in plutus_mint:
             pmint_args = []
+            pmint_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in pmint.collaterals}
             pmint_args.extend(
                 [
                     "--tx-in",
                     # assume that all txin records are for the same UTxO and use the first one
                     f"{pmint.txins[0].utxo_hash}#{pmint.txins[0].utxo_ix}",
-                    "--tx-in-collateral",
-                    f"{pmint.collateral.utxo_hash}#{pmint.collateral.utxo_ix}",
+                    *self._prepend_flag("--tx-in-collateral", pmint_collaterals),
                     "--mint-script-file",
                     str(pmint.script_file),
                 ]
@@ -2389,13 +2389,13 @@ class ClusterLib:
         plutus_txin_args = []
         for tin in plutus_txins:
             tin_args = []
+            tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
             tin_args.extend(
                 [
                     "--tx-in",
                     # assume that all txin records are for the same UTxO and use the first one
                     f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
-                    "--tx-in-collateral",
-                    f"{tin.collateral.utxo_hash}#{tin.collateral.utxo_ix}",
+                    *self._prepend_flag("--tx-in-collateral", tin_collaterals),
                     "--tx-in-script-file",
                     str(tin.script_file),
                 ]
@@ -2414,12 +2414,12 @@ class ClusterLib:
         plutus_mint_args = []
         for pmint in plutus_mint:
             pmint_args = []
+            pmint_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in pmint.collaterals}
             pmint_args.extend(
                 [
                     "--tx-in",
                     f"{pmint.txins[0].utxo_hash}#{pmint.txins[0].utxo_ix}",
-                    "--tx-in-collateral",
-                    f"{pmint.collateral.utxo_hash}#{pmint.collateral.utxo_ix}",
+                    *self._prepend_flag("--tx-in-collateral", pmint_collaterals),
                     "--mint-script-file",
                     str(pmint.script_file),
                 ]
