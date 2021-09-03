@@ -28,6 +28,12 @@ LOGGER = logging.getLogger(__name__)
 DEFAULT_COIN = "lovelace"
 MAINNET_MAGIC = 764824073
 
+# offset of slots from Byron configuration vs current era configuration
+SLOTS_OFFSETS = {
+    764824073: 85363200,  # mainnet
+    1097911063: 30369600,  # testnet
+}
+
 
 class CLIOut(NamedTuple):
     stdout: bytes
@@ -300,7 +306,6 @@ class ClusterLib:
         self.epoch_length_sec = self.epoch_length * self.slot_length
         self.slots_per_kes_period = self.genesis["slotsPerKESPeriod"]
         self.max_kes_evolutions = self.genesis["maxKESEvolutions"]
-        self.slots_offset = slots_offset
 
         self.network_magic = self.genesis["networkMagic"]
         if self.network_magic == MAINNET_MAGIC:
@@ -308,6 +313,7 @@ class ClusterLib:
         else:
             self.magic_args = ["--testnet-magic", str(self.network_magic)]
 
+        self.slots_offset = slots_offset or SLOTS_OFFSETS.get(self.network_magic) or 0
         self.ttl_length = 1000
         self._min_change_value = 0  # TODO: proper calculation based on `minUTxOValue` needed
 
