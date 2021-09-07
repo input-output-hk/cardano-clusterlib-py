@@ -3077,22 +3077,44 @@ class ClusterLib:
         if new_blocks < 1:
             return
 
+        next_block_timeout = 300  # in slots
+        max_tip_throttle = 5 * self.slot_length
+
         LOGGER.debug(f"Waiting for {new_blocks} new block(s) to be created.")
-        timeout_no_of_slots = 200 * new_blocks
-        initial_block = self.get_block_no()
+
+        initial_tip = self.get_tip()
+        initial_block = initial_tip["block"]
+        initial_slot = initial_tip["slot"]
         expected_block = initial_block + new_blocks
 
         LOGGER.debug(f"Initial block no: {initial_block}")
-        for __ in range(timeout_no_of_slots):
-            time.sleep(self.slot_length)
-            this_block = self.get_block_no()
+
+        this_slot = initial_slot
+        this_block = initial_block
+        timeout_slot = initial_slot + next_block_timeout
+        blocks_to_go = new_blocks
+        # limit calls to `query tip`
+        tip_throttle = 0
+
+        while this_slot < timeout_slot:
+            prev_block = this_block
+            time.sleep((self.slot_length * blocks_to_go) + tip_throttle)
+
+            this_tip = self.get_tip()
+            this_slot = this_tip["slot"]
+            this_block = this_tip["block"]
+
             if this_block >= expected_block:
                 break
+            if this_block > prev_block:
+                # new block was created, reset timeout slot
+                timeout_slot = this_slot + next_block_timeout
+
+            blocks_to_go = expected_block - this_block
+            tip_throttle = min(max_tip_throttle, tip_throttle + self.slot_length)
         else:
-            raise CLIError(
-                f"Timeout waiting for {timeout_no_of_slots * self.slot_length} sec for "
-                f"{new_blocks} block(s)."
-            )
+            waited_sec = (this_slot - initial_slot) * self.slot_length
+            raise CLIError(f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s).")
 
         LOGGER.debug(f"New block(s) were created; block number: {this_block}")
 
