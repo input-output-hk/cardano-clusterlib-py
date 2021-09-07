@@ -1,4 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
+import base64
 import datetime
 import functools
 import itertools
@@ -511,8 +512,12 @@ class ClusterLib:
         """Refresh protocol parameters file."""
         self.query_cli(["protocol-parameters", "--out-file", str(self.pparams_file)])
 
-    def get_utxo(
-        self, address: str = "", txin: str = "", coins: UnpackableSequence = ()
+    def get_utxo(  # noqa: C901
+        self,
+        address: str = "",
+        txin: str = "",
+        coins: UnpackableSequence = (),
+        decode_names: bool = True,
     ) -> List[UTXOData]:
         """Return UTxO info for payment address.
 
@@ -520,6 +525,7 @@ class ClusterLib:
             address: A payment address.
             txin: A transaction input (TxId#TxIx).
             coins: A list (iterable) of coin names (asset IDs).
+            decode_names: A bool indicating whether to decode asset names (True by default).
 
         Returns:
             List[UTXOData]: A list of UTxO data.
@@ -554,14 +560,31 @@ class ClusterLib:
                         )
                     )
                     continue
-                for asset_name, amount in coin_data.items():
+
+                # coin data used to be a dict, now it is a list
+                try:
+                    coin_iter = coin_data.items()
+                except AttributeError:
+                    coin_iter = coin_data
+
+                for asset_name, amount in coin_iter:
+                    final_name = asset_name
+                    if final_name and decode_names:
+                        # asset name used to be decoded by default, now it is base16
+                        try:
+                            final_name = base64.b16decode(
+                                asset_name.encode(), casefold=True
+                            ).decode("utf-8")
+                        except Exception:
+                            pass
+
                     utxo.append(
                         UTXOData(
                             utxo_hash=utxo_hash,
                             utxo_ix=int(utxo_ix),
                             amount=amount,
                             address=address or utxo_address,
-                            coin=f"{policyid}.{asset_name}" if asset_name else policyid,
+                            coin=f"{policyid}.{final_name}" if final_name else policyid,
                             datum_hash=datum_hash,
                         )
                     )
