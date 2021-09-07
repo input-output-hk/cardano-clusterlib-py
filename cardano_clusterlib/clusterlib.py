@@ -210,6 +210,7 @@ class Eras:
     SHELLEY = "shelley"
     ALLEGRA = "allegra"
     MARY = "mary"
+    ALONZO = "alonzo"
 
 
 class MultiSigTypeArgs:
