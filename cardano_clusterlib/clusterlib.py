@@ -210,6 +210,7 @@ class Eras:
     SHELLEY = "shelley"
     ALLEGRA = "allegra"
     MARY = "mary"
+    ALONZO = "alonzo"
 
 
 class MultiSigTypeArgs:
@@ -1908,7 +1909,7 @@ class ClusterLib:
         Returns:
             TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
+        # pylint: disable=too-many-arguments,too-many-branches
         out_file = Path(out_file)
 
         plutus_txout_args, txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
@@ -1950,6 +1951,7 @@ class ClusterLib:
             script_args.append("--script-invalid")
 
         plutus_txin_args = []
+
         for tin in plutus_txins:
             tin_args = []
             tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
@@ -1981,7 +1983,6 @@ class ClusterLib:
 
             plutus_txin_args.extend(tin_args)
 
-        plutus_mint_args = []
         for pmint in plutus_mint:
             pmint_args = []
             pmint_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in pmint.collaterals}
@@ -2007,9 +2008,9 @@ class ClusterLib:
             if pmint.redeemer_value:
                 pmint_args.extend(["--mint-redeemer-value", str(pmint.redeemer_value)])
 
-            plutus_mint_args.extend(pmint_args)
+            plutus_txin_args.extend(pmint_args)
 
-        if plutus_txin_args or plutus_mint_args:
+        if plutus_txin_args:
             plutus_txin_args.extend(
                 [
                     "--protocol-params-file",
@@ -2026,7 +2027,6 @@ class ClusterLib:
                 "--out-file",
                 str(out_file),
                 *plutus_txin_args,
-                *plutus_mint_args,
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
@@ -2393,6 +2393,7 @@ class ClusterLib:
             script_args.append("--script-invalid")
 
         plutus_txin_args = []
+
         for tin in plutus_txins:
             tin_args = []
             tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
@@ -2417,7 +2418,6 @@ class ClusterLib:
 
             plutus_txin_args.extend(tin_args)
 
-        plutus_mint_args = []
         for pmint in plutus_mint:
             pmint_args = []
             pmint_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in pmint.collaterals}
@@ -2435,9 +2435,9 @@ class ClusterLib:
             if pmint.redeemer_value:
                 pmint_args.extend(["--mint-redeemer-value", str(pmint.redeemer_value)])
 
-            plutus_mint_args.extend(pmint_args)
+            plutus_txin_args.extend(pmint_args)
 
-        if plutus_txin_args or plutus_mint_args or plutus_txout_args:
+        if plutus_txin_args:
             plutus_txin_args.extend(
                 [
                     "--protocol-params-file",
@@ -2460,7 +2460,6 @@ class ClusterLib:
                 "transaction",
                 "build",
                 *plutus_txin_args,
-                *plutus_mint_args,
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
