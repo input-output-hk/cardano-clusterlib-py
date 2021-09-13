@@ -320,7 +320,7 @@ class ClusterLib:
         self._min_change_value = 0  # TODO: proper calculation based on `minUTxOValue` needed
 
         self.tx_era = tx_era
-        self.tx_era_arg = [f"--{self.tx_era}-era"] if self.tx_era else []
+        self.tx_era_arg = [f"--{self.tx_era.lower()}-era"] if self.tx_era else []
 
         self.protocol = protocol
         self._check_protocol()
@@ -2274,32 +2274,44 @@ class ClusterLib:
 
         return fee
 
-    def calculate_min_value(
+    def calculate_min_req_utxo(
         self,
-        multi_assets: List[TxOut],
+        txouts: List[TxOut],
     ) -> Value:
-        """Calculate the minimum value in for a transaction.
+        """Calculate the minimum required UTxO for a transaction output.
 
         Args:
-            multi_assets: A list of `TxOuts`, specifying multi-assets.
+            txouts: A list of `TxOuts` for given address.
 
         Returns:
             Value: A tuple describing the value.
         """
-        ma_records = [f"{m.amount} {m.coin}" for m in multi_assets]
-        ma_args = ["--multi-asset", "+".join(ma_records)] if ma_records else []
+        if not txouts:
+            raise AssertionError("No txout was specified.")
+
+        txout_records = [f"{t.amount} {t.coin}" for t in txouts]
+        address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
+
+        datum_hash = txouts[0].datum_hash
+        datum_hash_args = [] if not datum_hash else ["--tx-out-datum-hash", str(datum_hash)]
+
+        era = self.get_era()
+        era_arg = f"--{era.lower()}-era"
 
         self.refresh_pparams_file()
         stdout = self.cli(
             [
                 "transaction",
-                "calculate-min-value",
+                "calculate-min-required-utxo",
                 "--protocol-params-file",
                 str(self.pparams_file),
-                *ma_args,
+                era_arg,
+                "--tx-out",
+                address_value,
+                *datum_hash_args,
             ]
         ).stdout
-        coin, value = stdout.decode().split(" ")
+        coin, value = stdout.decode().strip().split(" ")
         return Value(value=int(value), coin=coin)
 
     def build_tx(  # noqa: C901
