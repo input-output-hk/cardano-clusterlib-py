@@ -2523,7 +2523,7 @@ class ClusterLib:
         if witness_override is not None:
             witness_override_args = ["--witness-override", str(witness_override)]
 
-        self.cli(
+        stdout = self.cli(
             [
                 "transaction",
                 "build",
@@ -2546,7 +2546,14 @@ class ClusterLib:
                 "--out-file",
                 str(out_file),
             ]
-        )
+        ).stdout
+        stdout_dec = stdout.decode("utf-8") if stdout else ""
+
+        # check for the presence of fee information so compatibility with older versions
+        # of the `build` command is preserved
+        estimated_fee = -1
+        if "transaction fee" in stdout_dec:
+            estimated_fee = int(stdout_dec.strip().split(" ")[-1])
 
         return TxRawOutput(
             txins=list(txins_copy),
@@ -2555,7 +2562,7 @@ class ClusterLib:
             txouts=list(txouts_copy),
             tx_files=tx_files,
             out_file=out_file,
-            fee=-1,
+            fee=estimated_fee,
             invalid_hereafter=invalid_hereafter,
             invalid_before=invalid_before,
             withdrawals=withdrawals,
