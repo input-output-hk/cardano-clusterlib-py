@@ -292,6 +292,7 @@ class ClusterLib:
         tx_era: str = "",
         slots_offset: int = 0,
     ):
+        self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
         self._rand_str = get_rand_str(4)
         self._cli_log = ""
