@@ -1903,6 +1903,7 @@ class ClusterLib:
         txins: OptionalUTXOData = (),
         plutus_txins: OptionalPlutusTxIns = (),
         plutus_mint: OptionalPlutusMintData = (),
+        required_signers: OptionalFiles = (),
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
         invalid_hereafter: Optional[int] = None,
@@ -1921,6 +1922,8 @@ class ClusterLib:
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
             plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
+            required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -1934,7 +1937,7 @@ class ClusterLib:
         Returns:
             TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-branches
+        # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
         out_file = Path(out_file)
 
         plutus_txout_args, txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
@@ -2055,6 +2058,7 @@ class ClusterLib:
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
+                *self._prepend_flag("--required-signer", required_signers),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
@@ -2359,6 +2363,7 @@ class ClusterLib:
         fee_buffer: Optional[int] = None,
         plutus_txins: OptionalPlutusTxIns = (),
         plutus_mint: OptionalPlutusMintData = (),
+        required_signers: OptionalFiles = (),
         withdrawals: OptionalTxOuts = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
@@ -2382,11 +2387,15 @@ class ClusterLib:
             fee_buffer: A buffer for fee amount (optional).
             plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
             plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
+            required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
             mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+            witness_override: An integer indicating real number of witnesses. Can be used to fix
+                fee calculation (optional).
             script_valid: A bool indicating that the script is valid (True by default).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
@@ -2532,6 +2541,7 @@ class ClusterLib:
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
+                *self._prepend_flag("--required-signer", required_signers),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
