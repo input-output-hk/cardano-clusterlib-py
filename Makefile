@@ -4,7 +4,7 @@
 	mkdir -p docs/build
 
 install:
-	python3 -m pip install --upgrade pip
+	python3 -m pip install --upgrade pip==21.2.4  # TODO: remove once pip 21.3 works
 	python3 -m pip install --upgrade wheel
 	python3 -m pip install --upgrade -r requirements-dev.txt
 
