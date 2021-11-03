@@ -74,6 +74,7 @@ class UTXOData(NamedTuple):
     amount: int
     address: str
     coin: str = DEFAULT_COIN
+    decoded_coin: str = ""
     datum_hash: str = ""
 
 
@@ -519,7 +520,6 @@ class ClusterLib:
         address: str = "",
         txin: str = "",
         coins: UnpackableSequence = (),
-        decode_names: bool = True,
     ) -> List[UTXOData]:
         """Return UTxO info for payment address.
 
@@ -527,7 +527,6 @@ class ClusterLib:
             address: A payment address.
             txin: A transaction input (TxId#TxIx).
             coins: A list (iterable) of coin names (asset IDs).
-            decode_names: A bool indicating whether to decode asset names (True by default).
 
         Returns:
             List[UTXOData]: A list of UTxO data.
@@ -570,15 +569,17 @@ class ClusterLib:
                     coin_iter = coin_data
 
                 for asset_name, amount in coin_iter:
-                    final_name = asset_name
-                    if final_name and decode_names:
-                        # asset name used to be decoded by default, now it is base16
+                    decoded_coin = ""
+                    if asset_name:
                         try:
-                            final_name = base64.b16decode(
+                            decoded_name = base64.b16decode(
                                 asset_name.encode(), casefold=True
                             ).decode("utf-8")
+                            decoded_coin = f"{policyid}.{decoded_name}"
                         except Exception:
                             pass
+                    else:
+                        decoded_coin = policyid
 
                     utxo.append(
                         UTXOData(
@@ -586,7 +587,8 @@ class ClusterLib:
                             utxo_ix=int(utxo_ix),
                             amount=amount,
                             address=address or utxo_address,
-                            coin=f"{policyid}.{final_name}" if final_name else policyid,
+                            coin=f"{policyid}.{asset_name}" if asset_name else policyid,
+                            decoded_coin=decoded_coin,
                             datum_hash=datum_hash,
                         )
                     )
