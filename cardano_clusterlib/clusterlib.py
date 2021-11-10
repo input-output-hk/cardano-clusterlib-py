@@ -320,7 +320,8 @@ class ClusterLib:
 
         self.slots_offset = slots_offset or SLOTS_OFFSETS.get(self.network_magic) or 0
         self.ttl_length = 1000
-        self._min_change_value = 0  # TODO: proper calculation based on `minUTxOValue` needed
+        # TODO: proper calculation based on `utxoCostPerWord` needed
+        self._min_change_value = 1800_000
 
         self.tx_era = tx_era
         self.tx_era_arg = [f"--{self.tx_era.lower()}-era"] if self.tx_era else []
