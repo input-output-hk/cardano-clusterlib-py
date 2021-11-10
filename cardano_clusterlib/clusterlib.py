@@ -740,11 +740,15 @@ class ClusterLib:
         self._check_outfiles(out_file)
         return read_address_from_file(out_file)
 
-    def gen_payment_key_pair(self, key_name: str, destination_dir: FileType = ".") -> KeyPair:
+    def gen_payment_key_pair(
+        self, key_name: str, extended: bool = False, destination_dir: FileType = "."
+    ) -> KeyPair:
         """Generate an address key pair.
 
         Args:
             key_name: A name of the key pair.
+            extended: A bool indicating whether to generate extended ed25519 Shelley-era key
+                (False by default).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -755,12 +759,15 @@ class ClusterLib:
         skey = destination_dir / f"{key_name}.skey"
         self._check_files_exist(vkey, skey)
 
+        extended_args = ["--extended-key"] if extended else []
+
         self.cli(
             [
                 "address",
                 "key-gen",
                 "--verification-key-file",
                 str(vkey),
+                *extended_args,
                 "--signing-key-file",
                 str(skey),
             ]
