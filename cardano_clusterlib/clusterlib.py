@@ -1952,6 +1952,7 @@ class ClusterLib:
         plutus_txins: OptionalPlutusTxIns = (),
         plutus_mint: OptionalPlutusMintData = (),
         required_signers: OptionalFiles = (),
+        required_signer_hashes: Optional[List[str]] = None,
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
         invalid_hereafter: Optional[int] = None,
@@ -1972,6 +1973,8 @@ class ClusterLib:
             plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
                 are required (optional).
+            required_signer_hashes: A list of hashes of the signing keys whose signatures
+                are required (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -1988,6 +1991,7 @@ class ClusterLib:
         # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
         out_file = Path(out_file)
 
+        required_signer_hashes = required_signer_hashes or []
         plutus_txout_args, txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
 
         # filter out duplicate txins
@@ -2107,6 +2111,7 @@ class ClusterLib:
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
                 *self._prepend_flag("--required-signer", required_signers),
+                *self._prepend_flag("--required-signer-hash", required_signer_hashes),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
@@ -2412,6 +2417,7 @@ class ClusterLib:
         plutus_txins: OptionalPlutusTxIns = (),
         plutus_mint: OptionalPlutusMintData = (),
         required_signers: OptionalFiles = (),
+        required_signer_hashes: Optional[List[str]] = None,
         withdrawals: OptionalTxOuts = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
@@ -2437,6 +2443,8 @@ class ClusterLib:
             plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
                 are required (optional).
+            required_signer_hashes: A list of hashes of the signing keys whose signatures
+                are required (optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
@@ -2457,6 +2465,7 @@ class ClusterLib:
         out_file = destination_dir / f"{tx_name}_tx.body"
         self._check_files_exist(out_file)
 
+        required_signer_hashes = required_signer_hashes or []
         withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
         # combine txins and make sure we have enough funds to satisfy all txouts
@@ -2590,6 +2599,7 @@ class ClusterLib:
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
                 *self._prepend_flag("--required-signer", required_signers),
+                *self._prepend_flag("--required-signer-hash", required_signer_hashes),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
