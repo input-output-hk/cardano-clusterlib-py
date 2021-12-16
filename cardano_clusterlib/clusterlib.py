@@ -1252,6 +1252,37 @@ class ClusterLib:
             .decode("ascii")
         )
 
+    def gen_verification_key(
+        self, key_name: str, signing_key_file: FileType, destination_dir: FileType = "."
+    ) -> Path:
+        """Generate a verification file from a signing key.
+
+        Args:
+            key_name: A name of the key.
+            signing_key_file: A path to signing key file.
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            Path: A path to the generated verification key file.
+        """
+        destination_dir = Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{key_name}.vkey"
+        self._check_files_exist(out_file)
+
+        self.cli(
+            [
+                "key",
+                "verification-key",
+                "--signing-key-file",
+                str(signing_key_file),
+                "--verification-key-file",
+                str(out_file),
+            ]
+        )
+
+        self._check_outfiles(out_file)
+        return out_file
+
     def get_ledger_state(self) -> dict:
         """Return the current ledger state info."""
         ledger_state: dict = json.loads(self.query_cli(["ledger-state"]))
