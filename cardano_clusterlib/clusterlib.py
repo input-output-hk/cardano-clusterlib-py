@@ -3102,17 +3102,16 @@ class ClusterLib:
             Path: A path to the MIR certificate file.
         """
         destination_dir = Path(destination_dir).expanduser()
-        out_file = destination_dir / f"{tx_name}_mir_stake.cert"
+        funds_src = "treasury" if use_treasury else "reserves"
+        out_file = destination_dir / f"{tx_name}_{funds_src}_mir_stake.cert"
         self._check_files_exist(out_file)
-
-        funds_src = ["--treasury"] if use_treasury else ["--reserves"]
 
         self.cli(
             [
                 "governance",
                 "create-mir-certificate",
                 "stake-addresses",
-                *funds_src,
+                f"--{funds_src}",
                 "--stake-address",
                 str(stake_addr),
                 "--reward",
