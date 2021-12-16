@@ -1428,6 +1428,11 @@ class ClusterLib:
             stake_distribution[pool_id] = float(stake)
         return stake_distribution
 
+    def get_stake_pools(self) -> List[str]:
+        """Return the node's current set of stake pool ids."""
+        stake_pools = self.query_cli(["stake-pools"]).splitlines()
+        return stake_pools
+
     def get_slot_no(self) -> int:
         """Return slot number of last block that was successfully applied to the ledger."""
         return int(self.get_tip()["slot"])
