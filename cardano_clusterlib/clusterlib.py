@@ -1735,22 +1735,29 @@ class ClusterLib:
             elif coin == DEFAULT_COIN:
                 tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
                 tx_fee = fee if fee > 0 else 0
-                funds_needed = total_output_amount + tx_fee + tx_deposit
                 total_withdrawals_amount = functools.reduce(
                     lambda x, y: x + y.amount, withdrawals, 0
                 )
-                change = total_input_amount + total_withdrawals_amount - funds_needed
+                funds_available = total_input_amount + total_withdrawals_amount
+                funds_needed = total_output_amount + tx_fee + tx_deposit
+                change = funds_available - funds_needed
                 if change < 0:
                     LOGGER.error(
                         "Not enough funds to make the transaction - "
-                        f"available: {total_input_amount}; needed: {funds_needed}"
+                        f"available: {funds_available}; needed: {funds_needed}"
                     )
             else:
                 coin_txouts_minted = txouts_mint_db.get(coin) or []
                 total_minted_amount = functools.reduce(
                     lambda x, y: x + y.amount, coin_txouts_minted, 0
                 )
-                change = total_input_amount + total_minted_amount - total_output_amount
+                funds_available = total_input_amount + total_minted_amount
+                change = funds_available - total_output_amount
+                if change < 0:
+                    LOGGER.error(
+                        f"Amount of coin `{coin}` is not sufficient - "
+                        f"available: {funds_available}; needed: {total_output_amount}"
+                    )
 
             if change > 0:
                 coin_txouts.append(
