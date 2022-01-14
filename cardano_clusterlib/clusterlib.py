@@ -1059,7 +1059,7 @@ class ClusterLib:
         addr_name: str,
         stake_vkey_file: FileType,
         cold_vkey_file: Optional[FileType] = None,
-        stake_pool_id: Optional[str] = None,
+        stake_pool_id: str = "",
         destination_dir: FileType = ".",
     ) -> Path:
         """Generate a stake address delegation certificate.
@@ -1420,11 +1420,11 @@ class ClusterLib:
 
     def get_stake_distribution(self) -> Dict[str, float]:
         """Return current aggregated stake distribution per stake pool."""
-        # stake pool values are displayed starting with line 2 from the command output
+        # stake pool values are displayed starting with line 2 of the command output
         result = self.query_cli(["stake-distribution"]).splitlines()[2:]
         stake_distribution: Dict[str, float] = {}
         for pool in result:
-            pool_id, *__, stake = pool.split(" ")
+            pool_id, stake = pool.split()
             stake_distribution[pool_id] = float(stake)
         return stake_distribution
 
@@ -2260,7 +2260,7 @@ class ClusterLib:
                 str(txbody_file),
             ]
         ).stdout
-        fee, *__ = stdout.decode().split(" ")
+        fee, *__ = stdout.decode().split()
         return int(fee)
 
     def calculate_tx_fee(
@@ -2367,7 +2367,7 @@ class ClusterLib:
                 *ma_args,
             ]
         ).stdout
-        coin, value = stdout.decode().strip().split(" ")
+        coin, value = stdout.decode().split()
         return Value(value=int(value), coin=coin)
 
     def calculate_min_req_utxo(
@@ -2407,7 +2407,7 @@ class ClusterLib:
                 *datum_hash_args,
             ]
         ).stdout
-        coin, value = stdout.decode().strip().split(" ")
+        coin, value = stdout.decode().split()
         return Value(value=int(value), coin=coin)
 
     def build_tx(  # noqa: C901
@@ -2627,7 +2627,7 @@ class ClusterLib:
         # of the `build` command is preserved
         estimated_fee = -1
         if "transaction fee" in stdout_dec:
-            estimated_fee = int(stdout_dec.strip().split(" ")[-1])
+            estimated_fee = int(stdout_dec.split()[-1])
 
         return TxRawOutput(
             txins=list(txins_copy),
