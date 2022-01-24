@@ -204,6 +204,11 @@ class Value(NamedTuple):
     coin: str
 
 
+class LeadershipSchedule(NamedTuple):
+    slot_no: int
+    utc_time: datetime.datetime
+
+
 class Protocols:
     CARDANO = "cardano"
     SHELLEY = "shelley"
@@ -1432,6 +1437,83 @@ class ClusterLib:
         """Return the node's current set of stake pool ids."""
         stake_pools = self.query_cli(["stake-pools"]).splitlines()
         return stake_pools
+
+    def get_leadership_schedule(
+        self,
+        vrf_skey_file: FileType,
+        stake_pool_vkey: str = "",
+        cold_vkey_file: Optional[FileType] = None,
+        stake_pool_id: str = "",
+    ) -> List[LeadershipSchedule]:
+        """Get the slots the node is expected to mint a block in.
+
+        Args:
+            vrf_vkey_file: A path to node VRF vkey file.
+            stake_pool_vkey: A pool cold vkey (Bech32 or hex-encoded, optional)
+            cold_vkey_file: A path to pool cold vkey file (optional).
+            stake_pool_id: An ID of the stake pool (Bech32 or hex-encoded, optional).
+
+        Returns:
+            List[LeadershipSchedule]: A list of `LeadershipSchedule`, specifying slot and time.
+        """
+        args = []
+
+        if stake_pool_vkey:
+            args.extend(
+                [
+                    "--stake-pool-verification-key",
+                    str(stake_pool_vkey),
+                ]
+            )
+        elif cold_vkey_file:
+            args.extend(
+                [
+                    "--cold-verification-key-file",
+                    str(cold_vkey_file),
+                ]
+            )
+        elif stake_pool_id:
+            args.extend(
+                [
+                    "--stake-pool-id",
+                    str(stake_pool_id),
+                ]
+            )
+        else:
+            raise CLIError(
+                "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
+            )
+
+        # only current epoch is supported at the moment
+        args.append("--current")
+
+        unparsed = self.query_cli(
+            [
+                "leadership-schedule",
+                "--genesis",
+                str(self.genesis_json),
+                "--vrf-signing-key-file",
+                str(vrf_skey_file),
+                *args,
+            ]
+            # schedule values are displayed starting with line 2 of the command output
+        ).splitlines()[2:]
+
+        schedule = []
+        for rec in unparsed:
+            slot_no, date_str, time_str, *__ = rec.split()
+            # add miliseconds component of a time string if it is missing
+            time_str = time_str if "." in time_str else f"{time_str}.0"
+            schedule.append(
+                LeadershipSchedule(
+                    slot_no=int(slot_no),
+                    utc_time=datetime.datetime.strptime(
+                        f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S.%f"
+                    ),
+                )
+            )
+
+        return schedule
 
     def get_slot_no(self) -> int:
         """Return slot number of last block that was successfully applied to the ledger."""
