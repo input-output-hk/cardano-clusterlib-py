@@ -3332,19 +3332,22 @@ class ClusterLib:
                 time.sleep(padding_seconds)
                 break
 
-    def wait_for_new_epoch(self, new_epochs: int = 1, padding_seconds: int = 0) -> None:
+    def wait_for_new_epoch(self, new_epochs: int = 1, padding_seconds: int = 0) -> int:
         """Wait for new epoch(s).
 
         Args:
             new_epochs: A number of new epochs to wait for (optional).
             padding_seconds: A number of additional seconds to wait for (optional).
+
+        Returns:
+            int: The current epoch.
         """
-        if new_epochs < 1:
-            return
-
         start_epoch = self.get_epoch()
-        exp_epoch = start_epoch + new_epochs
 
+        if new_epochs < 1:
+            return start_epoch
+
+        exp_epoch = start_epoch + new_epochs
         LOGGER.debug(
             f"Current epoch: {start_epoch}; Waiting for the beginning of epoch: {exp_epoch}"
         )
@@ -3373,6 +3376,7 @@ class ClusterLib:
             )
 
         LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
+        return this_epoch
 
     def time_to_epoch_end(self) -> float:
         """How many seconds to go to start of a new epoch."""
