@@ -3216,30 +3216,32 @@ class ClusterLib:
             verify_tx=verify_tx,
         )
 
-    def wait_for_new_block(self, new_blocks: int = 1) -> None:
+    def wait_for_new_block(self, new_blocks: int = 1) -> int:
         """Wait for new block(s) to be created.
 
         Args:
             new_blocks: A number of new blocks to wait for (optional).
+
+        Returns:
+            int: A block number of last added block.
         """
+        initial_tip = self.get_tip()
+        initial_block = int(initial_tip["block"])
+        initial_slot = int(initial_tip["slot"])
+
         if new_blocks < 1:
-            return
+            return initial_block
 
         next_block_timeout = 300  # in slots
         max_tip_throttle = 5 * self.slot_length
 
         LOGGER.debug(f"Waiting for {new_blocks} new block(s) to be created.")
-
-        initial_tip = self.get_tip()
-        initial_block = initial_tip["block"]
-        initial_slot = initial_tip["slot"]
-        expected_block = initial_block + new_blocks
-
         LOGGER.debug(f"Initial block no: {initial_block}")
 
         this_slot = initial_slot
         this_block = initial_block
         timeout_slot = initial_slot + next_block_timeout
+        expected_block = initial_block + new_blocks
         blocks_to_go = new_blocks
         # limit calls to `query tip`
         tip_throttle = 0
@@ -3265,6 +3267,7 @@ class ClusterLib:
             raise CLIError(f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s).")
 
         LOGGER.debug(f"New block(s) were created; block number: {this_block}")
+        return this_block
 
     def wait_for_slot(self, slot: int) -> None:
         """Wait for slot number.
