@@ -3269,31 +3269,47 @@ class ClusterLib:
         LOGGER.debug(f"New block(s) were created; block number: {this_block}")
         return this_block
 
-    def wait_for_slot(self, slot: int) -> None:
+    def wait_for_slot(self, slot: int) -> int:
         """Wait for slot number.
 
         Args:
             slot: A slot number to wait for.
+
+        Returns:
+            int: A slot number of last block.
         """
         min_sleep = 1.5
-        start_slot = -1
+        no_block_time = 0  # in slots
+        next_block_timeout = 300  # in slots
+        last_slot = -1
         printed = False
-        for check_no in range(100):
+        for __ in range(100):
             this_slot = self.get_slot_no()
-            if check_no == 0:
-                start_slot = this_slot
-            if check_no == 30 and this_slot == start_slot:
-                raise CLIError(f"Waited for slot number {slot}, no new slots are being created.")
 
             slots_diff = slot - this_slot
             if slots_diff <= 0:
-                break
+                return this_slot
 
-            sleep_time = slots_diff * self.slot_length
+            if this_slot == last_slot:
+                if no_block_time >= next_block_timeout:
+                    raise CLIError(
+                        f"Failed to wait for slot number {slot}, no new blocks are being created."
+                    )
+            else:
+                no_block_time = 0
+
+            _sleep_time = slots_diff * self.slot_length
+            sleep_time = _sleep_time if _sleep_time > min_sleep else min_sleep
+
             if not printed and sleep_time > 15:
                 LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}.")
                 printed = True
-            time.sleep(sleep_time if sleep_time > min_sleep else min_sleep)
+
+            last_slot = this_slot
+            no_block_time += slots_diff
+            time.sleep(sleep_time)
+
+        raise CLIError(f"Failed to wait for slot number {slot}.")
 
     def poll_new_epoch(self, exp_epoch: int, padding_seconds: int = 0) -> None:
         """Wait for new epoch(s) by polling current epoch every 3 sec.
