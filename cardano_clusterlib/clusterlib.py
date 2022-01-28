@@ -556,7 +556,7 @@ class ClusterLib:
             utxo_hash, utxo_ix = utxo_rec.split("#")
             utxo_address = utxo_data.get("address") or ""
             addr_data = utxo_data["value"]
-            datum_hash = utxo_data.get("data") or ""
+            datum_hash = utxo_data.get("data") or utxo_data.get("datumhash") or ""
             for policyid, coin_data in addr_data.items():
                 if policyid == DEFAULT_COIN:
                     utxo.append(
