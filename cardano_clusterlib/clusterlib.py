@@ -331,6 +331,9 @@ class ClusterLib:
         self.tx_era = tx_era
         self.tx_era_arg = [f"--{self.tx_era.lower()}-era"] if self.tx_era else []
 
+        # TODO: add temporary switch for CDDL format, until it is made default
+        self.use_cddl = False
+
         self.protocol = protocol
         self._check_protocol()
 
@@ -2185,6 +2188,8 @@ class ClusterLib:
                 ]
             )
 
+        format_args = ["--cddl-format"] if self.use_cddl else []
+
         self.cli(
             [
                 "transaction",
@@ -2207,6 +2212,7 @@ class ClusterLib:
                 *bound_args,
                 *mint_args,
                 *script_args,
+                *format_args,
                 *self.tx_era_arg,
             ]
         )
@@ -2677,6 +2683,8 @@ class ClusterLib:
         if witness_override is not None:
             witness_override_args = ["--witness-override", str(witness_override)]
 
+        format_args = ["--cddl-format"] if self.use_cddl else []
+
         stdout = self.cli(
             [
                 "transaction",
@@ -2697,6 +2705,7 @@ class ClusterLib:
                 *mint_args,
                 *script_args,
                 *witness_override_args,
+                *format_args,
                 *self.tx_era_arg,
                 *self.magic_args,
                 "--out-file",
