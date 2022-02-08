@@ -1,18 +1,19 @@
 repos:
 - repo: https://github.com/asottile/reorder_python_imports
-  rev: v2.6.0
+  rev: v2.7.1
   hooks:
   - id: reorder-python-imports
+    entry: env SETUPTOOLS_USE_DISTUTILS=stdlib reorder-python-imports
     language_version: python3
 - repo: https://github.com/ambv/black
-  rev: 21.12b0
+  rev: 22.1.0
   hooks:
   - id: black
     args: [--safe, --quiet]
     language_version: python3
     require_serial: true
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.0.1
+  rev: v4.1.0
   hooks:
   - id: trailing-whitespace
     language_version: python3
@@ -29,9 +30,13 @@ repos:
   hooks:
   - id: flake8
     language_version: python3
-    additional_dependencies: [flake8-comprehensions]
+    additional_dependencies:
+    - flake8-comprehensions
+    - flake8-pytest-style
+    - flake8-simplify
+    - flake8-use-pathlib
 - repo: https://github.com/asottile/pyupgrade
-  rev: v2.29.1
+  rev: v2.31.0
   hooks:
   - id: pyupgrade
     language_version: python3
@@ -41,7 +46,7 @@ repos:
   - id: pydocstyle
     language_version: python3
 - repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.8.0.1
+  rev: v0.8.0.4
   hooks:
   - id: shellcheck
 - repo: local

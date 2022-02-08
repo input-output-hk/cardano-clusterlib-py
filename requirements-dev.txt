@@ -5,5 +5,4 @@ mypy
 pre-commit
 pylint
 
-# install
-setuptools>=21.0.0
+virtualenv

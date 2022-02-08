@@ -5,7 +5,6 @@ import functools
 import itertools
 import json
 import logging
-import os
 import random
 import string
 import subprocess
@@ -467,7 +466,7 @@ class ClusterLib:
             stderr_dec = stderr.decode()
             err_msg = (
                 f"An error occurred running a CLI command `{cmd_str}` on path "
-                f"`{os.getcwd()}`: {stderr_dec}"
+                f"`{Path.cwd()}`: {stderr_dec}"
             )
             if "resource exhausted" in stderr_dec or "resource vanished" in stderr_dec:
                 LOGGER.error(err_msg)
@@ -1091,7 +1090,7 @@ class ClusterLib:
                 "--cold-verification-key-file",
                 str(cold_vkey_file),
             ]
-        elif stake_pool_id:
+        elif stake_pool_id:  # noqa: SIM106
             pool_args = [
                 "--stake-pool-id",
                 str(stake_pool_id),
@@ -1475,7 +1474,7 @@ class ClusterLib:
                     str(cold_vkey_file),
                 ]
             )
-        elif stake_pool_id:
+        elif stake_pool_id:  # noqa: SIM106
             args.extend(
                 [
                     "--stake-pool-id",
@@ -1581,7 +1580,7 @@ class ClusterLib:
         """
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
-        elif tx_file:
+        elif tx_file:  # noqa: SIM106
             cli_args = ["--tx-file", str(tx_file)]
         else:
             raise CLIError("Either `tx_body_file` or `tx_file` is needed.")
@@ -1600,7 +1599,7 @@ class ClusterLib:
         """
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
-        elif tx_file:
+        elif tx_file:  # noqa: SIM106
             cli_args = ["--tx-file", str(tx_file)]
         else:
             raise CLIError("Either `tx_body_file` or `tx_file` is needed.")
@@ -1621,7 +1620,7 @@ class ClusterLib:
         """
         if script_data_file:
             cli_args = ["--script-data-file", str(script_data_file)]
-        elif script_data_value:
+        elif script_data_value:  # noqa: SIM106
             cli_args = ["--script-data-value", str(script_data_value)]
         else:
             raise CLIError("Either `script_data_file` or `script_data_value` is needed.")
