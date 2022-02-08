@@ -4,9 +4,10 @@
 	mkdir -p docs/build
 
 install:
-	python3 -m pip install --upgrade pip==21.2.4  # TODO: remove once pip 21.3 works
+	python3 -m pip install --upgrade pip
 	python3 -m pip install --upgrade wheel
-	python3 -m pip install --upgrade -r requirements-dev.txt
+	python3 -m pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt
+	virtualenv --upgrade-embed-wheels
 
 .install_doc:
 	python3 -m pip install --upgrade -r docs/requirements.txt
@@ -23,6 +24,7 @@ release: build
 	twine upload --skip-existing dist/*
 
 # generate sphinx documentation
+.PHONY: doc
 doc: .docs_build_dir .install_doc
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
