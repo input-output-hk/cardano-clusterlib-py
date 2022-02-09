@@ -1292,7 +1292,10 @@ class ClusterLib:
         return out_file
 
     def gen_non_extended_verification_key(
-        self, key_name: str, extended_verification_key_file: FileType, destination_dir: FileType = "."
+        self,
+        key_name: str,
+        extended_verification_key_file: FileType,
+        destination_dir: FileType = ".",
     ) -> Path:
         """Generate a non extended key from a verification key.
 
