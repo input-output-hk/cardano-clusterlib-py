@@ -1492,6 +1492,7 @@ class ClusterLib:
         stake_pool_vkey: str = "",
         cold_vkey_file: Optional[FileType] = None,
         stake_pool_id: str = "",
+        for_next: bool = False,
     ) -> List[LeadershipSchedule]:
         """Get the slots the node is expected to mint a block in.
 
@@ -1500,6 +1501,8 @@ class ClusterLib:
             stake_pool_vkey: A pool cold vkey (Bech32 or hex-encoded, optional)
             cold_vkey_file: A path to pool cold vkey file (optional).
             stake_pool_id: An ID of the stake pool (Bech32 or hex-encoded, optional).
+            for_next: A bool indicating whether to get the leadership schedule for the following
+                epoch (current epoch by default)
 
         Returns:
             List[LeadershipSchedule]: A list of `LeadershipSchedule`, specifying slot and time.
@@ -1532,8 +1535,7 @@ class ClusterLib:
                 "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
             )
 
-        # only current epoch is supported at the moment
-        args.append("--current")
+        args.append("--next" if for_next else "--current")
 
         unparsed = self.query_cli(
             [
