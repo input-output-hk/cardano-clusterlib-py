@@ -303,10 +303,12 @@ class ClusterLib:
         self._cli_log = ""
 
         self.state_dir = Path(state_dir).expanduser().resolve()
-        self.genesis_json = self.state_dir / "shelley" / "genesis.json"
-        self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
-        self._check_state_dir()
+        if not self.state_dir.exists():
+            raise CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
 
+        self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
+
+        self.genesis_json = self._find_genesis_json()
         with open(self.genesis_json, encoding="utf-8") as in_json:
             self.genesis = json.load(in_json)
 
@@ -341,12 +343,22 @@ class ClusterLib:
 
         self.overwrite_outfiles = True
 
-    def _check_state_dir(self) -> None:
-        """Check that all files expected by `__init__` are present."""
-        if not self.state_dir.exists():
-            raise CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
-        if not self.genesis_json.exists():
-            raise CLIError(f"The genesis JSON file `{self.genesis_json}` doesn't exist.")
+    def _find_genesis_json(self) -> Path:
+        """Find shelley genesis JSON file in state dir."""
+        default = self.state_dir / "shelley" / "genesis.json"
+        if default.exists():
+            return default
+
+        potential = [
+            *self.state_dir.glob("*shelley*genesis.json"),
+            *self.state_dir.glob("*genesis*shelley.json"),
+        ]
+        if not potential:
+            raise CLIError(f"Shelley genesis JSON file not found in `{self.state_dir}`.")
+
+        genesis_json = potential[0]
+        LOGGER.debug(f"Using shelley genesis JSON file `{genesis_json}")
+        return genesis_json
 
     def _check_protocol(self) -> None:
         """Check that the cluster is running with the expected protocol."""
