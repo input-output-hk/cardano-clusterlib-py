@@ -1692,6 +1692,45 @@ class ClusterLib:
         """Return last block KES period."""
         return int(self.get_slot_no() // self.slots_per_kes_period)
 
+    def get_kes_period_info(self, opcert_file: FileType) -> dict:
+        """Get information about the current KES period and node's operational certificate.
+
+        Args:
+            opcert_file: Operational certificate.
+
+        Returns:
+            dict: A dictionary containing KES period information.
+        """
+        command_output = self.query_cli(["kes-period-info", "--op-cert-file", str(opcert_file)])
+
+        # get output messages
+        messages_str = command_output.split("{")[0]
+        messages_list = []
+
+        if messages_str:
+            message_entry: list = []
+
+            for line in messages_str.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                if not message_entry or line[0].isalpha():
+                    message_entry.append(line)
+                else:
+                    messages_list.append(" ".join(message_entry))
+                    message_entry = [line]
+
+            messages_list.append(" ".join(message_entry))
+
+        # get output metrics
+        metrics_str = command_output.split("{")[-1]
+        metrics_dict = {}
+
+        if metrics_str and metrics_str.strip().endswith("}"):
+            metrics_dict = json.loads(f"{{{metrics_str}")
+
+        return {"messages": messages_list, "metrics": metrics_dict}
+
     def get_txid(self, tx_body_file: FileType = "", tx_file: FileType = "") -> str:
         """Return the transaction identifier.
 
