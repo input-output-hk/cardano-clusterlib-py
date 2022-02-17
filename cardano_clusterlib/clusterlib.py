@@ -84,10 +84,19 @@ class TxOut(NamedTuple):
     datum_hash: str = ""
 
 
-class PlutusTxIn(NamedTuple):
+# list of `TxOut`s, empty list, or empty tuple
+OptionalTxOuts = Union[List[TxOut], Tuple[()]]
+# list of `UTXOData`s, empty list, or empty tuple
+OptionalUTXOData = Union[List[UTXOData], Tuple[()]]
+
+
+class ScriptTxIn(NamedTuple):
+    """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
+
     txins: List[UTXOData]
-    collaterals: List[UTXOData]
     script_file: FileType
+    # values below needed only when working with Plutus
+    collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     datum_file: FileType = ""
     datum_value: str = ""
@@ -95,34 +104,51 @@ class PlutusTxIn(NamedTuple):
     redeemer_value: str = ""
 
 
-class PlutusMint(NamedTuple):
-    txins: List[UTXOData]
-    collaterals: List[UTXOData]
+class ScriptWithdrawal(NamedTuple):
+    """Data structure for withdrawals that are combined with Plutus scripts."""
+
+    txout: TxOut
     script_file: FileType
+    collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
     redeemer_value: str = ""
 
 
-# list of `TxOut`s, empty list, or empty tuple
-OptionalTxOuts = Union[List[TxOut], Tuple[()]]
-# list of `UTXOData`s, empty list, or empty tuple
-OptionalUTXOData = Union[List[UTXOData], Tuple[()]]
-# list of `PlutusTxIn`s, empty list, or empty tuple
-OptionalPlutusTxIns = Union[List[PlutusTxIn], Tuple[()]]
-# list of `PlutusMint`s, empty list, or empty tuple
-OptionalPlutusMintData = Union[List[PlutusMint], Tuple[()]]
+class ComplexCert(NamedTuple):
+    """Data structure for certificates with optional data for Plutus scripts.
+
+    If used for one certificate, it needs to be used for all the other certificates in a given
+    transaction (instead of `TxFiles.certificate_files`). Otherwise order of certificates
+    cannot be guaranteed.
+    """
+
+    certificate_file: FileType
+    script_file: FileType = ""
+    collaterals: OptionalUTXOData = ()
+    execution_units: Optional[Tuple[int, int]] = None
+    redeemer_file: FileType = ""
+    redeemer_value: str = ""
 
 
-class ScriptFiles(NamedTuple):
-    txin_scripts: OptionalFiles = ()
-    minting_scripts: OptionalFiles = ()  # TODO: rename to `mint_scripts`
-    certificate_scripts: OptionalFiles = ()
-    withdrawal_scripts: OptionalFiles = ()
-    auxiliary_scripts: OptionalFiles = ()
+class Mint(NamedTuple):
+    txouts: List[TxOut]
+    script_file: FileType
+    # values below needed only when working with Plutus
+    collaterals: OptionalUTXOData = ()
+    execution_units: Optional[Tuple[int, int]] = None
+    redeemer_file: FileType = ""
+    redeemer_value: str = ""
 
 
-OptionalScriptFiles = Union[ScriptFiles, Tuple[()]]
+# list of `ScriptTxIn`s, empty list, or empty tuple
+OptionalScriptTxIn = Union[List[ScriptTxIn], Tuple[()]]
+# list of `ComplexCert`s, empty list, or empty tuple
+OptionalScriptCerts = Union[List[ComplexCert], Tuple[()]]
+# list of `ScriptWithdrawal`s, empty list, or empty tuple
+OptionalScriptWithdrawals = Union[List[ScriptWithdrawal], Tuple[()]]
+# list of `Mint`s, empty list, or empty tuple
+OptionalMint = Union[List[Mint], Tuple[()]]
 
 
 class TxFiles(NamedTuple):
@@ -130,8 +156,8 @@ class TxFiles(NamedTuple):
     proposal_files: OptionalFiles = ()
     metadata_json_files: OptionalFiles = ()
     metadata_cbor_files: OptionalFiles = ()
-    script_files: OptionalScriptFiles = ()
     signing_key_files: OptionalFiles = ()
+    auxiliary_script_files: OptionalFiles = ()
 
 
 class PoolUser(NamedTuple):
@@ -157,12 +183,13 @@ class TxRawOutput(NamedTuple):
     tx_files: TxFiles
     out_file: Path
     fee: int
-    plutus_txins: OptionalPlutusTxIns = ()
-    plutus_mint: OptionalPlutusMintData = ()
+    script_txins: OptionalScriptTxIn = ()
+    script_withdrawals: OptionalScriptWithdrawals = ()
+    complex_certs: OptionalScriptCerts = ()
+    mint: OptionalMint = ()
     invalid_hereafter: Optional[int] = None
     invalid_before: Optional[int] = None
     withdrawals: OptionalTxOuts = ()
-    mint: OptionalTxOuts = ()
     change_address: str = ""
 
 
@@ -659,16 +686,20 @@ class ClusterLib:
     def gen_payment_addr(
         self,
         addr_name: str,
-        payment_vkey_file: FileType,
+        payment_vkey_file: Optional[FileType] = None,
+        payment_script_file: Optional[FileType] = None,
         stake_vkey_file: Optional[FileType] = None,
+        stake_script_file: Optional[FileType] = None,
         destination_dir: FileType = ".",
     ) -> str:
         """Generate a payment address, with optional delegation to a stake address.
 
         Args:
             addr_name: A name of payment address.
-            payment_vkey_file: A path to corresponding vkey file.
+            payment_vkey_file: A path to corresponding vkey file (optional).
+            payment_script_file: A path to corresponding payment script file (optional).
             stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding payment script file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -678,9 +709,17 @@ class ClusterLib:
         out_file = destination_dir / f"{addr_name}.addr"
         self._check_files_exist(out_file)
 
-        cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
+        if payment_vkey_file:
+            cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
+        elif payment_script_file:  # noqa: SIM106
+            cli_args = ["--payment-script-file", str(payment_script_file)]
+        else:
+            raise CLIError("Either `payment_vkey_file` or `payment_script_file` is needed.")
+
         if stake_vkey_file:
             cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
+        elif stake_script_file:
+            cli_args.extend(["--stake-script-file", str(stake_script_file)])
 
         self.cli(
             [
@@ -697,13 +736,18 @@ class ClusterLib:
         return read_address_from_file(out_file)
 
     def gen_stake_addr(
-        self, addr_name: str, stake_vkey_file: FileType, destination_dir: FileType = "."
+        self,
+        addr_name: str,
+        stake_vkey_file: Optional[FileType] = None,
+        stake_script_file: Optional[FileType] = None,
+        destination_dir: FileType = ".",
     ) -> str:
         """Generate a stake address.
 
         Args:
             addr_name: A name of payment address.
-            stake_vkey_file: A path to corresponding stake vkey file.
+            stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding payment script file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -713,12 +757,18 @@ class ClusterLib:
         out_file = destination_dir / f"{addr_name}_stake.addr"
         self._check_files_exist(out_file)
 
+        if stake_vkey_file:
+            cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
+        elif stake_script_file:  # noqa: SIM106
+            cli_args = ["--stake-script-file", str(stake_script_file)]
+        else:
+            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+
         self.cli(
             [
                 "stake-address",
                 "build",
-                "--stake-verification-key-file",
-                str(stake_vkey_file),
+                *cli_args,
                 *self.magic_args,
                 "--out-file",
                 str(out_file),
@@ -741,24 +791,10 @@ class ClusterLib:
         Returns:
             str: A generated script address.
         """
-        destination_dir = Path(destination_dir).expanduser()
-        out_file = destination_dir / f"{addr_name}_script.addr"
-        self._check_files_exist(out_file)
-
-        self.cli(
-            [
-                "address",
-                "build",
-                "--payment-script-file",
-                str(script_file),
-                *self.magic_args,
-                "--out-file",
-                str(out_file),
-            ]
+        warnings.warn("deprecated by `gen_payment_addr`", DeprecationWarning)
+        return self.gen_payment_addr(
+            addr_name=addr_name, payment_script_file=script_file, destination_dir=destination_dir
         )
-
-        self._check_outfiles(out_file)
-        return read_address_from_file(out_file)
 
     def gen_payment_key_pair(
         self, key_name: str, extended: bool = False, destination_dir: FileType = "."
@@ -826,23 +862,29 @@ class ClusterLib:
         return KeyPair(vkey, skey)
 
     def gen_payment_addr_and_keys(
-        self, name: str, stake_vkey_file: Optional[FileType] = None, destination_dir: FileType = "."
+        self,
+        name: str,
+        stake_vkey_file: Optional[FileType] = None,
+        stake_script_file: Optional[FileType] = None,
+        destination_dir: FileType = ".",
     ) -> AddressRecord:
         """Generate payment address and key pair.
 
         Args:
             name: A name of the address and key pair.
             stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding payment script file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            AddressRecord: A tuple containing the address and key pair.
+            AddressRecord: A tuple containing the address and key pair / script file.
         """
         key_pair = self.gen_payment_key_pair(key_name=name, destination_dir=destination_dir)
         addr = self.gen_payment_addr(
             addr_name=name,
             payment_vkey_file=key_pair.vkey_file,
             stake_vkey_file=stake_vkey_file,
+            stake_script_file=stake_script_file,
             destination_dir=destination_dir,
         )
 
@@ -858,7 +900,7 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            AddressRecord: A tuple containing the address and key pair.
+            AddressRecord: A tuple containing the address and key pair / script file.
         """
         key_pair = self.gen_stake_key_pair(key_name=name, destination_dir=destination_dir)
         addr = self.gen_stake_addr(
@@ -1012,13 +1054,18 @@ class ClusterLib:
         return out_file
 
     def gen_stake_addr_registration_cert(
-        self, addr_name: str, stake_vkey_file: FileType, destination_dir: FileType = "."
+        self,
+        addr_name: str,
+        stake_vkey_file: Optional[FileType] = None,
+        stake_script_file: Optional[FileType] = None,
+        destination_dir: FileType = ".",
     ) -> Path:
         """Generate a stake address registration certificate.
 
         Args:
             addr_name: A name of stake address.
-            stake_vkey_file: A path to corresponding stake vkey file.
+            stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding payment script file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -1028,12 +1075,18 @@ class ClusterLib:
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
         self._check_files_exist(out_file)
 
+        if stake_vkey_file:
+            cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
+        elif stake_script_file:  # noqa: SIM106
+            cli_args = ["--stake-script-file", str(stake_script_file)]
+        else:
+            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+
         self.cli(
             [
                 "stake-address",
                 "registration-certificate",
-                "--stake-verification-key-file",
-                str(stake_vkey_file),
+                *cli_args,
                 "--out-file",
                 str(out_file),
             ]
@@ -1043,13 +1096,18 @@ class ClusterLib:
         return out_file
 
     def gen_stake_addr_deregistration_cert(
-        self, addr_name: str, stake_vkey_file: FileType, destination_dir: FileType = "."
+        self,
+        addr_name: str,
+        stake_vkey_file: Optional[FileType] = None,
+        stake_script_file: Optional[FileType] = None,
+        destination_dir: FileType = ".",
     ) -> Path:
         """Generate a stake address deregistration certificate.
 
         Args:
             addr_name: A name of stake address.
-            stake_vkey_file: A path to corresponding stake vkey file.
+            stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding payment script file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -1059,12 +1117,18 @@ class ClusterLib:
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
         self._check_files_exist(out_file)
 
+        if stake_vkey_file:
+            cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
+        elif stake_script_file:  # noqa: SIM106
+            cli_args = ["--stake-script-file", str(stake_script_file)]
+        else:
+            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+
         self.cli(
             [
                 "stake-address",
                 "deregistration-certificate",
-                "--stake-verification-key-file",
-                str(stake_vkey_file),
+                *cli_args,
                 "--out-file",
                 str(out_file),
             ]
@@ -1076,7 +1140,8 @@ class ClusterLib:
     def gen_stake_addr_delegation_cert(
         self,
         addr_name: str,
-        stake_vkey_file: FileType,
+        stake_vkey_file: Optional[FileType] = None,
+        stake_script_file: Optional[FileType] = None,
         cold_vkey_file: Optional[FileType] = None,
         stake_pool_id: str = "",
         destination_dir: FileType = ".",
@@ -1085,7 +1150,8 @@ class ClusterLib:
 
         Args:
             addr_name: A name of stake address.
-            stake_vkey_file: A path to corresponding stake vkey file.
+            stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding payment script file (optional).
             cold_vkey_file: A path to pool cold vkey file (optional).
             stake_pool_id: An ID of the stake pool (optional).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -1097,16 +1163,28 @@ class ClusterLib:
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
         self._check_files_exist(out_file)
 
+        cli_args = []
+        if stake_vkey_file:
+            cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
+        elif stake_script_file:  # noqa: SIM106
+            cli_args.extend(["--stake-script-file", str(stake_script_file)])
+        else:
+            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+
         if cold_vkey_file:
-            pool_args = [
-                "--cold-verification-key-file",
-                str(cold_vkey_file),
-            ]
+            cli_args.extend(
+                [
+                    "--cold-verification-key-file",
+                    str(cold_vkey_file),
+                ]
+            )
         elif stake_pool_id:  # noqa: SIM106
-            pool_args = [
-                "--stake-pool-id",
-                str(stake_pool_id),
-            ]
+            cli_args.extend(
+                [
+                    "--stake-pool-id",
+                    str(stake_pool_id),
+                ]
+            )
         else:
             raise CLIError("Either `cold_vkey_file` or `stake_pool_id` is needed.")
 
@@ -1114,9 +1192,7 @@ class ClusterLib:
             [
                 "stake-address",
                 "delegation-certificate",
-                "--stake-verification-key-file",
-                str(stake_vkey_file),
-                *pool_args,
+                *cli_args,
                 "--out-file",
                 str(out_file),
             ]
@@ -1917,9 +1993,9 @@ class ClusterLib:
         fee: int = 0,
         deposit: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
-        mint: OptionalTxOuts = (),
+        mint_txouts: OptionalTxOuts = (),
         lovelace_balanced: bool = False,
-    ) -> Tuple[list, list]:
+    ) -> Tuple[List[UTXOData], List[TxOut]]:
         """Return list of transaction's inputs and outputs.
 
         Args:
@@ -1930,14 +2006,14 @@ class ClusterLib:
             fee: A fee amount (optional).
             deposit: A deposit amount needed by the transaction (optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
-            mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+            mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
 
         Returns:
             Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
                 outputs.
         """
         txouts_passed_db: Dict[str, List[TxOut]] = self._organize_tx_ins_outs_by_coin(txouts)
-        txouts_mint_db: Dict[str, List[TxOut]] = self._organize_tx_ins_outs_by_coin(mint)
+        txouts_mint_db: Dict[str, List[TxOut]] = self._organize_tx_ins_outs_by_coin(mint_txouts)
         outcoins_all = {DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
         outcoins_passed = [DEFAULT_COIN, *txouts_passed_db.keys()]
 
@@ -1994,7 +2070,7 @@ class ClusterLib:
 
         return txins_filtered, txouts_balanced
 
-    def get_withdrawals(self, withdrawals: List[TxOut]) -> List[TxOut]:
+    def _resolve_withdrawals(self, withdrawals: List[TxOut]) -> List[TxOut]:
         """Return list of resolved reward withdrawals.
 
         The `TxOut.amount` can be '-1', meaning all available funds.
@@ -2015,6 +2091,20 @@ class ClusterLib:
                 resolved_withdrawals.append(rec)
 
         return resolved_withdrawals
+
+    def _get_withdrawals(
+        self, withdrawals: OptionalTxOuts, script_withdrawals: OptionalScriptWithdrawals
+    ) -> Tuple[OptionalTxOuts, OptionalScriptWithdrawals, OptionalTxOuts]:
+        """Return tuple of resolved withdrawals.
+
+        Return simple withdrawals, script withdrawals, combination of all withdrawals Tx outputs.
+        """
+        withdrawals = withdrawals and self._resolve_withdrawals(withdrawals)
+        script_withdrawals = [
+            s._replace(txout=self._resolve_withdrawals([s.txout])[0]) for s in script_withdrawals
+        ]
+        withdrawals_txouts = [*withdrawals, *[s.txout for s in script_withdrawals]]
+        return withdrawals, script_withdrawals, withdrawals_txouts
 
     def _join_txouts(self, txouts: List[TxOut]) -> Tuple[List[str], List[str]]:
         plutus_txout_args: List[str] = []
@@ -2086,15 +2176,16 @@ class ClusterLib:
         tx_files: TxFiles,
         fee: int,
         txins: OptionalUTXOData = (),
-        plutus_txins: OptionalPlutusTxIns = (),
-        plutus_mint: OptionalPlutusMintData = (),
+        script_txins: OptionalScriptTxIn = (),
+        mint: OptionalMint = (),
+        complex_certs: OptionalScriptCerts = (),
         required_signers: OptionalFiles = (),
         required_signer_hashes: Optional[List[str]] = None,
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
+        script_withdrawals: OptionalScriptWithdrawals = (),
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
-        mint: OptionalTxOuts = (),
         script_valid: bool = True,
         join_txouts: bool = True,
     ) -> TxRawOutput:
@@ -2106,8 +2197,10 @@ class ClusterLib:
             tx_files: A `TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
-            plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
-            plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
                 are required (optional).
             required_signer_hashes: A list of hashes of the signing keys whose signatures
@@ -2115,9 +2208,10 @@ class ClusterLib:
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
-            mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
             script_valid: A bool indicating that the script is valid (True by default).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
@@ -2125,117 +2219,156 @@ class ClusterLib:
         Returns:
             TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
+        # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
+        if tx_files.certificate_files and complex_certs:
+            LOGGER.warning(
+                "Mixing `tx_files.certificate_files` and `complex_certs`, "
+                "certs may come in unexpected order."
+            )
+
         out_file = Path(out_file)
+
+        withdrawals, script_withdrawals, withdrawals_txouts = self._get_withdrawals(
+            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        )
 
         required_signer_hashes = required_signer_hashes or []
         plutus_txout_args, txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
 
-        # filter out duplicate txins
+        # filter out duplicates
         txins_combined = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
+        withdrawals_combined = {f"{x.address}+{x.amount}" for x in withdrawals}
 
-        withdrawals_combined = [f"{x.address}+{x.amount}" for x in withdrawals]
+        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
-        bound_args = []
+        cli_args = []
+
         if invalid_before is not None:
-            bound_args.extend(["--invalid-before", str(invalid_before)])
+            cli_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is not None:
-            bound_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
+            cli_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
         elif ttl is not None:
             # `--ttl` and `--invalid-hereafter` are the same
-            bound_args.extend(["--ttl", str(ttl)])
-
-        mint_records = [f"{m.amount} {m.coin}" for m in mint]
-        mint_args = ["--mint", "+".join(mint_records)] if mint_records else []
-
-        script_args = []
-        if tx_files.script_files:
-            script_args = [
-                *self._prepend_flag("--tx-in-script-file", tx_files.script_files.txin_scripts),
-                *self._prepend_flag("--mint-script-file", tx_files.script_files.minting_scripts),
-                *self._prepend_flag(
-                    "--certificate-script-file", tx_files.script_files.certificate_scripts
-                ),
-                *self._prepend_flag(
-                    "--withdrawal-script-file", tx_files.script_files.withdrawal_scripts
-                ),
-                *self._prepend_flag(
-                    "--auxiliary-script-file", tx_files.script_files.auxiliary_scripts
-                ),
-            ]
+            cli_args.extend(["--ttl", str(ttl)])
 
         if not script_valid:
-            script_args.append("--script-invalid")
+            cli_args.append("--script-invalid")
 
-        plutus_txin_args = []
+        # only single `--mint` argument is allowed, let's aggregate all the outputs
+        mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
+        cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
-        for tin in plutus_txins:
-            tin_args = []
+        grouped_args = []
+
+        for tin in script_txins:
+            if tin.txins:
+                grouped_args.extend(
+                    [
+                        "--tx-in",
+                        # assume that all txin records are for the same UTxO and use the first one
+                        f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
+                    ]
+                )
             tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-            tin_args.extend(
+            grouped_args.extend(
                 [
-                    "--tx-in",
-                    # assume that all txin records are for the same UTxO and use the first one
-                    f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
                     *self._prepend_flag("--tx-in-collateral", tin_collaterals),
                     "--tx-in-script-file",
                     str(tin.script_file),
                 ]
             )
             if tin.execution_units:
-                tin_args.extend(
+                grouped_args.extend(
                     [
                         "--tx-in-execution-units",
                         f"({tin.execution_units[0]},{tin.execution_units[1]})",
                     ]
                 )
             if tin.datum_file:
-                tin_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
             if tin.datum_value:
-                tin_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
+                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
             if tin.redeemer_file:
-                tin_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
             if tin.redeemer_value:
-                tin_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
+                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
 
-            plutus_txin_args.extend(tin_args)
-
-        for pmint in plutus_mint:
-            pmint_args = []
-            pmint_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in pmint.collaterals}
-            pmint_args.extend(
+        for mrec in mint:
+            mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
+            grouped_args.extend(
                 [
-                    "--tx-in",
-                    # assume that all txin records are for the same UTxO and use the first one
-                    f"{pmint.txins[0].utxo_hash}#{pmint.txins[0].utxo_ix}",
-                    *self._prepend_flag("--tx-in-collateral", pmint_collaterals),
+                    *self._prepend_flag("--tx-in-collateral", mrec_collaterals),
                     "--mint-script-file",
-                    str(pmint.script_file),
+                    str(mrec.script_file),
                 ]
             )
-            if pmint.execution_units:
-                pmint_args.extend(
+            if mrec.execution_units:
+                grouped_args.extend(
                     [
                         "--mint-execution-units",
-                        f"({pmint.execution_units[0]},{pmint.execution_units[1]})",
+                        f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
                     ]
                 )
-            if pmint.redeemer_file:
-                pmint_args.extend(["--mint-redeemer-file", str(pmint.redeemer_file)])
-            if pmint.redeemer_value:
-                pmint_args.extend(["--mint-redeemer-value", str(pmint.redeemer_value)])
+            if mrec.redeemer_file:
+                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
+            if mrec.redeemer_value:
+                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
 
-            plutus_txin_args.extend(pmint_args)
+        for crec in complex_certs:
+            crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
+            grouped_args.extend(
+                [
+                    *self._prepend_flag("--tx-in-collateral", crec_collaterals),
+                    "--certificate-file",
+                    str(crec.certificate_file),
+                ]
+            )
+            if crec.script_file:
+                grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
+            if crec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--certificate-execution-units",
+                        f"({crec.execution_units[0]},{crec.execution_units[1]})",
+                    ]
+                )
+            if crec.redeemer_file:
+                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
+            if crec.redeemer_value:
+                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
 
-        if plutus_txin_args:
-            plutus_txin_args.extend(
+        for wrec in script_withdrawals:
+            wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
+            grouped_args.extend(
+                [
+                    *self._prepend_flag("--tx-in-collateral", wrec_collaterals),
+                    "--withdrawal",
+                    f"{wrec.txout.address}+{wrec.txout.amount}",
+                    "--withdrawal-script-file",
+                    str(wrec.script_file),
+                ]
+            )
+            if wrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--withdrawal-execution-units",
+                        f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
+                    ]
+                )
+            if wrec.redeemer_file:
+                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
+            if wrec.redeemer_value:
+                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+
+        if grouped_args:
+            grouped_args.extend(
                 [
                     "--protocol-params-file",
                     str(self.pparams_file),
                 ]
             )
 
-        format_args = ["--cddl-format"] if self.use_cddl else []
+        cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
         self.cli(
             [
@@ -2245,7 +2378,7 @@ class ClusterLib:
                 str(fee),
                 "--out-file",
                 str(out_file),
-                *plutus_txin_args,
+                *grouped_args,
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
@@ -2253,29 +2386,28 @@ class ClusterLib:
                 *self._prepend_flag("--required-signer-hash", required_signer_hashes),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+                *self._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *self._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
                 *self._prepend_flag("--withdrawal", withdrawals_combined),
-                *bound_args,
-                *mint_args,
-                *script_args,
-                *format_args,
+                *cli_args,
                 *self.tx_era_arg,
             ]
         )
 
         return TxRawOutput(
             txins=list(txins),
-            plutus_txins=plutus_txins,
-            plutus_mint=plutus_mint,
+            script_txins=script_txins,
+            script_withdrawals=script_withdrawals,
+            complex_certs=complex_certs,
+            mint=mint,
             txouts=txouts,
             tx_files=tx_files,
             out_file=out_file,
             fee=fee,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
-            withdrawals=withdrawals,
-            mint=mint,
+            withdrawals=withdrawals_txouts,
         )
 
     def build_raw_tx(
@@ -2284,14 +2416,17 @@ class ClusterLib:
         tx_name: str,
         txins: OptionalUTXOData = (),
         txouts: OptionalTxOuts = (),
+        script_txins: OptionalScriptTxIn = (),
+        mint: OptionalMint = (),
         tx_files: Optional[TxFiles] = None,
+        complex_certs: OptionalScriptCerts = (),
         fee: int = 0,
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
+        script_withdrawals: OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
-        mint: OptionalTxOuts = (),
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
@@ -2302,15 +2437,20 @@ class ClusterLib:
             tx_name: A name of the transaction.
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
             fee: A fee amount (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
-            mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -2326,17 +2466,32 @@ class ClusterLib:
         tx_files = tx_files or TxFiles()
         if ttl is None and invalid_hereafter is None and self.tx_era == Eras.SHELLEY:
             invalid_hereafter = self.calculate_tx_ttl()
-        withdrawals = withdrawals and self.get_withdrawals(withdrawals)
 
+        withdrawals, script_withdrawals, withdrawals_txouts = self._get_withdrawals(
+            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        )
+
+        # combine txins and make sure we have enough funds to satisfy all txouts
+        combined_txins = [
+            *txins,
+            *itertools.chain.from_iterable(r.txins for r in script_txins),
+        ]
+        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
+        combined_tx_files = tx_files._replace(
+            certificate_files={
+                *tx_files.certificate_files,
+                *[c.certificate_file for c in complex_certs],
+            }
+        )
         txins_copy, txouts_copy = self.get_tx_ins_outs(
             src_address=src_address,
-            tx_files=tx_files,
-            txins=txins,
+            tx_files=combined_tx_files,
+            txins=combined_txins,
             txouts=txouts,
             fee=fee,
             deposit=deposit,
-            withdrawals=withdrawals,
-            mint=mint,
+            withdrawals=withdrawals_txouts,
+            mint_txouts=mint_txouts,
         )
 
         tx_raw_output = self.build_raw_tx_bare(
@@ -2344,11 +2499,13 @@ class ClusterLib:
             txouts=txouts_copy,
             tx_files=tx_files,
             fee=fee,
-            txins=txins_copy,
+            txins=txins or txins_copy,
+            script_txins=script_txins,
+            mint=mint,
             withdrawals=withdrawals,
+            script_withdrawals=script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
-            mint=mint,
             join_txouts=join_txouts,
         )
 
@@ -2405,16 +2562,19 @@ class ClusterLib:
         dst_addresses: Optional[List[str]] = None,
         txins: OptionalUTXOData = (),
         txouts: OptionalTxOuts = (),
+        script_txins: OptionalScriptTxIn = (),
+        mint: OptionalMint = (),
         tx_files: Optional[TxFiles] = None,
+        complex_certs: OptionalScriptCerts = (),
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
+        script_withdrawals: OptionalScriptWithdrawals = (),
         invalid_hereafter: Optional[int] = None,
-        mint: OptionalTxOuts = (),
         witness_count_add: int = 0,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> int:
-        """Build "dummy" transaction and calculate (estimate) it's fee.
+        """Build "dummy" transaction and calculate (estimate) its fee.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
@@ -2422,12 +2582,17 @@ class ClusterLib:
             dst_addresses: A list of destination addresses (optional)
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
-            mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
                 calculation more precise.
             join_txouts: A bool indicating whether to aggregate transaction outputs
@@ -2453,12 +2618,15 @@ class ClusterLib:
             tx_name=tx_name,
             txins=txins,
             txouts=txouts_filled,
+            script_txins=script_txins,
+            mint=mint,
             tx_files=tx_files,
+            complex_certs=complex_certs,
             fee=0,
             withdrawals=withdrawals,
+            script_withdrawals=script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
             deposit=0,
-            mint=mint,
             join_txouts=join_txouts,
             destination_dir=destination_dir,
         )
@@ -2521,6 +2689,7 @@ class ClusterLib:
             raise AssertionError("No txout was specified.")
 
         txout_records = [f"{t.amount} {t.coin}" for t in txouts]
+        # pylint: disable=consider-using-f-string
         address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
 
         datum_hash = txouts[0].datum_hash
@@ -2549,20 +2718,21 @@ class ClusterLib:
         self,
         src_address: str,
         tx_name: str,
-        tx_files: TxFiles,
         txins: OptionalUTXOData = (),
         txouts: OptionalTxOuts = (),
+        script_txins: OptionalScriptTxIn = (),
+        mint: OptionalMint = (),
+        tx_files: Optional[TxFiles] = None,
+        complex_certs: OptionalScriptCerts = (),
         change_address: str = "",
         fee_buffer: Optional[int] = None,
-        plutus_txins: OptionalPlutusTxIns = (),
-        plutus_mint: OptionalPlutusMintData = (),
         required_signers: OptionalFiles = (),
         required_signer_hashes: Optional[List[str]] = None,
         withdrawals: OptionalTxOuts = (),
+        script_withdrawals: OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
-        mint: OptionalTxOuts = (),
         witness_override: Optional[int] = None,
         script_valid: bool = True,
         join_txouts: bool = True,
@@ -2573,23 +2743,26 @@ class ClusterLib:
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            tx_files: A `TxFiles` tuple containing files needed for the transaction.
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
+            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
             change_address: A string with address where ADA in excess of the transaction fee
                 will go to (`src_address` by default).
             fee_buffer: A buffer for fee amount (optional).
-            plutus_txins: An iterable of `PlutusTxIn`, specifying input Plutus UTxOs (optional).
-            plutus_mint: An iterable of `PlutusMint`, specifying Plutus minting data (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
                 are required (optional).
             required_signer_hashes: A list of hashes of the signing keys whose signatures
                 are required (optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
-            mint: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
             witness_override: An integer indicating real number of witnesses. Can be used to fix
                 fee calculation (optional).
             script_valid: A bool indicating that the script is valid (True by default).
@@ -2601,28 +2774,46 @@ class ClusterLib:
             TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
+        tx_files = tx_files or TxFiles()
+
+        if tx_files.certificate_files and complex_certs:
+            LOGGER.warning(
+                "Mixing `tx_files.certificate_files` and `complex_certs`, "
+                "certs may come in unexpected order."
+            )
+
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         self._check_files_exist(out_file)
 
+        withdrawals, script_withdrawals, withdrawals_txouts = self._get_withdrawals(
+            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        )
+
         required_signer_hashes = required_signer_hashes or []
-        withdrawals = withdrawals and self.get_withdrawals(withdrawals)
+
+        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
         # combine txins and make sure we have enough funds to satisfy all txouts
         combined_txins = [
             *txins,
-            *itertools.chain.from_iterable(r.txins for r in plutus_txins),
-            *itertools.chain.from_iterable(r.txins for r in plutus_mint),
+            *itertools.chain.from_iterable(r.txins for r in script_txins),
         ]
+        combined_tx_files = tx_files._replace(
+            certificate_files={
+                *tx_files.certificate_files,
+                *[c.certificate_file for c in complex_certs],
+            }
+        )
         txins_copy, txouts_copy = self.get_tx_ins_outs(
             src_address=src_address,
-            tx_files=tx_files,
+            tx_files=combined_tx_files,
             txins=combined_txins,
             txouts=txouts,
             fee=fee_buffer or 0,
             deposit=deposit,
-            withdrawals=withdrawals,
-            mint=mint,
+            withdrawals=withdrawals_txouts,
+            mint_txouts=mint_txouts,
             lovelace_balanced=True,
         )
 
@@ -2633,110 +2824,125 @@ class ClusterLib:
         # filter out duplicate txins
         txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins_copy}
         # assume that all plutus txin records are for the same UTxO and use the first one
-        plutus_txins_utxos = {f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in plutus_txins}
-        plutus_mint_utxos = {f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in plutus_mint}
-        txins_combined = txins_utxos.difference(plutus_txins_utxos.union(plutus_mint_utxos))
+        plutus_txins_utxos = {
+            f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in script_txins if x.txins
+        }
+        txins_combined = txins_utxos.difference(plutus_txins_utxos)
 
         withdrawals_combined = [f"{x.address}+{x.amount}" for x in withdrawals]
 
-        bound_args = []
+        cli_args = []
+
         if invalid_before is not None:
-            bound_args.extend(["--invalid-before", str(invalid_before)])
+            cli_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is not None:
-            bound_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
-
-        mint_records = [f"{m.amount} {m.coin}" for m in mint]
-        mint_args = ["--mint", "+".join(mint_records)] if mint_records else []
-
-        script_args = []
-        if tx_files.script_files:
-            script_args = [
-                *self._prepend_flag("--tx-in-script-file", tx_files.script_files.txin_scripts),
-                *self._prepend_flag("--mint-script-file", tx_files.script_files.minting_scripts),
-                *self._prepend_flag(
-                    "--certificate-script-file", tx_files.script_files.certificate_scripts
-                ),
-                *self._prepend_flag(
-                    "--withdrawal-script-file", tx_files.script_files.withdrawal_scripts
-                ),
-                *self._prepend_flag(
-                    "--auxiliary-script-file", tx_files.script_files.auxiliary_scripts
-                ),
-            ]
+            cli_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
 
         if not script_valid:
-            script_args.append("--script-invalid")
+            cli_args.append("--script-invalid")
 
-        plutus_txin_args = []
+        # there's allowed just single `--mint` argument, let's aggregate all the outputs
+        mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
+        cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
-        for tin in plutus_txins:
-            tin_args = []
+        grouped_args = []
+
+        for tin in script_txins:
+            if tin.txins:
+                grouped_args.extend(
+                    [
+                        "--tx-in",
+                        # assume that all txin records are for the same UTxO and use the first one
+                        f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
+                    ]
+                )
             tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-            tin_args.extend(
+            grouped_args.extend(
                 [
-                    "--tx-in",
-                    # assume that all txin records are for the same UTxO and use the first one
-                    f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
                     *self._prepend_flag("--tx-in-collateral", tin_collaterals),
                     "--tx-in-script-file",
                     str(tin.script_file),
                 ]
             )
             if tin.datum_file:
-                tin_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
             if tin.datum_value:
-                tin_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
+                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
             if tin.redeemer_file:
-                tin_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
             if tin.redeemer_value:
-                tin_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
+                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
 
-            plutus_txin_args.extend(tin_args)
-
-        for pmint in plutus_mint:
-            pmint_args = []
-            pmint_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in pmint.collaterals}
-            pmint_args.extend(
+        for mrec in mint:
+            mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
+            grouped_args.extend(
                 [
-                    "--tx-in",
-                    f"{pmint.txins[0].utxo_hash}#{pmint.txins[0].utxo_ix}",
-                    *self._prepend_flag("--tx-in-collateral", pmint_collaterals),
+                    *self._prepend_flag("--tx-in-collateral", mrec_collaterals),
                     "--mint-script-file",
-                    str(pmint.script_file),
+                    str(mrec.script_file),
                 ]
             )
-            if pmint.redeemer_file:
-                pmint_args.extend(["--mint-redeemer-file", str(pmint.redeemer_file)])
-            if pmint.redeemer_value:
-                pmint_args.extend(["--mint-redeemer-value", str(pmint.redeemer_value)])
+            if mrec.redeemer_file:
+                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
+            if mrec.redeemer_value:
+                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
 
-            plutus_txin_args.extend(pmint_args)
+        for crec in complex_certs:
+            crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
+            grouped_args.extend(
+                [
+                    *self._prepend_flag("--tx-in-collateral", crec_collaterals),
+                    "--certificate-file",
+                    str(crec.certificate_file),
+                ]
+            )
+            if crec.script_file:
+                grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
+            if crec.redeemer_file:
+                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
+            if crec.redeemer_value:
+                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
 
-        if plutus_txin_args:
-            plutus_txin_args.extend(
+        for wrec in script_withdrawals:
+            wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
+            grouped_args.extend(
+                [
+                    *self._prepend_flag("--tx-in-collateral", wrec_collaterals),
+                    "--withdrawal",
+                    f"{wrec.txout.address}+{wrec.txout.amount}",
+                    "--withdrawal-script-file",
+                    str(wrec.script_file),
+                ]
+            )
+            if wrec.redeemer_file:
+                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
+            if wrec.redeemer_value:
+                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+
+        if grouped_args:
+            grouped_args.extend(
                 [
                     "--protocol-params-file",
                     str(self.pparams_file),
                 ]
             )
 
-        change_addr_args = ["--change-address"]
+        cli_args.append("--change-address")
         if change_address:
-            change_addr_args.append(change_address)
+            cli_args.append(change_address)
         else:
-            change_addr_args.append(src_address)
+            cli_args.append(src_address)
 
-        witness_override_args = []
         if witness_override is not None:
-            witness_override_args = ["--witness-override", str(witness_override)]
+            cli_args.extend(["--witness-override", str(witness_override)])
 
-        format_args = ["--cddl-format"] if self.use_cddl else []
+        cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
         stdout = self.cli(
             [
                 "transaction",
                 "build",
-                *plutus_txin_args,
+                *grouped_args,
                 *self._prepend_flag("--tx-in", txins_combined),
                 *plutus_txout_args,
                 *self._prepend_flag("--tx-out", txout_args),
@@ -2744,15 +2950,11 @@ class ClusterLib:
                 *self._prepend_flag("--required-signer-hash", required_signer_hashes),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
                 *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+                *self._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
                 *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *self._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
                 *self._prepend_flag("--withdrawal", withdrawals_combined),
-                *bound_args,
-                *change_addr_args,
-                *mint_args,
-                *script_args,
-                *witness_override_args,
-                *format_args,
+                *cli_args,
                 *self.tx_era_arg,
                 *self.magic_args,
                 "--out-file",
@@ -2769,16 +2971,17 @@ class ClusterLib:
 
         return TxRawOutput(
             txins=list(txins_copy),
-            plutus_txins=plutus_txins,
-            plutus_mint=plutus_mint,
+            script_txins=script_txins,
+            script_withdrawals=script_withdrawals,
+            complex_certs=complex_certs,
+            mint=mint,
             txouts=list(txouts_copy),
             tx_files=tx_files,
             out_file=out_file,
             fee=estimated_fee,
             invalid_hereafter=invalid_hereafter,
             invalid_before=invalid_before,
-            withdrawals=withdrawals,
-            mint=mint,
+            withdrawals=withdrawals_txouts,
             change_address=change_address or src_address,
         )
 
@@ -2964,13 +3167,18 @@ class ClusterLib:
         tx_name: str,
         txins: OptionalUTXOData = (),
         txouts: OptionalTxOuts = (),
+        script_txins: OptionalScriptTxIn = (),
+        mint: OptionalMint = (),
         tx_files: Optional[TxFiles] = None,
+        complex_certs: OptionalScriptCerts = (),
         fee: Optional[int] = None,
         ttl: Optional[int] = None,
         withdrawals: OptionalTxOuts = (),
+        script_withdrawals: OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
+        witness_count_add: int = 0,
         join_txouts: bool = True,
         verify_tx: bool = True,
         destination_dir: FileType = ".",
@@ -2982,14 +3190,22 @@ class ClusterLib:
             tx_name: A name of the transaction.
             txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
             fee: A fee amount (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
+            witness_count_add: A number of witnesses to add - workaround to make the fee
+                calculation more precise.
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             verify_tx: A bool indicating whether to verify the transaction made it to chain
@@ -3002,18 +3218,22 @@ class ClusterLib:
         # pylint: disable=too-many-arguments
         tx_files = tx_files or TxFiles()
 
+        withdrawals, script_withdrawals, *__ = self._get_withdrawals(
+            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        )
+
         if fee is None:
-            witness_count_add = 0
-            if tx_files and tx_files.script_files:
-                # TODO: workaround for https://github.com/input-output-hk/cardano-node/issues/1892
-                all_scripts = list(itertools.chain.from_iterable(tx_files.script_files))
-                witness_count_add += 5 * len(all_scripts)
             fee = self.calculate_tx_fee(
                 src_address=src_address,
                 tx_name=tx_name,
                 txins=txins,
                 txouts=txouts,
+                script_txins=script_txins,
+                mint=mint,
                 tx_files=tx_files,
+                complex_certs=complex_certs,
+                withdrawals=withdrawals,
+                script_withdrawals=script_withdrawals,
                 invalid_hereafter=invalid_hereafter or ttl,
                 witness_count_add=witness_count_add,
                 join_txouts=join_txouts,
@@ -3027,9 +3247,13 @@ class ClusterLib:
             tx_name=tx_name,
             txins=txins,
             txouts=txouts,
+            script_txins=script_txins,
+            mint=mint,
             tx_files=tx_files,
+            complex_certs=complex_certs,
             fee=fee,
             withdrawals=withdrawals,
+            script_withdrawals=script_withdrawals,
             deposit=deposit,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
