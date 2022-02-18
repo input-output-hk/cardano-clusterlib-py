@@ -52,7 +52,7 @@ cluster.wait_for_new_block(new_blocks=2)
 cluster.get_utxo(dst_address)
 ```
 
-See [cardano-node-tests](https://github.com/input-output-hk/cardano-node-tests) for more examples, e.g. [minting new tokens](https://github.com/input-output-hk/cardano-node-tests/blob/6da4cf210bc1da9f1304e67e226063772fff631d/cardano_node_tests/utils/clusterlib_utils.py#L495-L543).
+See [cardano-node-tests](https://github.com/input-output-hk/cardano-node-tests) for more examples, e.g. [minting new tokens](https://github.com/input-output-hk/cardano-node-tests/blob/90aa4a2e9fe4019a89e6f4cdec7cb092732e6f2a/cardano_node_tests/utils/clusterlib_utils.py#L567-L602).
 
 
 Source Documentation

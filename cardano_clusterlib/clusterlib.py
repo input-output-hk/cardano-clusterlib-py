@@ -2360,7 +2360,8 @@ class ClusterLib:
             if wrec.redeemer_value:
                 grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
 
-        if grouped_args:
+        grouped_args_str = " ".join(grouped_args)
+        if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
             grouped_args.extend(
                 [
                     "--protocol-params-file",
@@ -2919,7 +2920,8 @@ class ClusterLib:
             if wrec.redeemer_value:
                 grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
 
-        if grouped_args:
+        grouped_args_str = " ".join(grouped_args)
+        if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
             grouped_args.extend(
                 [
                     "--protocol-params-file",
