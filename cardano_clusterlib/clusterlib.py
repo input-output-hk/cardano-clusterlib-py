@@ -1707,6 +1707,9 @@ class ClusterLib:
         messages_str = command_output.split("{")[0]
         messages_list = []
 
+        valid_counters = False
+        valid_kes_period = False
+
         if messages_str:
             message_entry: list = []
 
@@ -1722,6 +1725,12 @@ class ClusterLib:
 
             messages_list.append(" ".join(message_entry))
 
+            for out_message in messages_list:
+                if "counter agrees with" in out_message:
+                    valid_counters = True
+                elif "correct KES period interval" in out_message:
+                    valid_kes_period = True
+
         # get output metrics
         metrics_str = command_output.split("{")[-1]
         metrics_dict = {}
@@ -1729,7 +1738,14 @@ class ClusterLib:
         if metrics_str and metrics_str.strip().endswith("}"):
             metrics_dict = json.loads(f"{{{metrics_str}")
 
-        return {"messages": messages_list, "metrics": metrics_dict}
+        output_dict = {
+            "messages": messages_list,
+            "metrics": metrics_dict,
+            "valid_counters": valid_counters,
+            "valid_kes_period": valid_kes_period,
+        }
+
+        return output_dict
 
     def get_txid(self, tx_body_file: FileType = "", tx_file: FileType = "") -> str:
         """Return the transaction identifier.
