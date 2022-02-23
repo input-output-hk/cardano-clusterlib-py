@@ -2791,6 +2791,7 @@ class ClusterLib:
         invalid_before: Optional[int] = None,
         witness_override: Optional[int] = None,
         script_valid: bool = True,
+        calc_script_cost_file: Optional[FileType] = None,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
     ) -> TxRawOutput:
@@ -2822,6 +2823,8 @@ class ClusterLib:
             witness_override: An integer indicating real number of witnesses. Can be used to fix
                 fee calculation (optional).
             script_valid: A bool indicating that the script is valid (True by default).
+            calc_script_cost_file: A path for output of the Plutus script cost information
+                (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -2995,6 +2998,12 @@ class ClusterLib:
 
         cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
+        if calc_script_cost_file:
+            cli_args.extend(["--calculate-plutus-script-cost", str(calc_script_cost_file)])
+            out_file = Path(calc_script_cost_file)
+        else:
+            cli_args.extend(["--out-file", str(out_file)])
+
         stdout = self.cli(
             [
                 "transaction",
@@ -3014,8 +3023,6 @@ class ClusterLib:
                 *cli_args,
                 *self.tx_era_arg,
                 *self.magic_args,
-                "--out-file",
-                str(out_file),
             ]
         ).stdout
         stdout_dec = stdout.decode("utf-8") if stdout else ""
@@ -3394,6 +3401,84 @@ class ClusterLib:
             .stdout.rstrip()
             .decode("utf-8")
         )
+
+    def calculate_plutus_script_cost(
+        self,
+        src_address: str,
+        tx_name: str,
+        txins: OptionalUTXOData = (),
+        txouts: OptionalTxOuts = (),
+        script_txins: OptionalScriptTxIn = (),
+        mint: OptionalMint = (),
+        tx_files: Optional[TxFiles] = None,
+        complex_certs: OptionalScriptCerts = (),
+        change_address: str = "",
+        fee_buffer: Optional[int] = None,
+        required_signers: OptionalFiles = (),
+        required_signer_hashes: Optional[List[str]] = None,
+        withdrawals: OptionalTxOuts = (),
+        script_withdrawals: OptionalScriptWithdrawals = (),
+        deposit: Optional[int] = None,
+        invalid_hereafter: Optional[int] = None,
+        invalid_before: Optional[int] = None,
+        witness_override: Optional[int] = None,
+        script_valid: bool = True,
+        calc_script_cost_file: Optional[FileType] = None,
+        join_txouts: bool = True,
+        destination_dir: FileType = ".",
+    ) -> List[dict]:
+        """Calculate cost of Plutus scripts. Accepts the same arguments as `build_tx`.
+
+        Args:
+            src_address: An address used for fee and inputs (if inputs not specified by `txins`).
+            tx_name: A name of the transaction.
+            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
+            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            change_address: A string with address where ADA in excess of the transaction fee
+                will go to (`src_address` by default).
+            fee_buffer: A buffer for fee amount (optional).
+            required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
+            required_signer_hashes: A list of hashes of the signing keys whose signatures
+                are required (optional).
+            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
+            deposit: A deposit amount needed by the transaction (optional).
+            invalid_hereafter: A last block when the transaction is still valid (optional).
+            invalid_before: A first block when the transaction is valid (optional).
+            witness_override: An integer indicating real number of witnesses. Can be used to fix
+                fee calculation (optional).
+            script_valid: A bool indicating that the script is valid (True by default).
+            calc_script_cost_file: A path for output of the Plutus script cost information
+                (optional).
+            join_txouts: A bool indicating whether to aggregate transaction outputs
+                by payment address (True by default).
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            List[dict]: A Plutus scripts cost data.
+        """
+        # pylint: disable=too-many-arguments,unused-argument
+        # collect all arguments that will be passed to `build_tx`
+        kwargs = locals()
+        kwargs.pop("self", None)
+        kwargs.pop("kwargs", None)
+        # this would be a duplicate if already present
+        kwargs.pop("calc_script_cost_file", None)
+
+        destination_dir = Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{tx_name}_plutus.cost"
+
+        self.build_tx(**kwargs, calc_script_cost_file=out_file)
+        with open(out_file, encoding="utf-8") as fp_out:
+            cost: List[dict] = json.load(fp_out)
+        return cost
 
     def gen_update_proposal(
         self,
