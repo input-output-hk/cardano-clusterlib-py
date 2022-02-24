@@ -99,8 +99,10 @@ class ScriptTxIn(NamedTuple):
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     datum_file: FileType = ""
+    datum_cbor_file: FileType = ""
     datum_value: str = ""
     redeemer_file: FileType = ""
+    redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
 
 
@@ -112,6 +114,7 @@ class ScriptWithdrawal(NamedTuple):
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
+    redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
 
 
@@ -128,6 +131,7 @@ class ComplexCert(NamedTuple):
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
+    redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
 
 
@@ -138,6 +142,7 @@ class Mint(NamedTuple):
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
+    redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
 
 
@@ -1786,12 +1791,16 @@ class ClusterLib:
         return self.cli(["transaction", "view", *cli_args]).stdout.rstrip().decode("utf-8")
 
     def get_hash_script_data(
-        self, script_data_file: FileType = "", script_data_value: str = ""
+        self,
+        script_data_file: Optional[FileType] = None,
+        script_data_cbor_file: Optional[FileType] = None,
+        script_data_value: str = "",
     ) -> str:
         """Return the hash of script data.
 
         Args:
-            script_data_file: A path to the file containing the script data (optional).
+            script_data_file: A path to the JSON file containing the script data (optional).
+            script_data_cbor_file: A path to the CBOR file containing the script data (optional).
             script_data_value: A value (in JSON syntax) for the script data (optional).
 
         Returns:
@@ -1799,10 +1808,15 @@ class ClusterLib:
         """
         if script_data_file:
             cli_args = ["--script-data-file", str(script_data_file)]
+        elif script_data_cbor_file:
+            cli_args = ["--script-data-cbor-file", str(script_data_cbor_file)]
         elif script_data_value:  # noqa: SIM106
             cli_args = ["--script-data-value", str(script_data_value)]
         else:
-            raise CLIError("Either `script_data_file` or `script_data_value` is needed.")
+            raise CLIError(
+                "Either `script_data_file`, `script_data_cbor_file` or `script_data_value` "
+                "is needed."
+            )
 
         return (
             self.cli(["transaction", "hash-script-data", *cli_args]).stdout.rstrip().decode("ascii")
@@ -2341,10 +2355,14 @@ class ClusterLib:
                 )
             if tin.datum_file:
                 grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+            if tin.datum_cbor_file:
+                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
             if tin.datum_value:
                 grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
             if tin.redeemer_file:
                 grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+            if tin.redeemer_cbor_file:
+                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
             if tin.redeemer_value:
                 grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
 
@@ -2366,6 +2384,8 @@ class ClusterLib:
                 )
             if mrec.redeemer_file:
                 grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
+            if mrec.redeemer_cbor_file:
+                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
             if mrec.redeemer_value:
                 grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
 
@@ -2389,6 +2409,10 @@ class ClusterLib:
                 )
             if crec.redeemer_file:
                 grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
+            if crec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
+                )
             if crec.redeemer_value:
                 grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
 
@@ -2412,6 +2436,10 @@ class ClusterLib:
                 )
             if wrec.redeemer_file:
                 grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
+            if wrec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
+                )
             if wrec.redeemer_value:
                 grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
 
@@ -2925,10 +2953,14 @@ class ClusterLib:
             )
             if tin.datum_file:
                 grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+            if tin.datum_cbor_file:
+                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
             if tin.datum_value:
                 grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
             if tin.redeemer_file:
                 grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+            if tin.redeemer_cbor_file:
+                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
             if tin.redeemer_value:
                 grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
 
@@ -2943,6 +2975,8 @@ class ClusterLib:
             )
             if mrec.redeemer_file:
                 grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
+            if mrec.redeemer_cbor_file:
+                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
             if mrec.redeemer_value:
                 grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
 
@@ -2959,6 +2993,10 @@ class ClusterLib:
                 grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
             if crec.redeemer_file:
                 grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
+            if crec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
+                )
             if crec.redeemer_value:
                 grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
 
@@ -2975,6 +3013,10 @@ class ClusterLib:
             )
             if wrec.redeemer_file:
                 grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
+            if wrec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
+                )
             if wrec.redeemer_value:
                 grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
 
