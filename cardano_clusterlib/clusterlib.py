@@ -1822,11 +1822,11 @@ class ClusterLib:
             self.cli(["transaction", "hash-script-data", *cli_args]).stdout.rstrip().decode("ascii")
         )
 
-    def address_info(
+    def get_address_info(
         self,
         address: str,
     ) -> AddressInfo:
-        """View a transaction.
+        """Get information about an address.
 
         Args:
             address: A Cardano address.
