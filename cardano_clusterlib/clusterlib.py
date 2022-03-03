@@ -583,14 +583,13 @@ class ClusterLib:
         Returns:
             List[UTXOData]: A list of UTxO data.
         """
-        if not (address or txin):
-            raise AssertionError("Either `address` or `txin` need to be specified.")
-
         cli_args = ["utxo", "--out-file", "/dev/stdout"]
         if address:
             cli_args.extend(["--address", address])
-        elif txin:
+        elif txin:  # noqa: SIM106
             cli_args.extend(["--tx-in", txin])
+        else:
+            raise AssertionError("Either `address` or `txin` need to be specified.")
 
         utxo_dict = json.loads(self.query_cli(cli_args))
 
@@ -719,7 +718,7 @@ class ClusterLib:
         elif payment_script_file:  # noqa: SIM106
             cli_args = ["--payment-script-file", str(payment_script_file)]
         else:
-            raise CLIError("Either `payment_vkey_file` or `payment_script_file` is needed.")
+            raise AssertionError("Either `payment_vkey_file` or `payment_script_file` is needed.")
 
         if stake_vkey_file:
             cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
@@ -767,7 +766,7 @@ class ClusterLib:
         elif stake_script_file:  # noqa: SIM106
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
-            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
 
         self.cli(
             [
@@ -1085,7 +1084,7 @@ class ClusterLib:
         elif stake_script_file:  # noqa: SIM106
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
-            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
 
         self.cli(
             [
@@ -1127,7 +1126,7 @@ class ClusterLib:
         elif stake_script_file:  # noqa: SIM106
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
-            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
 
         self.cli(
             [
@@ -1174,7 +1173,7 @@ class ClusterLib:
         elif stake_script_file:  # noqa: SIM106
             cli_args.extend(["--stake-script-file", str(stake_script_file)])
         else:
-            raise CLIError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
 
         if cold_vkey_file:
             cli_args.extend(
@@ -1191,7 +1190,7 @@ class ClusterLib:
                 ]
             )
         else:
-            raise CLIError("Either `cold_vkey_file` or `stake_pool_id` is needed.")
+            raise AssertionError("Either `cold_vkey_file` or `stake_pool_id` is needed.")
 
         self.cli(
             [
@@ -1612,7 +1611,7 @@ class ClusterLib:
                 ]
             )
         else:
-            raise CLIError(
+            raise AssertionError(
                 "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
             )
 
@@ -1767,7 +1766,7 @@ class ClusterLib:
         elif tx_file:  # noqa: SIM106
             cli_args = ["--tx-file", str(tx_file)]
         else:
-            raise CLIError("Either `tx_body_file` or `tx_file` is needed.")
+            raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
 
         return self.cli(["transaction", "txid", *cli_args]).stdout.rstrip().decode("ascii")
 
@@ -1786,7 +1785,7 @@ class ClusterLib:
         elif tx_file:  # noqa: SIM106
             cli_args = ["--tx-file", str(tx_file)]
         else:
-            raise CLIError("Either `tx_body_file` or `tx_file` is needed.")
+            raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
 
         return self.cli(["transaction", "view", *cli_args]).stdout.rstrip().decode("utf-8")
 
@@ -1813,7 +1812,7 @@ class ClusterLib:
         elif script_data_value:  # noqa: SIM106
             cli_args = ["--script-data-value", str(script_data_value)]
         else:
-            raise CLIError(
+            raise AssertionError(
                 "Either `script_data_file`, `script_data_cbor_file` or `script_data_value` "
                 "is needed."
             )
@@ -4146,7 +4145,7 @@ class ClusterLib:
 
         # check that reward is 0
         if self.get_stake_addr_info(stake_addr_record.address).reward_account_balance != 0:
-            raise AssertionError("Not all rewards were transferred.")
+            raise CLIError("Not all rewards were transferred.")
 
         # check that rewards were transferred
         src_reward_balance = self.get_address_balance(dst_address)
@@ -4156,7 +4155,7 @@ class ClusterLib:
             - tx_raw_withdrawal_output.fee
             + tx_raw_withdrawal_output.withdrawals[0].amount  # type: ignore
         ):
-            raise AssertionError(f"Incorrect balance for destination address `{dst_address}`.")
+            raise CLIError(f"Incorrect balance for destination address `{dst_address}`.")
 
         return tx_raw_withdrawal_output
 
