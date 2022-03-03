@@ -3092,17 +3092,19 @@ class ClusterLib:
 
     def sign_tx(
         self,
-        tx_body_file: FileType,
         signing_key_files: OptionalFiles,
         tx_name: str,
+        tx_body_file: Optional[FileType] = None,
+        tx_file: Optional[FileType] = None,
         destination_dir: FileType = ".",
     ) -> Path:
         """Sign a transaction.
 
         Args:
-            tx_body_file: A path to file with transaction body.
             signing_key_files: A list of paths to signing key files.
             tx_name: A name of the transaction.
+            tx_body_file: A path to file with transaction body (optional).
+            tx_file: A path to file with transaction (for incremental signing, optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -3112,16 +3114,22 @@ class ClusterLib:
         out_file = destination_dir / f"{tx_name}_tx.signed"
         self._check_files_exist(out_file)
 
+        if tx_body_file:
+            cli_args = ["--tx-body-file", str(tx_body_file)]
+        elif tx_file:  # noqa: SIM106
+            cli_args = ["--tx-file", str(tx_file)]
+        else:
+            raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
+
         self.cli(
             [
                 "transaction",
                 "sign",
-                "--tx-body-file",
-                str(tx_body_file),
-                "--out-file",
-                str(out_file),
+                *cli_args,
                 *self.magic_args,
                 *self._prepend_flag("--signing-key-file", signing_key_files),
+                "--out-file",
+                str(out_file),
             ]
         )
 
