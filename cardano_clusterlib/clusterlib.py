@@ -188,6 +188,7 @@ class TxRawOutput(NamedTuple):
     tx_files: TxFiles
     out_file: Path
     fee: int
+    era: str = ""
     script_txins: OptionalScriptTxIn = ()
     script_withdrawals: OptionalScriptWithdrawals = ()
     complex_certs: OptionalScriptCerts = ()
@@ -2491,6 +2492,7 @@ class ClusterLib:
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             withdrawals=withdrawals_txouts,
+            era=self.tx_era,
         )
 
     def build_raw_tx(
@@ -3088,6 +3090,7 @@ class ClusterLib:
             invalid_before=invalid_before,
             withdrawals=withdrawals_txouts,
             change_address=change_address or src_address,
+            era=self.tx_era,
         )
 
     def sign_tx(
