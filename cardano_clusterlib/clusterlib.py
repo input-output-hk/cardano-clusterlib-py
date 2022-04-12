@@ -796,7 +796,7 @@ class ClusterLib:
         Returns:
             str: A generated script address.
         """
-        warnings.warn("deprecated by `gen_payment_addr`", DeprecationWarning)
+        warnings.warn("`gen_script_addr` deprecated by `gen_payment_addr`", DeprecationWarning)
         return self.gen_payment_addr(
             addr_name=addr_name, payment_script_file=script_file, destination_dir=destination_dir
         )
