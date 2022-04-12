@@ -1984,6 +1984,7 @@ class ClusterLib:
         self,
         src_address: str,
         tx_files: TxFiles,
+        txouts: OptionalTxOuts,
         txins_db: Dict[str, List[UTXOData]],
         txouts_passed_db: Dict[str, List[TxOut]],
         txouts_mint_db: Dict[str, List[TxOut]],
@@ -1993,11 +1994,13 @@ class ClusterLib:
         lovelace_balanced: bool = False,
     ) -> List[TxOut]:
         """Balance the transaction by adding change output for each coin."""
-        txouts_result: List[TxOut] = []
+        # pylint: disable=too-many-arguments
+        txouts_result: List[TxOut] = list(txouts)
 
         # iterate over coins both in txins and txouts
         for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
             max_address = None
+            change = 0
             coin_txins = txins_db.get(coin) or []
             coin_txouts = txouts_passed_db.get(coin) or []
 
@@ -2013,7 +2016,7 @@ class ClusterLib:
 
             if coin == DEFAULT_COIN and lovelace_balanced:
                 # balancing is done elsewhere (by the `transaction build` command)
-                change = 0
+                pass
             elif coin == DEFAULT_COIN:
                 tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
                 tx_fee = fee if fee > 0 else 0
@@ -2042,13 +2045,11 @@ class ClusterLib:
                     )
 
             if change > 0:
-                coin_txouts.append(
+                txouts_result.append(
                     TxOut(address=(max_address or src_address), amount=change, coin=coin)
                 )
 
-            txouts_result.extend(coin_txouts)
-
-        # filter out negative token amounts (tokens burning)
+        # filter out negative amounts (tokens burning and -1 "max" amounts)
         txouts_result = [r for r in txouts_result if r.amount > 0]
 
         return txouts_result
@@ -2128,6 +2129,7 @@ class ClusterLib:
         txouts_balanced = self._balance_txouts(
             src_address=src_address,
             tx_files=tx_files,
+            txouts=txouts,
             txins_db=txins_db_filtered,
             txouts_passed_db=txouts_passed_db,
             txouts_mint_db=txouts_mint_db,
@@ -2175,13 +2177,15 @@ class ClusterLib:
         withdrawals_txouts = [*withdrawals, *[s.txout for s in script_withdrawals]]
         return withdrawals, script_withdrawals, withdrawals_txouts
 
-    def _join_txouts(self, txouts: List[TxOut]) -> Tuple[List[str], List[str]]:
-        plutus_txout_args: List[str] = []
+    def _join_txouts(self, txouts: List[TxOut]) -> List[str]:
         txout_args: List[str] = []
-
+        txouts_datum_order: List[str] = []
         txouts_by_datum: Dict[str, Dict[str, List[str]]] = {}
+
         # aggregate TX outputs by datum hash and address
         for rec in txouts:
+            if rec.datum_hash not in txouts_datum_order:
+                txouts_datum_order.append(rec.datum_hash)
             if rec.datum_hash not in txouts_by_datum:
                 txouts_by_datum[rec.datum_hash] = {}
             txouts_by_addr = txouts_by_datum[rec.datum_hash]
@@ -2191,34 +2195,29 @@ class ClusterLib:
             txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
 
         # join txouts with the same address
-        simple_txouts = txouts_by_datum.get("") or {}
-        for addr, amounts in simple_txouts.items():
-            amounts_joined = "+".join(amounts)
-            txout_args.append(f"{addr}+{amounts_joined}")
-
-        for datum_hash, txouts_by_addr in txouts_by_datum.items():
-            if not datum_hash:
-                continue
-            for addr, amounts in txouts_by_addr.items():
+        for datum_hash in txouts_datum_order:
+            for addr, amounts in txouts_by_datum[datum_hash].items():
                 amounts_joined = "+".join(amounts)
-                plutus_txout_args.extend(
-                    [
-                        "--tx-out",
-                        f"{addr}+{amounts_joined}",
-                        "--tx-out-datum-hash",
-                        datum_hash,
-                    ]
-                )
+                if datum_hash:
+                    txout_args.extend(
+                        [
+                            "--tx-out",
+                            f"{addr}+{amounts_joined}",
+                            "--tx-out-datum-hash",
+                            datum_hash,
+                        ]
+                    )
+                else:
+                    txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
 
-        return plutus_txout_args, txout_args
+        return txout_args
 
-    def _list_txouts(self, txouts: List[TxOut]) -> Tuple[List[str], List[str]]:
-        plutus_txout_args: List[str] = []
+    def _list_txouts(self, txouts: List[TxOut]) -> List[str]:
         txout_args: List[str] = []
 
         for rec in txouts:
             if rec.datum_hash:
-                plutus_txout_args.extend(
+                txout_args.extend(
                     [
                         "--tx-out",
                         f"{rec.address}+{rec.amount}",
@@ -2227,13 +2226,11 @@ class ClusterLib:
                     ]
                 )
             else:
-                txout_args.append(f"{rec.address}+{rec.amount}")
+                txout_args.extend(["--tx-out", f"{rec.address}+{rec.amount}"])
 
-        return plutus_txout_args, txout_args
+        return txout_args
 
-    def _process_txouts(
-        self, txouts: List[TxOut], join_txouts: bool
-    ) -> Tuple[List[str], List[str]]:
+    def _process_txouts(self, txouts: List[TxOut], join_txouts: bool) -> List[str]:
         if join_txouts:
             return self._join_txouts(txouts=txouts)
         return self._list_txouts(txouts=txouts)
@@ -2302,7 +2299,7 @@ class ClusterLib:
         )
 
         required_signer_hashes = required_signer_hashes or []
-        plutus_txout_args, txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
+        txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
 
         # filter out duplicates
         txins_combined = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
@@ -2464,8 +2461,7 @@ class ClusterLib:
                 str(out_file),
                 *grouped_args,
                 *self._prepend_flag("--tx-in", txins_combined),
-                *plutus_txout_args,
-                *self._prepend_flag("--tx-out", txout_args),
+                *txout_args,
                 *self._prepend_flag("--required-signer", required_signers),
                 *self._prepend_flag("--required-signer-hash", required_signer_hashes),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
@@ -2905,9 +2901,7 @@ class ClusterLib:
             lovelace_balanced=True,
         )
 
-        plutus_txout_args, txout_args = self._process_txouts(
-            txouts=txouts_copy, join_txouts=join_txouts
-        )
+        txout_args = self._process_txouts(txouts=txouts_copy, join_txouts=join_txouts)
 
         # filter out duplicate txins
         txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins_copy}
@@ -3053,8 +3047,7 @@ class ClusterLib:
                 "build",
                 *grouped_args,
                 *self._prepend_flag("--tx-in", txins_combined),
-                *plutus_txout_args,
-                *self._prepend_flag("--tx-out", txout_args),
+                *txout_args,
                 *self._prepend_flag("--required-signer", required_signers),
                 *self._prepend_flag("--required-signer-hash", required_signer_hashes),
                 *self._prepend_flag("--certificate-file", tx_files.certificate_files),
