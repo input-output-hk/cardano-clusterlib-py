@@ -1927,13 +1927,12 @@ class ClusterLib:
 
     def _select_utxos(
         self,
-        tx_files: TxFiles,
         txins_db: Dict[str, List[UTXOData]],
         txouts_passed_db: Dict[str, List[TxOut]],
         txouts_mint_db: Dict[str, List[TxOut]],
         fee: int,
-        deposit: Optional[int],
         withdrawals: OptionalTxOuts,
+        deposit: int = 0,
     ) -> Set[str]:
         """Select UTxOs that can satisfy all outputs, deposits and fee.
 
@@ -1955,9 +1954,8 @@ class ClusterLib:
             total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
 
             if coin == DEFAULT_COIN:
-                tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
                 tx_fee = fee if fee > 1 else 1
-                funds_needed = total_output_amount + tx_fee + tx_deposit
+                funds_needed = total_output_amount + tx_fee + deposit
                 total_withdrawals_amount = functools.reduce(
                     lambda x, y: x + y.amount, withdrawals, 0
                 )
@@ -1983,18 +1981,16 @@ class ClusterLib:
     def _balance_txouts(
         self,
         src_address: str,
-        tx_files: TxFiles,
         txouts: OptionalTxOuts,
         txins_db: Dict[str, List[UTXOData]],
         txouts_passed_db: Dict[str, List[TxOut]],
         txouts_mint_db: Dict[str, List[TxOut]],
         fee: int,
-        deposit: Optional[int],
         withdrawals: OptionalTxOuts,
+        deposit: int = 0,
         lovelace_balanced: bool = False,
     ) -> List[TxOut]:
         """Balance the transaction by adding change output for each coin."""
-        # pylint: disable=too-many-arguments
         txouts_result: List[TxOut] = list(txouts)
 
         # iterate over coins both in txins and txouts
@@ -2018,13 +2014,12 @@ class ClusterLib:
                 # balancing is done elsewhere (by the `transaction build` command)
                 pass
             elif coin == DEFAULT_COIN:
-                tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
                 tx_fee = fee if fee > 0 else 0
                 total_withdrawals_amount = functools.reduce(
                     lambda x, y: x + y.amount, withdrawals, 0
                 )
                 funds_available = total_input_amount + total_withdrawals_amount
-                funds_needed = total_output_amount + tx_fee + tx_deposit
+                funds_needed = total_output_amount + tx_fee + deposit
                 change = funds_available - funds_needed
                 if change < 0:
                     LOGGER.error(
@@ -2092,6 +2087,8 @@ class ClusterLib:
         )
         txins_db_all: Dict[str, List[UTXOData]] = self._organize_tx_ins_outs_by_coin(txins_all)
 
+        tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
+
         if not txins_all:
             LOGGER.error("No input UTxO.")
         # all output coins, except those minted by this transaction, need to be present in
@@ -2106,13 +2103,12 @@ class ClusterLib:
         else:
             # select only UTxOs that are needed to satisfy all outputs, deposits and fee
             selected_utxo_ids = self._select_utxos(
-                tx_files=tx_files,
                 txins_db=txins_db_all,
                 txouts_passed_db=txouts_passed_db,
                 txouts_mint_db=txouts_mint_db,
                 fee=fee,
-                deposit=deposit,
                 withdrawals=withdrawals,
+                deposit=tx_deposit,
             )
             txins_by_id: Dict[str, List[UTXOData]] = self._organize_utxos_by_id(txins_all)
             _txins_filtered = [
@@ -2128,14 +2124,13 @@ class ClusterLib:
         # balance the transaction
         txouts_balanced = self._balance_txouts(
             src_address=src_address,
-            tx_files=tx_files,
             txouts=txouts,
             txins_db=txins_db_filtered,
             txouts_passed_db=txouts_passed_db,
             txouts_mint_db=txouts_mint_db,
             fee=fee,
-            deposit=deposit,
             withdrawals=withdrawals,
+            deposit=tx_deposit,
             lovelace_balanced=lovelace_balanced,
         )
 
@@ -2559,10 +2554,10 @@ class ClusterLib:
         ]
         mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
         combined_tx_files = tx_files._replace(
-            certificate_files={
+            certificate_files=[
                 *tx_files.certificate_files,
                 *[c.certificate_file for c in complex_certs],
-            }
+            ]
         )
         txins_copy, txouts_copy = self.get_tx_ins_outs(
             src_address=src_address,
@@ -2884,10 +2879,10 @@ class ClusterLib:
             *itertools.chain.from_iterable(r.txins for r in script_txins),
         ]
         combined_tx_files = tx_files._replace(
-            certificate_files={
+            certificate_files=[
                 *tx_files.certificate_files,
                 *[c.certificate_file for c in complex_certs],
-            }
+            ]
         )
         txins_copy, txouts_copy = self.get_tx_ins_outs(
             src_address=src_address,
