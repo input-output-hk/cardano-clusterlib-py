@@ -2764,6 +2764,10 @@ class ClusterLib:
         if not txouts:
             raise AssertionError("No txout was specified.")
 
+        addresses = {t.address for t in txouts}
+        if len(addresses) > 1:
+            raise AssertionError("Accepts `txouts` only for single address.")
+
         txout_records = [f"{t.amount} {t.coin}" for t in txouts]
         # pylint: disable=consider-using-f-string
         address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
