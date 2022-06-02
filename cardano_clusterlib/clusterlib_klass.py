@@ -1,313 +1,32 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
-import base64
 import datetime
 import functools
 import itertools
 import json
 import logging
-import random
-import string
 import subprocess
 import time
 import warnings
 from pathlib import Path
 from typing import Dict
 from typing import List
-from typing import NamedTuple
 from typing import Optional
-from typing import Set
 from typing import Tuple
-from typing import Union
 
+from cardano_clusterlib import clusterlib_helpers
+from cardano_clusterlib import consts
+from cardano_clusterlib import coverage
+from cardano_clusterlib import exceptions
+from cardano_clusterlib import helpers
+from cardano_clusterlib import structs
+from cardano_clusterlib import txtools
 from cardano_clusterlib.types import FileType
 from cardano_clusterlib.types import FileTypeList
 from cardano_clusterlib.types import OptionalFiles
 from cardano_clusterlib.types import UnpackableSequence
 
+
 LOGGER = logging.getLogger(__name__)
-
-DEFAULT_COIN = "lovelace"
-MAINNET_MAGIC = 764824073
-
-# offset of slots from Byron configuration vs current era configuration
-SLOTS_OFFSETS = {
-    764824073: 85363200,  # mainnet
-    1097911063: 30369600,  # testnet
-}
-
-
-class CLIOut(NamedTuple):
-    stdout: bytes
-    stderr: bytes
-
-
-class KeyPair(NamedTuple):
-    vkey_file: Path
-    skey_file: Path
-
-
-class ColdKeyPair(NamedTuple):
-    vkey_file: Path
-    skey_file: Path
-    counter_file: Path
-
-
-class AddressRecord(NamedTuple):
-    address: str
-    vkey_file: Path
-    skey_file: Path
-
-
-class StakeAddrInfo(NamedTuple):
-    address: str
-    delegation: str
-    reward_account_balance: int
-
-    def __bool__(self) -> bool:
-        return bool(self.address)
-
-
-class UTXOData(NamedTuple):
-    utxo_hash: str
-    utxo_ix: int
-    amount: int
-    address: str
-    coin: str = DEFAULT_COIN
-    decoded_coin: str = ""
-    datum_hash: str = ""
-
-
-class TxOut(NamedTuple):
-    address: str
-    amount: int
-    coin: str = DEFAULT_COIN
-    datum_hash: str = ""
-
-
-# list of `TxOut`s, empty list, or empty tuple
-OptionalTxOuts = Union[List[TxOut], Tuple[()]]
-# list of `UTXOData`s, empty list, or empty tuple
-OptionalUTXOData = Union[List[UTXOData], Tuple[()]]
-
-
-class ScriptTxIn(NamedTuple):
-    """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
-
-    txins: List[UTXOData]
-    script_file: FileType
-    # values below needed only when working with Plutus
-    collaterals: OptionalUTXOData = ()
-    execution_units: Optional[Tuple[int, int]] = None
-    datum_file: FileType = ""
-    datum_cbor_file: FileType = ""
-    datum_value: str = ""
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
-    redeemer_value: str = ""
-
-
-class ScriptWithdrawal(NamedTuple):
-    """Data structure for withdrawals that are combined with Plutus scripts."""
-
-    txout: TxOut
-    script_file: FileType
-    collaterals: OptionalUTXOData = ()
-    execution_units: Optional[Tuple[int, int]] = None
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
-    redeemer_value: str = ""
-
-
-class ComplexCert(NamedTuple):
-    """Data structure for certificates with optional data for Plutus scripts.
-
-    If used for one certificate, it needs to be used for all the other certificates in a given
-    transaction (instead of `TxFiles.certificate_files`). Otherwise order of certificates
-    cannot be guaranteed.
-    """
-
-    certificate_file: FileType
-    script_file: FileType = ""
-    collaterals: OptionalUTXOData = ()
-    execution_units: Optional[Tuple[int, int]] = None
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
-    redeemer_value: str = ""
-
-
-class Mint(NamedTuple):
-    txouts: List[TxOut]
-    script_file: FileType
-    # values below needed only when working with Plutus
-    collaterals: OptionalUTXOData = ()
-    execution_units: Optional[Tuple[int, int]] = None
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
-    redeemer_value: str = ""
-
-
-# list of `ScriptTxIn`s, empty list, or empty tuple
-OptionalScriptTxIn = Union[List[ScriptTxIn], Tuple[()]]
-# list of `ComplexCert`s, empty list, or empty tuple
-OptionalScriptCerts = Union[List[ComplexCert], Tuple[()]]
-# list of `ScriptWithdrawal`s, empty list, or empty tuple
-OptionalScriptWithdrawals = Union[List[ScriptWithdrawal], Tuple[()]]
-# list of `Mint`s, empty list, or empty tuple
-OptionalMint = Union[List[Mint], Tuple[()]]
-
-
-class TxFiles(NamedTuple):
-    certificate_files: OptionalFiles = ()
-    proposal_files: OptionalFiles = ()
-    metadata_json_files: OptionalFiles = ()
-    metadata_cbor_files: OptionalFiles = ()
-    signing_key_files: OptionalFiles = ()
-    auxiliary_script_files: OptionalFiles = ()
-
-
-class PoolUser(NamedTuple):
-    payment: AddressRecord
-    stake: AddressRecord
-
-
-class PoolData(NamedTuple):
-    pool_name: str
-    pool_pledge: int
-    pool_cost: int
-    pool_margin: float
-    pool_metadata_url: str = ""
-    pool_metadata_hash: str = ""
-    pool_relay_dns: str = ""
-    pool_relay_ipv4: str = ""
-    pool_relay_port: int = 0
-
-
-class TxRawOutput(NamedTuple):
-    txins: List[UTXOData]
-    txouts: List[TxOut]
-    tx_files: TxFiles
-    out_file: Path
-    fee: int
-    era: str = ""
-    script_txins: OptionalScriptTxIn = ()
-    script_withdrawals: OptionalScriptWithdrawals = ()
-    complex_certs: OptionalScriptCerts = ()
-    mint: OptionalMint = ()
-    invalid_hereafter: Optional[int] = None
-    invalid_before: Optional[int] = None
-    withdrawals: OptionalTxOuts = ()
-    change_address: str = ""
-
-
-class PoolCreationOutput(NamedTuple):
-    stake_pool_id: str
-    vrf_key_pair: KeyPair
-    cold_key_pair: ColdKeyPair
-    pool_reg_cert_file: Path
-    pool_data: PoolData
-    pool_owners: List[PoolUser]
-    tx_raw_output: TxRawOutput
-    kes_key_pair: Optional[KeyPair] = None
-
-
-class GenesisKeys(NamedTuple):
-    genesis_utxo_vkey: Path
-    genesis_utxo_skey: Path
-    genesis_vkeys: List[Path]
-    delegate_skeys: List[Path]
-
-
-class PoolParamsTop(NamedTuple):
-    pool_params: dict
-    future_pool_params: dict
-    retiring: Optional[int]
-
-
-class AddressInfo(NamedTuple):
-    address: str
-    era: str
-    encoding: str
-    type: str
-    base16: str
-
-
-class Value(NamedTuple):
-    value: int
-    coin: str
-
-
-class LeadershipSchedule(NamedTuple):
-    slot_no: int
-    utc_time: datetime.datetime
-
-
-class Protocols:
-    CARDANO = "cardano"
-    SHELLEY = "shelley"
-
-
-class Eras:
-    SHELLEY = "shelley"
-    ALLEGRA = "allegra"
-    MARY = "mary"
-    ALONZO = "alonzo"
-
-
-class MultiSigTypeArgs:
-    ALL = "all"
-    ANY = "any"
-    AT_LEAST = "atLeast"
-
-
-class MultiSlotTypeArgs:
-    BEFORE = "before"
-    AFTER = "after"
-
-
-class CLIError(Exception):
-    pass
-
-
-def get_rand_str(length: int = 8) -> str:
-    """Return random ASCII lowercase string."""
-    if length < 1:
-        return ""
-    return "".join(random.choice(string.ascii_lowercase) for i in range(length))
-
-
-def read_address_from_file(addr_file: FileType) -> str:
-    """Read address stored in file."""
-    with open(Path(addr_file).expanduser(), encoding="utf-8") as in_file:
-        return in_file.read().strip()
-
-
-def record_cli_coverage(cli_args: List[str], coverage_dict: dict) -> None:
-    """Record coverage info for CLI commands.
-
-    Args:
-        cli_args: A list of command and it's arguments.
-        coverage_dict: A dictionary with coverage info.
-    """
-    parent_dict = coverage_dict
-    prev_arg = ""
-    for arg in cli_args:
-        # if the current argument is a parameter to an option, skip it
-        if prev_arg.startswith("--") and not arg.startswith("--"):
-            continue
-        prev_arg = arg
-
-        cur_dict = parent_dict.get(arg)
-        # initialize record if it doesn't exist yet
-        if not cur_dict:
-            parent_dict[arg] = {"_count": 0}
-            cur_dict = parent_dict[arg]
-
-        # increment count
-        cur_dict["_count"] += 1
-
-        # set new parent dict
-        if not arg.startswith("--"):
-            parent_dict = cur_dict
 
 
 class ClusterLib:
@@ -326,23 +45,23 @@ class ClusterLib:
     def __init__(
         self,
         state_dir: FileType,
-        protocol: str = Protocols.CARDANO,
+        protocol: str = consts.Protocols.CARDANO,
         tx_era: str = "",
         slots_offset: int = 0,
     ):
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
-        self._rand_str = get_rand_str(4)
+        self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
 
         self.state_dir = Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
-            raise CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
+            raise exceptions.CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
 
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
         self.pparams_compat_file = self.state_dir / f"pparams-{self._rand_str}-compat.json"
 
-        self.genesis_json = self._find_genesis_json()
+        self.genesis_json = clusterlib_helpers._find_genesis_json(clusterlib_obj=self)
         with open(self.genesis_json, encoding="utf-8") as in_json:
             self.genesis = json.load(in_json)
 
@@ -353,12 +72,12 @@ class ClusterLib:
         self.max_kes_evolutions = self.genesis["maxKESEvolutions"]
 
         self.network_magic = self.genesis["networkMagic"]
-        if self.network_magic == MAINNET_MAGIC:
+        if self.network_magic == consts.MAINNET_MAGIC:
             self.magic_args = ["--mainnet"]
         else:
             self.magic_args = ["--testnet-magic", str(self.network_magic)]
 
-        self.slots_offset = slots_offset or SLOTS_OFFSETS.get(self.network_magic) or 0
+        self.slots_offset = slots_offset or consts.SLOTS_OFFSETS.get(self.network_magic) or 0
         self.ttl_length = 1000
         # TODO: proper calculation based on `utxoCostPerWord` needed
         self._min_change_value = 1800_000
@@ -370,43 +89,15 @@ class ClusterLib:
         self.use_cddl = False
 
         self.protocol = protocol
-        self._check_protocol()
+        clusterlib_helpers._check_protocol(clusterlib_obj=self)
 
-        self._genesis_keys: Optional[GenesisKeys] = None
+        self._genesis_keys: Optional[structs.GenesisKeys] = None
         self._genesis_utxo_addr: str = ""
 
         self.overwrite_outfiles = True
 
-    def _find_genesis_json(self) -> Path:
-        """Find shelley genesis JSON file in state dir."""
-        default = self.state_dir / "shelley" / "genesis.json"
-        if default.exists():
-            return default
-
-        potential = [
-            *self.state_dir.glob("*shelley*genesis.json"),
-            *self.state_dir.glob("*genesis*shelley.json"),
-        ]
-        if not potential:
-            raise CLIError(f"Shelley genesis JSON file not found in `{self.state_dir}`.")
-
-        genesis_json = potential[0]
-        LOGGER.debug(f"Using shelley genesis JSON file `{genesis_json}")
-        return genesis_json
-
-    def _check_protocol(self) -> None:
-        """Check that the cluster is running with the expected protocol."""
-        try:
-            self.create_pparams_file()
-        except CLIError as exc:
-            if "SingleEraInfo" not in str(exc):
-                raise
-            raise CLIError(
-                f"The cluster is running with protocol different from '{self.protocol}'."
-            ) from exc
-
     @property
-    def genesis_keys(self) -> GenesisKeys:
+    def genesis_keys(self) -> structs.GenesisKeys:
         """Return tuple with genesis-related keys."""
         if self._genesis_keys:
             return self._genesis_keys
@@ -417,18 +108,18 @@ class ClusterLib:
         delegate_skeys = list(self.state_dir.glob("shelley/delegate-keys/delegate?.skey"))
 
         if not genesis_vkeys:
-            raise CLIError("The genesis verification keys don't exist.")
+            raise exceptions.CLIError("The genesis verification keys don't exist.")
         if not delegate_skeys:
-            raise CLIError("The delegation signing keys don't exist.")
+            raise exceptions.CLIError("The delegation signing keys don't exist.")
 
         for file_name in (
             genesis_utxo_vkey,
             genesis_utxo_skey,
         ):
             if not file_name.exists():
-                raise CLIError(f"The file `{file_name}` doesn't exist.")
+                raise exceptions.CLIError(f"The file `{file_name}` doesn't exist.")
 
-        genesis_keys = GenesisKeys(
+        genesis_keys = structs.GenesisKeys(
             genesis_utxo_vkey=genesis_utxo_skey,
             genesis_utxo_skey=genesis_utxo_skey,
             genesis_vkeys=genesis_vkeys,
@@ -453,50 +144,18 @@ class ClusterLib:
 
         return self._genesis_utxo_addr
 
-    def _check_files_exist(self, *out_files: FileType) -> None:
-        """Check that the output files don't already exist.
-
-        Args:
-            *out_files: Variable length list of expected output files.
-        """
-        if self.overwrite_outfiles:
-            return
-
-        for out_file in out_files:
-            out_file = Path(out_file).expanduser()
-            if out_file.exists():
-                raise CLIError(f"The expected file `{out_file}` already exist.")
-
-    def _check_outfiles(self, *out_files: FileType) -> None:
-        """Check that the expected output files were created.
-
-        Args:
-            *out_files: Variable length list of expected output files.
-        """
-        for out_file in out_files:
-            out_file = Path(out_file).expanduser()
-            if not out_file.exists():
-                raise CLIError(f"The expected file `{out_file}` doesn't exist.")
-
-    def _write_cli_log(self, command: str) -> None:
-        if not self._cli_log:
-            return
-
-        with open(self._cli_log, "a", encoding="utf-8") as logfile:
-            logfile.write(f"{datetime.datetime.now()}: {command}\n")
-
-    def cli_base(self, cli_args: List[str]) -> CLIOut:
+    def cli_base(self, cli_args: List[str]) -> structs.CLIOut:
         """Run a command.
 
         Args:
             cli_args: A list consisting of command and it's arguments.
 
         Returns:
-            CLIOut: A tuple containing command stdout and stderr.
+            structs.CLIOut: A tuple containing command stdout and stderr.
         """
         cmd_str = " ".join(cli_args)
         LOGGER.debug("Running `%s`", cmd_str)
-        self._write_cli_log(cmd_str)
+        clusterlib_helpers._write_cli_log(clusterlib_obj=self, command=cmd_str)
 
         # re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
@@ -518,39 +177,24 @@ class ClusterLib:
                 LOGGER.error(err_msg)
                 time.sleep(0.4)
                 continue
-            raise CLIError(err_msg)
+            raise exceptions.CLIError(err_msg)
         else:
-            raise CLIError(err_msg)
+            raise exceptions.CLIError(err_msg)
 
-        return CLIOut(stdout or b"", stderr or b"")
+        return structs.CLIOut(stdout or b"", stderr or b"")
 
-    def cli(self, cli_args: List[str]) -> CLIOut:
+    def cli(self, cli_args: List[str]) -> structs.CLIOut:
         """Run the `cardano-cli` command.
 
         Args:
             cli_args: A list of arguments for cardano-cli.
 
         Returns:
-            CLIOut: A tuple containing command stdout and stderr.
+            structs.CLIOut: A tuple containing command stdout and stderr.
         """
         cmd = ["cardano-cli", *cli_args]
-        record_cli_coverage(cli_args=cmd, coverage_dict=self.cli_coverage)
+        coverage.record_cli_coverage(cli_args=cmd, coverage_dict=self.cli_coverage)
         return self.cli_base(cmd)
-
-    def _prepend_flag(self, flag: str, contents: UnpackableSequence) -> List[str]:
-        """Prepend flag to every item of the sequence.
-
-        Args:
-            flag: A flag to prepend to every item of the `contents`.
-            contents: A list (iterable) of content to be prepended.
-
-        Returns:
-            List[str]: A list of flag followed by content, see below.
-
-        >>> ClusterLib._prepend_flag(None, "--foo", [1, 2, 3])
-        ['--foo', '1', '--foo', '2', '--foo', '3']
-        """
-        return list(itertools.chain.from_iterable([flag, str(x)] for x in contents))
 
     def query_cli(self, cli_args: UnpackableSequence) -> str:
         """Run the `cardano-cli query` command."""
@@ -594,12 +238,12 @@ class ClusterLib:
         self.create_pparams_file()
         self.refresh_pparams_compat_file()
 
-    def get_utxo(  # noqa: C901
+    def get_utxo(
         self,
         address: str = "",
         txin: str = "",
         coins: UnpackableSequence = (),
-    ) -> List[UTXOData]:
+    ) -> List[structs.UTXOData]:
         """Return UTxO info for payment address.
 
         Args:
@@ -608,7 +252,7 @@ class ClusterLib:
             coins: A list (iterable) of coin names (asset IDs).
 
         Returns:
-            List[UTXOData]: A list of UTxO data.
+            List[structs.UTXOData]: A list of UTxO data.
         """
         cli_args = ["utxo", "--out-file", "/dev/stdout"]
         if address:
@@ -619,63 +263,7 @@ class ClusterLib:
             raise AssertionError("Either `address` or `txin` need to be specified.")
 
         utxo_dict = json.loads(self.query_cli(cli_args))
-
-        utxo = []
-        for utxo_rec, utxo_data in utxo_dict.items():
-            utxo_hash, utxo_ix = utxo_rec.split("#")
-            utxo_address = utxo_data.get("address") or ""
-            addr_data = utxo_data["value"]
-            datum_hash = utxo_data.get("data") or utxo_data.get("datumhash") or ""
-            for policyid, coin_data in addr_data.items():
-                if policyid == DEFAULT_COIN:
-                    utxo.append(
-                        UTXOData(
-                            utxo_hash=utxo_hash,
-                            utxo_ix=int(utxo_ix),
-                            amount=coin_data,
-                            address=address or utxo_address,
-                            coin=DEFAULT_COIN,
-                            datum_hash=datum_hash,
-                        )
-                    )
-                    continue
-
-                # coin data used to be a dict, now it is a list
-                try:
-                    coin_iter = coin_data.items()
-                except AttributeError:
-                    coin_iter = coin_data
-
-                for asset_name, amount in coin_iter:
-                    decoded_coin = ""
-                    if asset_name:
-                        try:
-                            decoded_name = base64.b16decode(
-                                asset_name.encode(), casefold=True
-                            ).decode("utf-8")
-                            decoded_coin = f"{policyid}.{decoded_name}"
-                        except Exception:
-                            pass
-                    else:
-                        decoded_coin = policyid
-
-                    utxo.append(
-                        UTXOData(
-                            utxo_hash=utxo_hash,
-                            utxo_ix=int(utxo_ix),
-                            amount=amount,
-                            address=address or utxo_address,
-                            coin=f"{policyid}.{asset_name}" if asset_name else policyid,
-                            decoded_coin=decoded_coin,
-                            datum_hash=datum_hash,
-                        )
-                    )
-
-        if coins:
-            filtered_utxo = [u for u in utxo if u.coin in coins]
-            return filtered_utxo
-
-        return utxo
+        return txtools.get_utxo(utxo_dict=utxo_dict, address=address, coins=coins)
 
     def get_tip(self) -> dict:
         """Return current tip - last block successfully applied to the ledger."""
@@ -697,7 +285,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_genesis.addr"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -711,8 +299,8 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
-        return read_address_from_file(out_file)
+        helpers._check_outfiles(out_file)
+        return helpers.read_address_from_file(out_file)
 
     def gen_payment_addr(
         self,
@@ -738,7 +326,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}.addr"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         if payment_vkey_file:
             cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
@@ -763,8 +351,8 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
-        return read_address_from_file(out_file)
+        helpers._check_outfiles(out_file)
+        return helpers.read_address_from_file(out_file)
 
     def gen_stake_addr(
         self,
@@ -786,7 +374,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake.addr"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         if stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
@@ -806,8 +394,8 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
-        return read_address_from_file(out_file)
+        helpers._check_outfiles(out_file)
+        return helpers.read_address_from_file(out_file)
 
     def gen_script_addr(
         self, addr_name: str, script_file: FileType, destination_dir: FileType = "."
@@ -829,7 +417,7 @@ class ClusterLib:
 
     def gen_payment_key_pair(
         self, key_name: str, extended: bool = False, destination_dir: FileType = "."
-    ) -> KeyPair:
+    ) -> structs.KeyPair:
         """Generate an address key pair.
 
         Args:
@@ -839,12 +427,12 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A tuple containing the key pair.
         """
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}.vkey"
         skey = destination_dir / f"{key_name}.skey"
-        self._check_files_exist(vkey, skey)
+        clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self)
 
         extended_args = ["--extended-key"] if extended else []
 
@@ -860,10 +448,10 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(vkey, skey)
-        return KeyPair(vkey, skey)
+        helpers._check_outfiles(vkey, skey)
+        return structs.KeyPair(vkey, skey)
 
-    def gen_stake_key_pair(self, key_name: str, destination_dir: FileType = ".") -> KeyPair:
+    def gen_stake_key_pair(self, key_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
         """Generate a stake address key pair.
 
         Args:
@@ -871,12 +459,12 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A tuple containing the key pair.
         """
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_stake.vkey"
         skey = destination_dir / f"{key_name}_stake.skey"
-        self._check_files_exist(vkey, skey)
+        clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self)
 
         self.cli(
             [
@@ -889,8 +477,8 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(vkey, skey)
-        return KeyPair(vkey, skey)
+        helpers._check_outfiles(vkey, skey)
+        return structs.KeyPair(vkey, skey)
 
     def gen_payment_addr_and_keys(
         self,
@@ -898,7 +486,7 @@ class ClusterLib:
         stake_vkey_file: Optional[FileType] = None,
         stake_script_file: Optional[FileType] = None,
         destination_dir: FileType = ".",
-    ) -> AddressRecord:
+    ) -> structs.AddressRecord:
         """Generate payment address and key pair.
 
         Args:
@@ -908,7 +496,7 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            AddressRecord: A tuple containing the address and key pair / script file.
+            structs.AddressRecord: A tuple containing the address and key pair / script file.
         """
         key_pair = self.gen_payment_key_pair(key_name=name, destination_dir=destination_dir)
         addr = self.gen_payment_addr(
@@ -919,11 +507,13 @@ class ClusterLib:
             destination_dir=destination_dir,
         )
 
-        return AddressRecord(
+        return structs.AddressRecord(
             address=addr, vkey_file=key_pair.vkey_file, skey_file=key_pair.skey_file
         )
 
-    def gen_stake_addr_and_keys(self, name: str, destination_dir: FileType = ".") -> AddressRecord:
+    def gen_stake_addr_and_keys(
+        self, name: str, destination_dir: FileType = "."
+    ) -> structs.AddressRecord:
         """Generate stake address and key pair.
 
         Args:
@@ -931,18 +521,18 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            AddressRecord: A tuple containing the address and key pair / script file.
+            structs.AddressRecord: A tuple containing the address and key pair / script file.
         """
         key_pair = self.gen_stake_key_pair(key_name=name, destination_dir=destination_dir)
         addr = self.gen_stake_addr(
             addr_name=name, stake_vkey_file=key_pair.vkey_file, destination_dir=destination_dir
         )
 
-        return AddressRecord(
+        return structs.AddressRecord(
             address=addr, vkey_file=key_pair.vkey_file, skey_file=key_pair.skey_file
         )
 
-    def gen_kes_key_pair(self, node_name: str, destination_dir: FileType = ".") -> KeyPair:
+    def gen_kes_key_pair(self, node_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
         """Generate a key pair for a node KES operational key.
 
         Args:
@@ -950,12 +540,12 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A tuple containing the key pair.
         """
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_kes.vkey"
         skey = destination_dir / f"{node_name}_kes.skey"
-        self._check_files_exist(vkey, skey)
+        clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self)
 
         self.cli(
             [
@@ -968,10 +558,10 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(vkey, skey)
-        return KeyPair(vkey, skey)
+        helpers._check_outfiles(vkey, skey)
+        return structs.KeyPair(vkey, skey)
 
-    def gen_vrf_key_pair(self, node_name: str, destination_dir: FileType = ".") -> KeyPair:
+    def gen_vrf_key_pair(self, node_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
         """Generate a key pair for a node VRF operational key.
 
         Args:
@@ -979,12 +569,12 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A tuple containing the key pair.
         """
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_vrf.vkey"
         skey = destination_dir / f"{node_name}_vrf.skey"
-        self._check_files_exist(vkey, skey)
+        clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self)
 
         self.cli(
             [
@@ -997,12 +587,12 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(vkey, skey)
-        return KeyPair(vkey, skey)
+        helpers._check_outfiles(vkey, skey)
+        return structs.KeyPair(vkey, skey)
 
     def gen_cold_key_pair_and_counter(
         self, node_name: str, destination_dir: FileType = "."
-    ) -> ColdKeyPair:
+    ) -> structs.ColdKeyPair:
         """Generate a key pair for operator's offline key and a new certificate issue counter.
 
         Args:
@@ -1010,13 +600,13 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            ColdKeyPair: A tuple containing the key pair and the counter.
+            structs.ColdKeyPair: A tuple containing the key pair and the counter.
         """
         destination_dir = Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_cold.vkey"
         skey = destination_dir / f"{node_name}_cold.skey"
         counter = destination_dir / f"{node_name}_cold.counter"
-        self._check_files_exist(vkey, skey, counter)
+        clusterlib_helpers._check_files_exist(vkey, skey, counter, clusterlib_obj=self)
 
         self.cli(
             [
@@ -1031,8 +621,8 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(vkey, skey, counter)
-        return ColdKeyPair(vkey, skey, counter)
+        helpers._check_outfiles(vkey, skey, counter)
+        return structs.ColdKeyPair(vkey, skey, counter)
 
     def gen_node_operational_cert(
         self,
@@ -1060,7 +650,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{node_name}.opcert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         kes_period = kes_period if kes_period is not None else self.get_kes_period()
 
@@ -1081,7 +671,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_stake_addr_registration_cert(
@@ -1104,7 +694,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         if stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
@@ -1123,7 +713,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_stake_addr_deregistration_cert(
@@ -1146,7 +736,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         if stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
@@ -1165,7 +755,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_stake_addr_delegation_cert(
@@ -1192,7 +782,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         cli_args = []
         if stake_vkey_file:
@@ -1229,7 +819,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_pool_metadata_hash(self, pool_metadata_file: FileType) -> str:
@@ -1251,7 +841,7 @@ class ClusterLib:
 
     def gen_pool_registration_cert(
         self,
-        pool_data: PoolData,
+        pool_data: structs.PoolData,
         vrf_vkey_file: FileType,
         cold_vkey_file: FileType,
         owner_stake_vkey_files: FileTypeList,
@@ -1261,7 +851,7 @@ class ClusterLib:
         """Generate a stake pool registration certificate.
 
         Args:
-            pool_data: A `PoolData` tuple cointaining info about the stake pool.
+            pool_data: A `structs.PoolData` tuple cointaining info about the stake pool.
             vrf_vkey_file: A path to node VRF vkey file.
             cold_vkey_file: A path to pool cold vkey file.
             owner_stake_vkey_files: A list of paths to pool owner stake vkey files.
@@ -1273,7 +863,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_data.pool_name}_pool_reg.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         metadata_cmd = []
         if pool_data.pool_metadata_url and pool_data.pool_metadata_hash:
@@ -1310,7 +900,7 @@ class ClusterLib:
                 str(reward_account_vkey_file)
                 if reward_account_vkey_file
                 else str(list(owner_stake_vkey_files)[0]),
-                *self._prepend_flag(
+                *helpers._prepend_flag(
                     "--pool-owner-stake-verification-key-file", owner_stake_vkey_files
                 ),
                 *self.magic_args,
@@ -1321,7 +911,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_pool_deregistration_cert(
@@ -1340,7 +930,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_name}_pool_dereg.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -1355,7 +945,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def get_payment_vkey_hash(
@@ -1393,7 +983,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{key_name}.vkey"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -1406,7 +996,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_non_extended_verification_key(
@@ -1427,7 +1017,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{key_name}.vkey"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -1440,7 +1030,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def get_ledger_state(self) -> dict:
@@ -1525,7 +1115,7 @@ class ClusterLib:
     def get_pool_params(
         self,
         stake_pool_id: str,
-    ) -> PoolParamsTop:
+    ) -> structs.PoolParamsTop:
         """Return a pool parameters.
 
         Args:
@@ -1538,31 +1128,31 @@ class ClusterLib:
             self.query_cli(["pool-params", "--stake-pool-id", stake_pool_id])
         )
         retiring = pool_params.get("retiring")  # pool retiring epoch
-        pparams_top = PoolParamsTop(
+        pparams_top = structs.PoolParamsTop(
             pool_params=pool_params.get("poolParams") or {},
             future_pool_params=pool_params.get("futurePoolParams") or {},
             retiring=int(retiring) if retiring is not None else None,
         )
         return pparams_top
 
-    def get_stake_addr_info(self, stake_addr: str) -> StakeAddrInfo:
+    def get_stake_addr_info(self, stake_addr: str) -> structs.StakeAddrInfo:
         """Return the current delegations and reward accounts filtered by stake address.
 
         Args:
             stake_addr: A stake address string.
 
         Returns:
-            StakeAddrInfo: A tuple containing stake address info.
+            structs.StakeAddrInfo: A tuple containing stake address info.
         """
         output_json = json.loads(self.query_cli(["stake-address-info", "--address", stake_addr]))
         if not output_json:
-            return StakeAddrInfo(address="", delegation="", reward_account_balance=0)
+            return structs.StakeAddrInfo(address="", delegation="", reward_account_balance=0)
 
         address_rec = list(output_json)[0]
         address = address_rec.get("address") or ""
         delegation = address_rec.get("delegation") or ""
         reward_account_balance = address_rec.get("rewardAccountBalance") or 0
-        return StakeAddrInfo(
+        return structs.StakeAddrInfo(
             address=address,
             delegation=delegation,
             reward_account_balance=reward_account_balance,
@@ -1600,7 +1190,7 @@ class ClusterLib:
         cold_vkey_file: Optional[FileType] = None,
         stake_pool_id: str = "",
         for_next: bool = False,
-    ) -> List[LeadershipSchedule]:
+    ) -> List[structs.LeadershipSchedule]:
         """Get the slots the node is expected to mint a block in.
 
         Args:
@@ -1612,7 +1202,8 @@ class ClusterLib:
                 epoch (current epoch by default)
 
         Returns:
-            List[LeadershipSchedule]: A list of `LeadershipSchedule`, specifying slot and time.
+            List[structs.LeadershipSchedule]: A list of `structs.LeadershipSchedule`, specifying
+                slot and time.
         """
         args = []
 
@@ -1662,7 +1253,7 @@ class ClusterLib:
             # add miliseconds component of a time string if it is missing
             time_str = time_str if "." in time_str else f"{time_str}.0"
             schedule.append(
-                LeadershipSchedule(
+                structs.LeadershipSchedule(
                     slot_no=int(slot_no),
                     utc_time=datetime.datetime.strptime(
                         f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S.%f"
@@ -1689,7 +1280,7 @@ class ClusterLib:
         era: str = self.get_tip()["era"]
         return era
 
-    def get_address_balance(self, address: str, coin: str = DEFAULT_COIN) -> int:
+    def get_address_balance(self, address: str, coin: str = consts.DEFAULT_COIN) -> int:
         """Get total balance of an address (sum of all UTxO balances).
 
         Args:
@@ -1702,14 +1293,16 @@ class ClusterLib:
         address_balance = functools.reduce(lambda x, y: x + y.amount, utxo, 0)
         return int(address_balance)
 
-    def get_utxo_with_highest_amount(self, address: str, coin: str = DEFAULT_COIN) -> UTXOData:
+    def get_utxo_with_highest_amount(
+        self, address: str, coin: str = consts.DEFAULT_COIN
+    ) -> structs.UTXOData:
         """Return data for UTxO with highest amount.
 
         Args:
             address: A payment address string.
 
         Returns:
-            UTXOData: An UTxO record with the highest amount.
+            structs.UTXOData: An UTxO record with the highest amount.
         """
         utxo = self.get_utxo(address=address, coins=[coin])
         highest_amount_rec = max(utxo, key=lambda x: x.amount)
@@ -1851,25 +1444,25 @@ class ClusterLib:
     def get_address_info(
         self,
         address: str,
-    ) -> AddressInfo:
+    ) -> structs.AddressInfo:
         """Get information about an address.
 
         Args:
             address: A Cardano address.
 
         Returns:
-            AddressInfo: A tuple containing address info.
+            structs.AddressInfo: A tuple containing address info.
         """
         addr_dict: Dict[str, str] = json.loads(
             self.cli(["address", "info", "--address", str(address)]).stdout.rstrip().decode("utf-8")
         )
-        return AddressInfo(**addr_dict)
+        return structs.AddressInfo(**addr_dict)
 
-    def get_tx_deposit(self, tx_files: TxFiles) -> int:
+    def get_tx_deposit(self, tx_files: structs.TxFiles) -> int:
         """Get deposit amount for a transaction (based on certificates used for the TX).
 
         Args:
-            tx_files: A `TxFiles` tuple containing files needed for the transaction.
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
 
         Returns:
             int: A total deposit amount needed for the transaction.
@@ -1895,204 +1488,24 @@ class ClusterLib:
 
         return deposit
 
-    def _organize_tx_ins_outs_by_coin(
-        self, tx_list: Union[List[UTXOData], List[TxOut], Tuple[()]]
-    ) -> Dict[str, list]:
-        """Organize transaction inputs or outputs by coin type."""
-        db: Dict[str, list] = {}
-        for rec in tx_list:
-            if rec.coin not in db:
-                db[rec.coin] = []
-            db[rec.coin].append(rec)
-        return db
-
-    def _organize_utxos_by_id(self, tx_list: List[UTXOData]) -> Dict[str, List[UTXOData]]:
-        """Organize UTxOs by ID (hash#ix)."""
-        db: Dict[str, List[UTXOData]] = {}
-        for rec in tx_list:
-            utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
-            if utxo_id not in db:
-                db[utxo_id] = []
-            db[utxo_id].append(rec)
-        return db
-
-    def _get_utxos_with_coins(self, src_address: str, coins: Set[str]) -> List[UTXOData]:
-        """Get all UTxOs that contain any of the required coins (`coins`)."""
-        txins_all = self.get_utxo(address=src_address)
-        txins_by_id = self._organize_utxos_by_id(txins_all)
-
-        txins = []
-        seen_ids = set()
-        for rec in txins_all:
-            utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
-            if rec.coin in coins and utxo_id not in seen_ids:
-                seen_ids.add(utxo_id)
-                txins.extend(txins_by_id[utxo_id])
-
-        return txins
-
-    def _collect_utxos_amount(self, utxos: List[UTXOData], amount: int) -> List[UTXOData]:
-        """Collect UTxOs so their total combined amount >= `amount`."""
-        collected_utxos: List[UTXOData] = []
-        collected_amount = 0
-        # `_min_change_value` applies only to ADA
-        amount_plus_change = (
-            amount + self._min_change_value if utxos and utxos[0].coin == DEFAULT_COIN else amount
-        )
-        for utxo in utxos:
-            # if we were able to collect exact amount, no change is needed
-            if collected_amount == amount:
-                break
-            # make sure the change is higher than `_min_change_value`
-            if collected_amount >= amount_plus_change:
-                break
-            collected_utxos.append(utxo)
-            collected_amount += utxo.amount
-
-        return collected_utxos
-
-    def _select_utxos(
-        self,
-        txins_db: Dict[str, List[UTXOData]],
-        txouts_passed_db: Dict[str, List[TxOut]],
-        txouts_mint_db: Dict[str, List[TxOut]],
-        fee: int,
-        withdrawals: OptionalTxOuts,
-        deposit: int = 0,
-    ) -> Set[str]:
-        """Select UTxOs that can satisfy all outputs, deposits and fee.
-
-        Return IDs of selected UTxOs.
-        """
-        utxo_ids: Set[str] = set()
-
-        # iterate over coins both in txins and txouts
-        for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
-            coin_txins = txins_db.get(coin) or []
-            coin_txouts = txouts_passed_db.get(coin) or []
-
-            # the value "-1" means all available funds
-            max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
-            if max_index:
-                utxo_ids.update(f"{rec.utxo_hash}#{rec.utxo_ix}" for rec in coin_txins)
-                continue
-
-            total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
-
-            if coin == DEFAULT_COIN:
-                tx_fee = fee if fee > 1 else 1
-                funds_needed = total_output_amount + tx_fee + deposit
-                total_withdrawals_amount = functools.reduce(
-                    lambda x, y: x + y.amount, withdrawals, 0
-                )
-                # fee needs an input, even if withdrawal would cover all needed funds
-                input_funds_needed = max(funds_needed - total_withdrawals_amount, tx_fee)
-            else:
-                coin_txouts_minted = txouts_mint_db.get(coin) or []
-                total_minted_amount = functools.reduce(
-                    lambda x, y: x + y.amount, coin_txouts_minted, 0
-                )
-                # In case of token burning, `total_minted_amount` might be negative.
-                # Try to collect enough funds to satisfy both token burning and token
-                # transfers, even though there might be an overlap.
-                input_funds_needed = total_output_amount - total_minted_amount
-
-            filtered_coin_utxos = self._collect_utxos_amount(
-                utxos=coin_txins, amount=input_funds_needed
-            )
-            utxo_ids.update(f"{rec.utxo_hash}#{rec.utxo_ix}" for rec in filtered_coin_utxos)
-
-        return utxo_ids
-
-    def _balance_txouts(
-        self,
-        src_address: str,
-        txouts: OptionalTxOuts,
-        txins_db: Dict[str, List[UTXOData]],
-        txouts_passed_db: Dict[str, List[TxOut]],
-        txouts_mint_db: Dict[str, List[TxOut]],
-        fee: int,
-        withdrawals: OptionalTxOuts,
-        deposit: int = 0,
-        lovelace_balanced: bool = False,
-    ) -> List[TxOut]:
-        """Balance the transaction by adding change output for each coin."""
-        txouts_result: List[TxOut] = list(txouts)
-
-        # iterate over coins both in txins and txouts
-        for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
-            max_address = None
-            change = 0
-            coin_txins = txins_db.get(coin) or []
-            coin_txouts = txouts_passed_db.get(coin) or []
-
-            # the value "-1" means all available funds
-            max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
-            if len(max_index) > 1:
-                raise CLIError("Cannot send all remaining funds to more than one address.")
-            if max_index:
-                max_address = coin_txouts.pop(max_index[0]).address
-
-            total_input_amount = functools.reduce(lambda x, y: x + y.amount, coin_txins, 0)
-            total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
-
-            if coin == DEFAULT_COIN and lovelace_balanced:
-                # balancing is done elsewhere (by the `transaction build` command)
-                pass
-            elif coin == DEFAULT_COIN:
-                tx_fee = fee if fee > 0 else 0
-                total_withdrawals_amount = functools.reduce(
-                    lambda x, y: x + y.amount, withdrawals, 0
-                )
-                funds_available = total_input_amount + total_withdrawals_amount
-                funds_needed = total_output_amount + tx_fee + deposit
-                change = funds_available - funds_needed
-                if change < 0:
-                    LOGGER.error(
-                        "Not enough funds to make the transaction - "
-                        f"available: {funds_available}; needed: {funds_needed}"
-                    )
-            else:
-                coin_txouts_minted = txouts_mint_db.get(coin) or []
-                total_minted_amount = functools.reduce(
-                    lambda x, y: x + y.amount, coin_txouts_minted, 0
-                )
-                funds_available = total_input_amount + total_minted_amount
-                change = funds_available - total_output_amount
-                if change < 0:
-                    LOGGER.error(
-                        f"Amount of coin `{coin}` is not sufficient - "
-                        f"available: {funds_available}; needed: {total_output_amount}"
-                    )
-
-            if change > 0:
-                txouts_result.append(
-                    TxOut(address=(max_address or src_address), amount=change, coin=coin)
-                )
-
-        # filter out negative amounts (tokens burning and -1 "max" amounts)
-        txouts_result = [r for r in txouts_result if r.amount > 0]
-
-        return txouts_result
-
     def get_tx_ins_outs(
         self,
         src_address: str,
-        tx_files: TxFiles,
-        txins: OptionalUTXOData = (),
-        txouts: OptionalTxOuts = (),
+        tx_files: structs.TxFiles,
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
         fee: int = 0,
         deposit: Optional[int] = None,
-        withdrawals: OptionalTxOuts = (),
-        mint_txouts: OptionalTxOuts = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        mint_txouts: structs.OptionalTxOuts = (),
         lovelace_balanced: bool = False,
-    ) -> Tuple[List[UTXOData], List[TxOut]]:
+    ) -> Tuple[List[structs.UTXOData], List[structs.TxOut]]:
         """Return list of transaction's inputs and outputs.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
-            tx_files: A `TxFiles` tuple containing files needed for the transaction.
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             fee: A fee amount (optional).
             deposit: A deposit amount needed by the transaction (optional).
@@ -2103,187 +1516,47 @@ class ClusterLib:
             Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
                 outputs.
         """
-        txouts_passed_db: Dict[str, List[TxOut]] = self._organize_tx_ins_outs_by_coin(txouts)
-        txouts_mint_db: Dict[str, List[TxOut]] = self._organize_tx_ins_outs_by_coin(mint_txouts)
-        outcoins_all = {DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
-        outcoins_passed = [DEFAULT_COIN, *txouts_passed_db.keys()]
-
-        txins_all = list(txins) or self._get_utxos_with_coins(
-            src_address=src_address, coins=outcoins_all
-        )
-        txins_db_all: Dict[str, List[UTXOData]] = self._organize_tx_ins_outs_by_coin(txins_all)
-
-        tx_deposit = self.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
-
-        if not txins_all:
-            LOGGER.error("No input UTxO.")
-        # all output coins, except those minted by this transaction, need to be present in
-        # transaction inputs
-        elif not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
-            LOGGER.error("Not all output coins are present in input UTxO.")
-
-        if txins:
-            # don't touch txins that were passed to the function
-            txins_filtered = txins_all
-            txins_db_filtered = txins_db_all
-        else:
-            # select only UTxOs that are needed to satisfy all outputs, deposits and fee
-            selected_utxo_ids = self._select_utxos(
-                txins_db=txins_db_all,
-                txouts_passed_db=txouts_passed_db,
-                txouts_mint_db=txouts_mint_db,
-                fee=fee,
-                withdrawals=withdrawals,
-                deposit=tx_deposit,
-            )
-            txins_by_id: Dict[str, List[UTXOData]] = self._organize_utxos_by_id(txins_all)
-            _txins_filtered = [
-                utxo for uid, utxo in txins_by_id.items() if uid in selected_utxo_ids
-            ]
-
-            txins_filtered = list(itertools.chain.from_iterable(_txins_filtered))
-            txins_db_filtered = self._organize_tx_ins_outs_by_coin(txins_filtered)
-
-        if not txins_filtered:
-            LOGGER.error("Cannot build transaction, empty `txins`.")
-
-        # balance the transaction
-        txouts_balanced = self._balance_txouts(
+        return txtools._get_tx_ins_outs(
+            clusterlib_obj=self,
             src_address=src_address,
+            tx_files=tx_files,
+            txins=txins,
             txouts=txouts,
-            txins_db=txins_db_filtered,
-            txouts_passed_db=txouts_passed_db,
-            txouts_mint_db=txouts_mint_db,
             fee=fee,
+            deposit=deposit,
             withdrawals=withdrawals,
-            deposit=tx_deposit,
+            mint_txouts=mint_txouts,
             lovelace_balanced=lovelace_balanced,
         )
-
-        return txins_filtered, txouts_balanced
-
-    def _resolve_withdrawals(self, withdrawals: List[TxOut]) -> List[TxOut]:
-        """Return list of resolved reward withdrawals.
-
-        The `TxOut.amount` can be '-1', meaning all available funds.
-
-        Args:
-            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals.
-
-        Returns:
-            List[TxOut]: A list of `TxOuts`, specifying resolved reward withdrawals.
-        """
-        resolved_withdrawals = []
-        for rec in withdrawals:
-            # the amount with value "-1" means all available balance
-            if rec.amount == -1:
-                balance = self.get_stake_addr_info(rec.address).reward_account_balance
-                resolved_withdrawals.append(TxOut(address=rec.address, amount=balance))
-            else:
-                resolved_withdrawals.append(rec)
-
-        return resolved_withdrawals
-
-    def _get_withdrawals(
-        self, withdrawals: OptionalTxOuts, script_withdrawals: OptionalScriptWithdrawals
-    ) -> Tuple[OptionalTxOuts, OptionalScriptWithdrawals, OptionalTxOuts]:
-        """Return tuple of resolved withdrawals.
-
-        Return simple withdrawals, script withdrawals, combination of all withdrawals Tx outputs.
-        """
-        withdrawals = withdrawals and self._resolve_withdrawals(withdrawals)
-        script_withdrawals = [
-            s._replace(txout=self._resolve_withdrawals([s.txout])[0]) for s in script_withdrawals
-        ]
-        withdrawals_txouts = [*withdrawals, *[s.txout for s in script_withdrawals]]
-        return withdrawals, script_withdrawals, withdrawals_txouts
-
-    def _join_txouts(self, txouts: List[TxOut]) -> List[str]:
-        txout_args: List[str] = []
-        txouts_datum_order: List[str] = []
-        txouts_by_datum: Dict[str, Dict[str, List[str]]] = {}
-
-        # aggregate TX outputs by datum hash and address
-        for rec in txouts:
-            if rec.datum_hash not in txouts_datum_order:
-                txouts_datum_order.append(rec.datum_hash)
-            if rec.datum_hash not in txouts_by_datum:
-                txouts_by_datum[rec.datum_hash] = {}
-            txouts_by_addr = txouts_by_datum[rec.datum_hash]
-            if rec.address not in txouts_by_addr:
-                txouts_by_addr[rec.address] = []
-            coin = f" {rec.coin}" if rec.coin and rec.coin != DEFAULT_COIN else ""
-            txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
-
-        # join txouts with the same address
-        for datum_hash in txouts_datum_order:
-            for addr, amounts in txouts_by_datum[datum_hash].items():
-                amounts_joined = "+".join(amounts)
-                if datum_hash:
-                    txout_args.extend(
-                        [
-                            "--tx-out",
-                            f"{addr}+{amounts_joined}",
-                            "--tx-out-datum-hash",
-                            datum_hash,
-                        ]
-                    )
-                else:
-                    txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
-
-        return txout_args
-
-    def _list_txouts(self, txouts: List[TxOut]) -> List[str]:
-        txout_args: List[str] = []
-
-        for rec in txouts:
-            if rec.datum_hash:
-                txout_args.extend(
-                    [
-                        "--tx-out",
-                        f"{rec.address}+{rec.amount}",
-                        "--tx-out-datum-hash",
-                        rec.datum_hash,
-                    ]
-                )
-            else:
-                txout_args.extend(["--tx-out", f"{rec.address}+{rec.amount}"])
-
-        return txout_args
-
-    def _process_txouts(self, txouts: List[TxOut], join_txouts: bool) -> List[str]:
-        if join_txouts:
-            return self._join_txouts(txouts=txouts)
-        return self._list_txouts(txouts=txouts)
 
     def build_raw_tx_bare(  # noqa: C901
         self,
         out_file: FileType,
-        txouts: List[TxOut],
-        tx_files: TxFiles,
+        txouts: List[structs.TxOut],
+        tx_files: structs.TxFiles,
         fee: int,
-        txins: OptionalUTXOData = (),
-        script_txins: OptionalScriptTxIn = (),
-        mint: OptionalMint = (),
-        complex_certs: OptionalScriptCerts = (),
+        txins: structs.OptionalUTXOData = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        mint: structs.OptionalMint = (),
+        complex_certs: structs.OptionalScriptCerts = (),
         required_signers: OptionalFiles = (),
         required_signer_hashes: Optional[List[str]] = None,
         ttl: Optional[int] = None,
-        withdrawals: OptionalTxOuts = (),
-        script_withdrawals: OptionalScriptWithdrawals = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
         script_valid: bool = True,
         join_txouts: bool = True,
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Build a raw transaction.
 
         Args:
             out_file: An output file.
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs.
-            tx_files: A `TxFiles` tuple containing files needed for the transaction.
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
@@ -2304,7 +1577,7 @@ class ClusterLib:
                 by payment address (True by default).
 
         Returns:
-            TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
         if tx_files.certificate_files and complex_certs:
@@ -2315,12 +1588,12 @@ class ClusterLib:
 
         out_file = Path(out_file)
 
-        withdrawals, script_withdrawals, withdrawals_txouts = self._get_withdrawals(
-            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        withdrawals, script_withdrawals, withdrawals_txouts = txtools._get_withdrawals(
+            clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
         )
 
         required_signer_hashes = required_signer_hashes or []
-        txout_args = self._process_txouts(txouts=txouts, join_txouts=join_txouts)
+        txout_args = txtools._process_txouts(txouts=txouts, join_txouts=join_txouts)
 
         # filter out duplicates
         txins_combined = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
@@ -2359,7 +1632,7 @@ class ClusterLib:
             tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", tin_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
                     "--tx-in-script-file",
                     str(tin.script_file),
                 ]
@@ -2388,7 +1661,7 @@ class ClusterLib:
             mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", mrec_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
                     "--mint-script-file",
                     str(mrec.script_file),
                 ]
@@ -2411,7 +1684,7 @@ class ClusterLib:
             crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", crec_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
                     "--certificate-file",
                     str(crec.certificate_file),
                 ]
@@ -2438,7 +1711,7 @@ class ClusterLib:
             wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", wrec_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
                     "--withdrawal",
                     f"{wrec.txout.address}+{wrec.txout.amount}",
                     "--withdrawal-script-file",
@@ -2482,22 +1755,22 @@ class ClusterLib:
                 "--out-file",
                 str(out_file),
                 *grouped_args,
-                *self._prepend_flag("--tx-in", txins_combined),
+                *helpers._prepend_flag("--tx-in", txins_combined),
                 *txout_args,
-                *self._prepend_flag("--required-signer", required_signers),
-                *self._prepend_flag("--required-signer-hash", required_signer_hashes),
-                *self._prepend_flag("--certificate-file", tx_files.certificate_files),
-                *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
-                *self._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
-                *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
-                *self._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *self._prepend_flag("--withdrawal", withdrawals_combined),
+                *helpers._prepend_flag("--required-signer", required_signers),
+                *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
+                *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
+                *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+                *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
+                *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
+                *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
+                *helpers._prepend_flag("--withdrawal", withdrawals_combined),
                 *cli_args,
                 *self.tx_era_arg,
             ]
         )
 
-        return TxRawOutput(
+        return structs.TxRawOutput(
             txins=list(txins),
             script_txins=script_txins,
             script_withdrawals=script_withdrawals,
@@ -2517,32 +1790,33 @@ class ClusterLib:
         self,
         src_address: str,
         tx_name: str,
-        txins: OptionalUTXOData = (),
-        txouts: OptionalTxOuts = (),
-        script_txins: OptionalScriptTxIn = (),
-        mint: OptionalMint = (),
-        tx_files: Optional[TxFiles] = None,
-        complex_certs: OptionalScriptCerts = (),
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        mint: structs.OptionalMint = (),
+        tx_files: Optional[structs.TxFiles] = None,
+        complex_certs: structs.OptionalScriptCerts = (),
         fee: int = 0,
         ttl: Optional[int] = None,
-        withdrawals: OptionalTxOuts = (),
-        script_withdrawals: OptionalScriptWithdrawals = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Balance inputs and outputs and build a raw transaction.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+                (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             fee: A fee amount (optional).
@@ -2559,19 +1833,19 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
-        tx_files = tx_files or TxFiles()
-        if ttl is None and invalid_hereafter is None and self.tx_era == Eras.SHELLEY:
+        tx_files = tx_files or structs.TxFiles()
+        if ttl is None and invalid_hereafter is None and self.tx_era == consts.Eras.SHELLEY:
             invalid_hereafter = self.calculate_tx_ttl()
 
-        withdrawals, script_withdrawals, withdrawals_txouts = self._get_withdrawals(
-            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        withdrawals, script_withdrawals, withdrawals_txouts = txtools._get_withdrawals(
+            clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
         )
 
         # combine txins and make sure we have enough funds to satisfy all txouts
@@ -2612,7 +1886,7 @@ class ClusterLib:
             join_txouts=join_txouts,
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return tx_raw_output
 
     def estimate_fee(
@@ -2663,15 +1937,15 @@ class ClusterLib:
         src_address: str,
         tx_name: str,
         dst_addresses: Optional[List[str]] = None,
-        txins: OptionalUTXOData = (),
-        txouts: OptionalTxOuts = (),
-        script_txins: OptionalScriptTxIn = (),
-        mint: OptionalMint = (),
-        tx_files: Optional[TxFiles] = None,
-        complex_certs: OptionalScriptCerts = (),
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        mint: structs.OptionalMint = (),
+        tx_files: Optional[structs.TxFiles] = None,
+        complex_certs: structs.OptionalScriptCerts = (),
         ttl: Optional[int] = None,
-        withdrawals: OptionalTxOuts = (),
-        script_withdrawals: OptionalScriptWithdrawals = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
         witness_count_add: int = 0,
@@ -2684,11 +1958,12 @@ class ClusterLib:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
             dst_addresses: A list of destination addresses (optional)
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+                (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             ttl: A last block when the transaction is still valid
@@ -2708,7 +1983,7 @@ class ClusterLib:
             int: An estimated fee.
         """
         # pylint: disable=too-many-arguments
-        tx_files = tx_files or TxFiles()
+        tx_files = tx_files or structs.TxFiles()
         tx_name = f"{tx_name}_estimate"
 
         if dst_addresses and txouts:
@@ -2716,7 +1991,9 @@ class ClusterLib:
                 "The value of `dst_addresses` is ignored when value for `txouts` is available."
             )
 
-        txouts_filled = txouts or [TxOut(address=r, amount=1) for r in (dst_addresses or ())]
+        txouts_filled = txouts or [
+            structs.TxOut(address=r, amount=1) for r in (dst_addresses or ())
+        ]
 
         tx_raw_output = self.build_raw_tx(
             src_address=src_address,
@@ -2749,8 +2026,8 @@ class ClusterLib:
 
     def calculate_min_value(
         self,
-        multi_assets: List[TxOut],
-    ) -> Value:
+        multi_assets: List[structs.TxOut],
+    ) -> structs.Value:
         """Calculate the minimum value in for a transaction.
 
         This was replaced by `calculate_min_req_utxo` for node 1.29.0+.
@@ -2759,7 +2036,7 @@ class ClusterLib:
             multi_assets: A list of `TxOuts`, specifying multi-assets.
 
         Returns:
-            Value: A tuple describing the value.
+            structs.Value: A tuple describing the value.
         """
         warnings.warn("deprecated by `calculate_min_req_utxo` for node 1.29.0+", DeprecationWarning)
 
@@ -2777,19 +2054,19 @@ class ClusterLib:
             ]
         ).stdout
         coin, value = stdout.decode().split()
-        return Value(value=int(value), coin=coin)
+        return structs.Value(value=int(value), coin=coin)
 
     def calculate_min_req_utxo(
         self,
-        txouts: List[TxOut],
-    ) -> Value:
+        txouts: List[structs.TxOut],
+    ) -> structs.Value:
         """Calculate the minimum required UTxO for a transaction output.
 
         Args:
             txouts: A list of `TxOuts` for given address.
 
         Returns:
-            Value: A tuple describing the value.
+            structs.Value: A tuple describing the value.
         """
         if not txouts:
             raise AssertionError("No txout was specified.")
@@ -2822,24 +2099,24 @@ class ClusterLib:
             ]
         ).stdout
         coin, value = stdout.decode().split()
-        return Value(value=int(value), coin=coin)
+        return structs.Value(value=int(value), coin=coin)
 
     def build_tx(  # noqa: C901
         self,
         src_address: str,
         tx_name: str,
-        txins: OptionalUTXOData = (),
-        txouts: OptionalTxOuts = (),
-        script_txins: OptionalScriptTxIn = (),
-        mint: OptionalMint = (),
-        tx_files: Optional[TxFiles] = None,
-        complex_certs: OptionalScriptCerts = (),
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        mint: structs.OptionalMint = (),
+        tx_files: Optional[structs.TxFiles] = None,
+        complex_certs: structs.OptionalScriptCerts = (),
         change_address: str = "",
         fee_buffer: Optional[int] = None,
         required_signers: OptionalFiles = (),
         required_signer_hashes: Optional[List[str]] = None,
-        withdrawals: OptionalTxOuts = (),
-        script_withdrawals: OptionalScriptWithdrawals = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
@@ -2848,17 +2125,18 @@ class ClusterLib:
         calc_script_cost_file: Optional[FileType] = None,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Build a transaction.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+                (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             change_address: A string with address where ADA in excess of the transaction fee
@@ -2884,10 +2162,10 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
-        tx_files = tx_files or TxFiles()
+        tx_files = tx_files or structs.TxFiles()
 
         if tx_files.certificate_files and complex_certs:
             LOGGER.warning(
@@ -2897,10 +2175,10 @@ class ClusterLib:
 
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
-        withdrawals, script_withdrawals, withdrawals_txouts = self._get_withdrawals(
-            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        withdrawals, script_withdrawals, withdrawals_txouts = txtools._get_withdrawals(
+            clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
         )
 
         required_signer_hashes = required_signer_hashes or []
@@ -2930,7 +2208,7 @@ class ClusterLib:
             lovelace_balanced=True,
         )
 
-        txout_args = self._process_txouts(txouts=txouts_copy, join_txouts=join_txouts)
+        txout_args = txtools._process_txouts(txouts=txouts_copy, join_txouts=join_txouts)
 
         # filter out duplicate txins
         txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins_copy}
@@ -2970,7 +2248,7 @@ class ClusterLib:
             tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", tin_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
                     "--tx-in-script-file",
                     str(tin.script_file),
                 ]
@@ -2992,7 +2270,7 @@ class ClusterLib:
             mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", mrec_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
                     "--mint-script-file",
                     str(mrec.script_file),
                 ]
@@ -3008,7 +2286,7 @@ class ClusterLib:
             crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", crec_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
                     "--certificate-file",
                     str(crec.certificate_file),
                 ]
@@ -3028,7 +2306,7 @@ class ClusterLib:
             wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
             grouped_args.extend(
                 [
-                    *self._prepend_flag("--tx-in-collateral", wrec_collaterals),
+                    *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
                     "--withdrawal",
                     f"{wrec.txout.address}+{wrec.txout.amount}",
                     "--withdrawal-script-file",
@@ -3075,16 +2353,16 @@ class ClusterLib:
                 "transaction",
                 "build",
                 *grouped_args,
-                *self._prepend_flag("--tx-in", txins_combined),
+                *helpers._prepend_flag("--tx-in", txins_combined),
                 *txout_args,
-                *self._prepend_flag("--required-signer", required_signers),
-                *self._prepend_flag("--required-signer-hash", required_signer_hashes),
-                *self._prepend_flag("--certificate-file", tx_files.certificate_files),
-                *self._prepend_flag("--update-proposal-file", tx_files.proposal_files),
-                *self._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
-                *self._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
-                *self._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *self._prepend_flag("--withdrawal", withdrawals_combined),
+                *helpers._prepend_flag("--required-signer", required_signers),
+                *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
+                *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
+                *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+                *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
+                *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
+                *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
+                *helpers._prepend_flag("--withdrawal", withdrawals_combined),
                 *cli_args,
                 *self.tx_era_arg,
                 *self.magic_args,
@@ -3098,7 +2376,7 @@ class ClusterLib:
         if "transaction fee" in stdout_dec:
             estimated_fee = int(stdout_dec.split()[-1])
 
-        return TxRawOutput(
+        return structs.TxRawOutput(
             txins=list(txins_copy),
             script_txins=script_txins,
             script_withdrawals=script_withdrawals,
@@ -3137,7 +2415,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.signed"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
@@ -3152,13 +2430,13 @@ class ClusterLib:
                 "sign",
                 *cli_args,
                 *self.magic_args,
-                *self._prepend_flag("--signing-key-file", signing_key_files),
+                *helpers._prepend_flag("--signing-key-file", signing_key_files),
                 "--out-file",
                 str(out_file),
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def witness_tx(
@@ -3181,7 +2459,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{witness_name}_tx.witness"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -3192,11 +2470,11 @@ class ClusterLib:
                 "--out-file",
                 str(out_file),
                 *self.magic_args,
-                *self._prepend_flag("--signing-key-file", signing_key_files),
+                *helpers._prepend_flag("--signing-key-file", signing_key_files),
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def assemble_tx(
@@ -3219,7 +2497,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.witnessed"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -3229,11 +2507,11 @@ class ClusterLib:
                 str(tx_body_file),
                 "--out-file",
                 str(out_file),
-                *self._prepend_flag("--witness-file", witness_files),
+                *helpers._prepend_flag("--witness-file", witness_files),
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def submit_tx_bare(self, tx_file: FileType) -> None:
@@ -3253,12 +2531,14 @@ class ClusterLib:
             ]
         )
 
-    def submit_tx(self, tx_file: FileType, txins: List[UTXOData], wait_blocks: int = 2) -> None:
+    def submit_tx(
+        self, tx_file: FileType, txins: List[structs.UTXOData], wait_blocks: int = 2
+    ) -> None:
         """Submit a transaction, resubmit if the transaction didn't make it to the chain.
 
         Args:
             tx_file: A path to signed transaction file.
-            txins: An iterable of `UTXOData`, specifying input UTxOs.
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs.
             wait_blocks: A number of new blocks to wait for (default = 2).
         """
         txid = ""
@@ -3272,7 +2552,7 @@ class ClusterLib:
                 LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
                 try:
                     self.submit_tx_bare(tx_file)
-                except CLIError as exc:
+                except exceptions.CLIError as exc:
                     # check if resubmitting failed because an input UTxO was already spent
                     if "UtxoFailure (BadInputsUTxO" not in str(exc):
                         raise
@@ -3297,22 +2577,24 @@ class ClusterLib:
                 # spent, but it was not the case. Reraising the exception.
                 raise err
         else:
-            raise CLIError(f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}').")
+            raise exceptions.CLIError(
+                f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
+            )
 
     def send_tx(
         self,
         src_address: str,
         tx_name: str,
-        txins: OptionalUTXOData = (),
-        txouts: OptionalTxOuts = (),
-        script_txins: OptionalScriptTxIn = (),
-        mint: OptionalMint = (),
-        tx_files: Optional[TxFiles] = None,
-        complex_certs: OptionalScriptCerts = (),
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        mint: structs.OptionalMint = (),
+        tx_files: Optional[structs.TxFiles] = None,
+        complex_certs: structs.OptionalScriptCerts = (),
         fee: Optional[int] = None,
         ttl: Optional[int] = None,
-        withdrawals: OptionalTxOuts = (),
-        script_withdrawals: OptionalScriptWithdrawals = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
@@ -3320,17 +2602,18 @@ class ClusterLib:
         join_txouts: bool = True,
         verify_tx: bool = True,
         destination_dir: FileType = ".",
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Build, Sign and Submit a transaction.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+                (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             fee: A fee amount (optional).
@@ -3351,13 +2634,13 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments
-        tx_files = tx_files or TxFiles()
+        tx_files = tx_files or structs.TxFiles()
 
-        withdrawals, script_withdrawals, *__ = self._get_withdrawals(
-            withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        withdrawals, script_withdrawals, *__ = txtools._get_withdrawals(
+            clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
         )
 
         if fee is None:
@@ -3450,7 +2733,7 @@ class ClusterLib:
             "type": script_type_arg,
         }
 
-        if script_type_arg == MultiSigTypeArgs.AT_LEAST:
+        if script_type_arg == consts.MultiSigTypeArgs.AT_LEAST:
             script["required"] = required
 
         with open(out_file, "w", encoding="utf-8") as fp_out:
@@ -3480,18 +2763,18 @@ class ClusterLib:
         self,
         src_address: str,
         tx_name: str,
-        txins: OptionalUTXOData = (),
-        txouts: OptionalTxOuts = (),
-        script_txins: OptionalScriptTxIn = (),
-        mint: OptionalMint = (),
-        tx_files: Optional[TxFiles] = None,
-        complex_certs: OptionalScriptCerts = (),
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        mint: structs.OptionalMint = (),
+        tx_files: Optional[structs.TxFiles] = None,
+        complex_certs: structs.OptionalScriptCerts = (),
         change_address: str = "",
         fee_buffer: Optional[int] = None,
         required_signers: OptionalFiles = (),
         required_signer_hashes: Optional[List[str]] = None,
-        withdrawals: OptionalTxOuts = (),
-        script_withdrawals: OptionalScriptWithdrawals = (),
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         invalid_before: Optional[int] = None,
@@ -3506,11 +2789,12 @@ class ClusterLib:
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
-            txins: An iterable of `UTXOData`, specifying input UTxOs (optional).
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+                (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             change_address: A string with address where ADA in excess of the transaction fee
@@ -3574,7 +2858,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_update.proposal"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -3585,13 +2869,13 @@ class ClusterLib:
                 str(out_file),
                 "--epoch",
                 str(epoch),
-                *self._prepend_flag(
+                *helpers._prepend_flag(
                     "--genesis-verification-key-file", self.genesis_keys.genesis_vkeys
                 ),
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_mir_cert_to_treasury(
@@ -3612,7 +2896,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_mir_to_treasury.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -3626,7 +2910,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_mir_cert_to_rewards(
@@ -3647,7 +2931,7 @@ class ClusterLib:
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_mir_to_rewards.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -3661,7 +2945,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def gen_mir_cert_stake_addr(
@@ -3687,7 +2971,7 @@ class ClusterLib:
         destination_dir = Path(destination_dir).expanduser()
         funds_src = "treasury" if use_treasury else "reserves"
         out_file = destination_dir / f"{tx_name}_{funds_src}_mir_stake.cert"
-        self._check_files_exist(out_file)
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         self.cli(
             [
@@ -3704,7 +2988,7 @@ class ClusterLib:
             ]
         )
 
-        self._check_outfiles(out_file)
+        helpers._check_outfiles(out_file)
         return out_file
 
     def submit_update_proposal(
@@ -3715,7 +2999,7 @@ class ClusterLib:
         tx_name: str,
         epoch: Optional[int] = None,
         destination_dir: FileType = ".",
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Submit an update proposal.
 
         Args:
@@ -3727,7 +3011,7 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A tuple with transaction output details.
         """
         # TODO: assumption is update proposals submitted near beginning of epoch
         epoch = epoch if epoch is not None else self.get_epoch()
@@ -3742,7 +3026,7 @@ class ClusterLib:
         return self.send_tx(
             src_address=src_address,
             tx_name=f"{tx_name}_submit_proposal",
-            tx_files=TxFiles(
+            tx_files=structs.TxFiles(
                 proposal_files=[out_file],
                 signing_key_files=[*self.genesis_keys.delegate_skeys, Path(src_skey_file)],
             ),
@@ -3752,23 +3036,24 @@ class ClusterLib:
     def send_funds(
         self,
         src_address: str,
-        destinations: List[TxOut],
+        destinations: List[structs.TxOut],
         tx_name: str,
-        tx_files: Optional[TxFiles] = None,
+        tx_files: Optional[structs.TxFiles] = None,
         fee: Optional[int] = None,
         ttl: Optional[int] = None,
         deposit: Optional[int] = None,
         invalid_hereafter: Optional[int] = None,
         verify_tx: bool = True,
         destination_dir: FileType = ".",
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Send funds - convenience function for `send_tx`.
 
         Args:
             src_address: An address used for fee and inputs.
             destinations: A list (iterable) of `TxOuts`, specifying transaction outputs.
             tx_name: A name of the transaction.
-            tx_files: A `TxFiles` tuple containing files needed for the transaction (optional).
+            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+                (optional).
             fee: A fee amount (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
@@ -3779,7 +3064,7 @@ class ClusterLib:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments
         return self.send_tx(
@@ -3842,7 +3127,9 @@ class ClusterLib:
             tip_throttle = min(max_tip_throttle, tip_throttle + self.slot_length)
         else:
             waited_sec = (this_slot - initial_slot) * self.slot_length
-            raise CLIError(f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s).")
+            raise exceptions.CLIError(
+                f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s)."
+            )
 
         LOGGER.debug(f"New block(s) were created; block number: {this_block}")
         return this_block
@@ -3870,7 +3157,7 @@ class ClusterLib:
 
             if this_slot == last_slot:
                 if no_block_time >= next_block_timeout:
-                    raise CLIError(
+                    raise exceptions.CLIError(
                         f"Failed to wait for slot number {slot}, no new blocks are being created."
                     )
             else:
@@ -3887,7 +3174,7 @@ class ClusterLib:
             no_block_time += slots_diff
             time.sleep(sleep_time)
 
-        raise CLIError(f"Failed to wait for slot number {slot}.")
+        raise exceptions.CLIError(f"Failed to wait for slot number {slot}.")
 
     def poll_new_epoch(self, exp_epoch: int, padding_seconds: int = 0) -> None:
         """Wait for new epoch(s) by polling current epoch every 3 sec.
@@ -3949,7 +3236,7 @@ class ClusterLib:
         # Still not in the correct epoch? Something is wrong.
         this_epoch = self.get_epoch()
         if this_epoch != exp_epoch:
-            raise CLIError(
+            raise exceptions.CLIError(
                 f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}."
             )
 
@@ -3970,30 +3257,31 @@ class ClusterLib:
 
     def register_stake_pool(
         self,
-        pool_data: PoolData,
-        pool_owners: List[PoolUser],
+        pool_data: structs.PoolData,
+        pool_owners: List[structs.PoolUser],
         vrf_vkey_file: FileType,
-        cold_key_pair: ColdKeyPair,
+        cold_key_pair: structs.ColdKeyPair,
         tx_name: str,
         reward_account_vkey_file: Optional[FileType] = None,
         deposit: Optional[int] = None,
         destination_dir: FileType = ".",
-    ) -> Tuple[Path, TxRawOutput]:
+    ) -> Tuple[Path, structs.TxRawOutput]:
         """Register a stake pool.
 
         Args:
-            pool_data: A `PoolData` tuple cointaining info about the stake pool.
-            pool_owners: A list of `PoolUser` structures containing pool user addresses and keys.
+            pool_data: A `structs.PoolData` tuple cointaining info about the stake pool.
+            pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
+                and keys.
             vrf_vkey_file: A path to node VRF vkey file.
-            cold_key_pair: A `ColdKeyPair` tuple containing the key pair and the counter.
+            cold_key_pair: A `structs.ColdKeyPair` tuple containing the key pair and the counter.
             tx_name: A name of the transaction.
             reward_account_vkey_file: A path to reward account vkey file (optional).
             deposit: A deposit amount needed by the transaction (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, TxRawOutput]: A tuple with pool registration cert file and transaction
-                output details.
+            Tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
+                transaction output details.
         """
         tx_name = f"{tx_name}_reg_pool"
         pool_reg_cert_file = self.gen_pool_registration_cert(
@@ -4006,7 +3294,7 @@ class ClusterLib:
         )
 
         # submit the pool registration certificate through a tx
-        tx_files = TxFiles(
+        tx_files = structs.TxFiles(
             certificate_files=[pool_reg_cert_file],
             signing_key_files=[
                 *[p.payment.skey_file for p in pool_owners],
@@ -4027,26 +3315,27 @@ class ClusterLib:
 
     def deregister_stake_pool(
         self,
-        pool_owners: List[PoolUser],
-        cold_key_pair: ColdKeyPair,
+        pool_owners: List[structs.PoolUser],
+        cold_key_pair: structs.ColdKeyPair,
         epoch: int,
         pool_name: str,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Tuple[Path, TxRawOutput]:
+    ) -> Tuple[Path, structs.TxRawOutput]:
         """Deregister a stake pool.
 
         Args:
-            pool_owners: A list of `PoolUser` structures containing pool user addresses and keys.
-            cold_key_pair: A `ColdKeyPair` tuple containing the key pair and the counter.
+            pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
+                and keys.
+            cold_key_pair: A `structs.ColdKeyPair` tuple containing the key pair and the counter.
             epoch: An epoch where the update proposal will take effect (optional).
             pool_name: A name of the stake pool.
             tx_name: A name of the transaction.
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, TxRawOutput]: A tuple with pool registration cert file and transaction
-                output details.
+            Tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
+                transaction output details.
         """
         tx_name = f"{tx_name}_dereg_pool"
         LOGGER.debug(
@@ -4061,7 +3350,7 @@ class ClusterLib:
         )
 
         # submit the pool deregistration certificate through a tx
-        tx_files = TxFiles(
+        tx_files = structs.TxFiles(
             certificate_files=[pool_dereg_cert_file],
             signing_key_files=[
                 *[p.payment.skey_file for p in pool_owners],
@@ -4081,21 +3370,22 @@ class ClusterLib:
 
     def create_stake_pool(
         self,
-        pool_data: PoolData,
-        pool_owners: List[PoolUser],
+        pool_data: structs.PoolData,
+        pool_owners: List[structs.PoolUser],
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> PoolCreationOutput:
+    ) -> structs.PoolCreationOutput:
         """Create and register a stake pool.
 
         Args:
-            pool_data: A `PoolData` tuple cointaining info about the stake pool.
-            pool_owners: A list of `PoolUser` structures containing pool user addresses and keys.
+            pool_data: A `structs.PoolData` tuple cointaining info about the stake pool.
+            pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
+                and keys.
             tx_name: A name of the transaction.
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            PoolCreationOutput: A tuple containing pool creation output.
+            structs.PoolCreationOutput: A tuple containing pool creation output.
         """
         # create the KES key pair
         node_kes = self.gen_kes_key_pair(
@@ -4130,7 +3420,7 @@ class ClusterLib:
             destination_dir=destination_dir,
         )
 
-        return PoolCreationOutput(
+        return structs.PoolCreationOutput(
             stake_pool_id=self.get_stake_pool_id(node_cold.vkey_file),
             vrf_key_pair=node_vrf,
             cold_key_pair=node_cold,
@@ -4143,17 +3433,17 @@ class ClusterLib:
 
     def withdraw_reward(
         self,
-        stake_addr_record: AddressRecord,
-        dst_addr_record: AddressRecord,
+        stake_addr_record: structs.AddressRecord,
+        dst_addr_record: structs.AddressRecord,
         tx_name: str,
         verify: bool = True,
         destination_dir: FileType = ".",
-    ) -> TxRawOutput:
+    ) -> structs.TxRawOutput:
         """Withdraw reward to payment address.
 
         Args:
-            stake_addr_record: An `AddressRecord` tuple for the stake address with reward.
-            dst_addr_record: An `AddressRecord` tuple for the destination payment address.
+            stake_addr_record: An `structs.AddressRecord` tuple for the stake address with reward.
+            dst_addr_record: An `structs.AddressRecord` tuple for the destination payment address.
             tx_name: A name of the transaction.
             verify: A bool indicating whether to verify that the reward was transferred correctly.
             destination_dir: A path to directory for storing artifacts (optional).
@@ -4161,7 +3451,7 @@ class ClusterLib:
         dst_address = dst_addr_record.address
         src_init_balance = self.get_address_balance(dst_address)
 
-        tx_files_withdrawal = TxFiles(
+        tx_files_withdrawal = structs.TxFiles(
             signing_key_files=[dst_addr_record.skey_file, stake_addr_record.skey_file],
         )
 
@@ -4169,7 +3459,7 @@ class ClusterLib:
             src_address=dst_address,
             tx_name=f"{tx_name}_reward_withdrawal",
             tx_files=tx_files_withdrawal,
-            withdrawals=[TxOut(address=stake_addr_record.address, amount=-1)],
+            withdrawals=[structs.TxOut(address=stake_addr_record.address, amount=-1)],
             destination_dir=destination_dir,
         )
 
@@ -4178,7 +3468,7 @@ class ClusterLib:
 
         # check that reward is 0
         if self.get_stake_addr_info(stake_addr_record.address).reward_account_balance != 0:
-            raise CLIError("Not all rewards were transferred.")
+            raise exceptions.CLIError("Not all rewards were transferred.")
 
         # check that rewards were transferred
         src_reward_balance = self.get_address_balance(dst_address)
@@ -4188,7 +3478,7 @@ class ClusterLib:
             - tx_raw_withdrawal_output.fee
             + tx_raw_withdrawal_output.withdrawals[0].amount  # type: ignore
         ):
-            raise CLIError(f"Incorrect balance for destination address `{dst_address}`.")
+            raise exceptions.CLIError(f"Incorrect balance for destination address `{dst_address}`.")
 
         return tx_raw_withdrawal_output
 
