@@ -2673,6 +2673,7 @@ class ClusterLib:
         withdrawals: OptionalTxOuts = (),
         script_withdrawals: OptionalScriptWithdrawals = (),
         invalid_hereafter: Optional[int] = None,
+        invalid_before: Optional[int] = None,
         witness_count_add: int = 0,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
@@ -2696,6 +2697,7 @@ class ClusterLib:
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
+            invalid_before: A first block when the transaction is valid (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
                 calculation more precise.
             join_txouts: A bool indicating whether to aggregate transaction outputs
@@ -2729,6 +2731,7 @@ class ClusterLib:
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
+            invalid_before=invalid_before,
             deposit=0,
             join_txouts=join_txouts,
             destination_dir=destination_dir,
