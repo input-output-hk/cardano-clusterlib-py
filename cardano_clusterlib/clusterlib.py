@@ -321,7 +321,7 @@ class ClusterLib:
             (e.g. Byron->Mary)
     """
 
-    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
 
     def __init__(
         self,
@@ -340,6 +340,7 @@ class ClusterLib:
             raise CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
 
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
+        self.pparams_compat_file = self.state_dir / f"pparams-{self._rand_str}-compat.json"
 
         self.genesis_json = self._find_genesis_json()
         with open(self.genesis_json, encoding="utf-8") as in_json:
@@ -396,7 +397,7 @@ class ClusterLib:
     def _check_protocol(self) -> None:
         """Check that the cluster is running with the expected protocol."""
         try:
-            self.refresh_pparams_file()
+            self.create_pparams_file()
         except CLIError as exc:
             if "SingleEraInfo" not in str(exc):
                 raise
@@ -567,6 +568,31 @@ class ClusterLib:
     def refresh_pparams_file(self) -> None:
         """Refresh protocol parameters file."""
         self.query_cli(["protocol-parameters", "--out-file", str(self.pparams_file)])
+
+    def refresh_pparams_compat_file(self) -> None:
+        """Refresh backwards compatible protocol parameters file."""
+        with open(self.pparams_file, encoding="utf-8") as in_json:
+            pparams: dict = json.load(in_json)
+
+        if pparams.get("decentralization") is None:
+            pparams["decentralization"] = 0
+
+        with open(self.pparams_compat_file, "w", encoding="utf-8") as fp_out:
+            json.dump(pparams, fp_out, indent=4)
+
+    def create_pparams_file(self) -> None:
+        """Create protocol parameters file if it doesn't exist."""
+        if self.pparams_file.exists():
+            return
+        self.refresh_pparams_file()
+
+    def create_pparams_compat_file(self) -> None:
+        """Create backwards compatible protocol parameters file if it doesn't exist."""
+        if self.pparams_compat_file.exists():
+            return
+
+        self.create_pparams_file()
+        self.refresh_pparams_compat_file()
 
     def get_utxo(  # noqa: C901
         self,
@@ -2437,10 +2463,11 @@ class ClusterLib:
 
         grouped_args_str = " ".join(grouped_args)
         if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
+            self.create_pparams_compat_file()
             grouped_args.extend(
                 [
                     "--protocol-params-file",
-                    str(self.pparams_file),
+                    str(self.pparams_compat_file),
                 ]
             )
 
@@ -2608,7 +2635,7 @@ class ClusterLib:
         Returns:
             int: An estimated fee.
         """
-        self.refresh_pparams_file()
+        self.create_pparams_file()
         stdout = self.cli(
             [
                 "transaction",
@@ -2736,7 +2763,7 @@ class ClusterLib:
         ma_records = [f"{m.amount} {m.coin}" for m in multi_assets]
         ma_args = ["--multi-asset", "+".join(ma_records)] if ma_records else []
 
-        self.refresh_pparams_file()
+        self.create_pparams_file()
         stdout = self.cli(
             [
                 "transaction",
@@ -2778,7 +2805,7 @@ class ClusterLib:
         era = self.get_era()
         era_arg = f"--{era.lower()}-era"
 
-        self.refresh_pparams_file()
+        self.create_pparams_file()
         stdout = self.cli(
             [
                 "transaction",
