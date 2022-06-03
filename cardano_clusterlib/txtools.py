@@ -245,38 +245,94 @@ def _get_withdrawals(
     return withdrawals, script_withdrawals, withdrawals_txouts
 
 
+def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:
+    txout_args = []
+
+    # add datum arguments
+    if txout.datum_hash:
+        txout_args = [
+            "--tx-out-datum-hash",
+            str(txout.datum_hash),
+        ]
+    elif txout.datum_hash_file:
+        txout_args = [
+            "--tx-out-datum-hash-file",
+            str(txout.datum_hash_file),
+        ]
+    elif txout.datum_hash_cbor_file:
+        txout_args = [
+            "--tx-out-datum-hash-cbor-file",
+            str(txout.datum_hash_cbor_file),
+        ]
+    elif txout.datum_hash_value:
+        txout_args = [
+            "--tx-out-datum-hash-value",
+            str(txout.datum_hash_value),
+        ]
+    elif txout.inline_datum_file:
+        txout_args = [
+            "--tx-out-inline-datum-file",
+            str(txout.inline_datum_file),
+        ]
+    elif txout.inline_datum_cbor_file:
+        txout_args = [
+            "--tx-out-inline-datum-cbor-file",
+            str(txout.inline_datum_cbor_file),
+        ]
+    elif txout.inline_datum_value:
+        txout_args = [
+            "--tx-out-inline-datum-value",
+            str(txout.inline_datum_value),
+        ]
+
+    # add regerence spript arguments
+    if txout.reference_script_file:
+        txout_args.extend(
+            [
+                "--tx-out-reference-script-file",
+                str(txout.reference_script_file),
+            ]
+        )
+
+    return txout_args
+
+
 def _join_txouts(txouts: List[structs.TxOut]) -> List[str]:
     txout_args: List[str] = []
     txouts_datum_order: List[str] = []
-    txouts_by_datum: Dict[str, Dict[str, List[str]]] = {}
+    txouts_by_datum: Dict[str, Dict[str, List[structs.TxOut]]] = {}
 
-    # aggregate TX outputs by datum hash and address
+    # aggregate TX outputs by datum and address
     for rec in txouts:
-        if rec.datum_hash not in txouts_datum_order:
-            txouts_datum_order.append(rec.datum_hash)
-        if rec.datum_hash not in txouts_by_datum:
-            txouts_by_datum[rec.datum_hash] = {}
-        txouts_by_addr = txouts_by_datum[rec.datum_hash]
+        datum_src = str(
+            rec.datum_hash
+            or rec.datum_hash_file
+            or rec.datum_hash_cbor_file
+            or rec.datum_hash_value
+            or rec.inline_datum_file
+            or rec.inline_datum_cbor_file
+            or rec.inline_datum_value
+        )
+        if datum_src not in txouts_datum_order:
+            txouts_datum_order.append(datum_src)
+        if datum_src not in txouts_by_datum:
+            txouts_by_datum[datum_src] = {}
+        txouts_by_addr = txouts_by_datum[datum_src]
         if rec.address not in txouts_by_addr:
             txouts_by_addr[rec.address] = []
-        coin = f" {rec.coin}" if rec.coin and rec.coin != consts.DEFAULT_COIN else ""
-        txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
+        txouts_by_addr[rec.address].append(rec)
 
-    # join txouts with the same address
-    for datum_hash in txouts_datum_order:
-        for addr, amounts in txouts_by_datum[datum_hash].items():
+    # join txouts with the same address and datum
+    for datum_src in txouts_datum_order:
+        for addr, recs in txouts_by_datum[datum_src].items():
+            amounts = []
+            for rec in recs:
+                coin = f" {rec.coin}" if rec.coin and rec.coin != consts.DEFAULT_COIN else ""
+                amounts.append(f"{rec.amount}{coin}")
             amounts_joined = "+".join(amounts)
-            if datum_hash:
-                txout_args.extend(
-                    [
-                        "--tx-out",
-                        f"{addr}+{amounts_joined}",
-                        "--tx-out-datum-hash",
-                        datum_hash,
-                    ]
-                )
-            else:
-                txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
+
+            txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
+            txout_args.extend(_get_txout_plutus_args(txout=recs[0]))
 
     return txout_args
 
@@ -285,17 +341,8 @@ def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
     txout_args: List[str] = []
 
     for rec in txouts:
-        if rec.datum_hash:
-            txout_args.extend(
-                [
-                    "--tx-out",
-                    f"{rec.address}+{rec.amount}",
-                    "--tx-out-datum-hash",
-                    rec.datum_hash,
-                ]
-            )
-        else:
-            txout_args.extend(["--tx-out", f"{rec.address}+{rec.amount}"])
+        txout_args.extend(["--tx-out", f"{rec.address}+{rec.amount}"])
+        txout_args.extend(_get_txout_plutus_args(txout=rec))
 
     return txout_args
 

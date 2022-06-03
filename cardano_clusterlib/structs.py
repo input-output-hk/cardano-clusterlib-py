@@ -57,6 +57,13 @@ class TxOut(NamedTuple):
     amount: int
     coin: str = consts.DEFAULT_COIN
     datum_hash: str = ""
+    datum_hash_file: FileType = ""
+    datum_hash_cbor_file: FileType = ""
+    datum_hash_value: str = ""
+    inline_datum_file: FileType = ""
+    inline_datum_cbor_file: FileType = ""
+    inline_datum_value: str = ""
+    reference_script_file: FileType = ""
 
 
 # list of `TxOut`s, empty list, or empty tuple
