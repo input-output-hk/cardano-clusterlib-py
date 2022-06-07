@@ -76,7 +76,9 @@ class ScriptTxIn(NamedTuple):
     """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
 
     txins: List[UTXOData]
-    script_file: FileType
+    script_file: FileType = ""
+    reference_txin: Optional[UTXOData] = None
+    reference_type: str = ""
     # values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None

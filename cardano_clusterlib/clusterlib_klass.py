@@ -1618,121 +1618,13 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
-        grouped_args = []
-
-        for tin in script_txins:
-            if tin.txins:
-                grouped_args.extend(
-                    [
-                        "--tx-in",
-                        # assume that all txin records are for the same UTxO and use the first one
-                        f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
-                    ]
-                )
-            tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
-                    "--tx-in-script-file",
-                    str(tin.script_file),
-                ]
-            )
-            if tin.execution_units:
-                grouped_args.extend(
-                    [
-                        "--tx-in-execution-units",
-                        f"({tin.execution_units[0]},{tin.execution_units[1]})",
-                    ]
-                )
-            if tin.datum_file:
-                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
-            if tin.datum_cbor_file:
-                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
-            if tin.datum_value:
-                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
-            if tin.redeemer_file:
-                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
-            if tin.redeemer_cbor_file:
-                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
-            if tin.redeemer_value:
-                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
-
-        for mrec in mint:
-            mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
-                    "--mint-script-file",
-                    str(mrec.script_file),
-                ]
-            )
-            if mrec.execution_units:
-                grouped_args.extend(
-                    [
-                        "--mint-execution-units",
-                        f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
-                    ]
-                )
-            if mrec.redeemer_file:
-                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
-            if mrec.redeemer_cbor_file:
-                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
-            if mrec.redeemer_value:
-                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
-
-        for crec in complex_certs:
-            crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
-                    "--certificate-file",
-                    str(crec.certificate_file),
-                ]
-            )
-            if crec.script_file:
-                grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
-            if crec.execution_units:
-                grouped_args.extend(
-                    [
-                        "--certificate-execution-units",
-                        f"({crec.execution_units[0]},{crec.execution_units[1]})",
-                    ]
-                )
-            if crec.redeemer_file:
-                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
-            if crec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
-                )
-            if crec.redeemer_value:
-                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
-
-        for wrec in script_withdrawals:
-            wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
-                    "--withdrawal",
-                    f"{wrec.txout.address}+{wrec.txout.amount}",
-                    "--withdrawal-script-file",
-                    str(wrec.script_file),
-                ]
-            )
-            if wrec.execution_units:
-                grouped_args.extend(
-                    [
-                        "--withdrawal-execution-units",
-                        f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
-                    ]
-                )
-            if wrec.redeemer_file:
-                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
-            if wrec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
-                )
-            if wrec.redeemer_value:
-                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+        grouped_args = txtools._get_script_args(
+            script_txins=script_txins,
+            mint=mint,
+            complex_certs=complex_certs,
+            script_withdrawals=script_withdrawals,
+            for_build=False,
+        )
 
         grouped_args_str = " ".join(grouped_args)
         if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
@@ -2164,7 +2056,7 @@ class ClusterLib:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
+        # pylint: disable=too-many-arguments,too-many-locals
         tx_files = tx_files or structs.TxFiles()
 
         if tx_files.certificate_files and complex_certs:
@@ -2234,93 +2126,13 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
-        grouped_args = []
-
-        for tin in script_txins:
-            if tin.txins:
-                grouped_args.extend(
-                    [
-                        "--tx-in",
-                        # assume that all txin records are for the same UTxO and use the first one
-                        f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
-                    ]
-                )
-            tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
-                    "--tx-in-script-file",
-                    str(tin.script_file),
-                ]
-            )
-            if tin.datum_file:
-                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
-            if tin.datum_cbor_file:
-                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
-            if tin.datum_value:
-                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
-            if tin.redeemer_file:
-                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
-            if tin.redeemer_cbor_file:
-                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
-            if tin.redeemer_value:
-                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
-
-        for mrec in mint:
-            mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
-                    "--mint-script-file",
-                    str(mrec.script_file),
-                ]
-            )
-            if mrec.redeemer_file:
-                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
-            if mrec.redeemer_cbor_file:
-                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
-            if mrec.redeemer_value:
-                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
-
-        for crec in complex_certs:
-            crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
-                    "--certificate-file",
-                    str(crec.certificate_file),
-                ]
-            )
-            if crec.script_file:
-                grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
-            if crec.redeemer_file:
-                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
-            if crec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
-                )
-            if crec.redeemer_value:
-                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
-
-        for wrec in script_withdrawals:
-            wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
-                    "--withdrawal",
-                    f"{wrec.txout.address}+{wrec.txout.amount}",
-                    "--withdrawal-script-file",
-                    str(wrec.script_file),
-                ]
-            )
-            if wrec.redeemer_file:
-                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
-            if wrec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
-                )
-            if wrec.redeemer_value:
-                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+        grouped_args = txtools._get_script_args(
+            script_txins=script_txins,
+            mint=mint,
+            complex_certs=complex_certs,
+            script_withdrawals=script_withdrawals,
+            for_build=True,
+        )
 
         grouped_args_str = " ".join(grouped_args)
         if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
