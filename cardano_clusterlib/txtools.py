@@ -12,6 +12,7 @@ from typing import Union
 
 from cardano_clusterlib import consts
 from cardano_clusterlib import exceptions
+from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import types  # pylint: disable=unused-import
 
@@ -245,38 +246,94 @@ def _get_withdrawals(
     return withdrawals, script_withdrawals, withdrawals_txouts
 
 
+def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:
+    txout_args = []
+
+    # add datum arguments
+    if txout.datum_hash:
+        txout_args = [
+            "--tx-out-datum-hash",
+            str(txout.datum_hash),
+        ]
+    elif txout.datum_hash_file:
+        txout_args = [
+            "--tx-out-datum-hash-file",
+            str(txout.datum_hash_file),
+        ]
+    elif txout.datum_hash_cbor_file:
+        txout_args = [
+            "--tx-out-datum-hash-cbor-file",
+            str(txout.datum_hash_cbor_file),
+        ]
+    elif txout.datum_hash_value:
+        txout_args = [
+            "--tx-out-datum-hash-value",
+            str(txout.datum_hash_value),
+        ]
+    elif txout.inline_datum_file:
+        txout_args = [
+            "--tx-out-inline-datum-file",
+            str(txout.inline_datum_file),
+        ]
+    elif txout.inline_datum_cbor_file:
+        txout_args = [
+            "--tx-out-inline-datum-cbor-file",
+            str(txout.inline_datum_cbor_file),
+        ]
+    elif txout.inline_datum_value:
+        txout_args = [
+            "--tx-out-inline-datum-value",
+            str(txout.inline_datum_value),
+        ]
+
+    # add regerence spript arguments
+    if txout.reference_script_file:
+        txout_args.extend(
+            [
+                "--tx-out-reference-script-file",
+                str(txout.reference_script_file),
+            ]
+        )
+
+    return txout_args
+
+
 def _join_txouts(txouts: List[structs.TxOut]) -> List[str]:
     txout_args: List[str] = []
     txouts_datum_order: List[str] = []
-    txouts_by_datum: Dict[str, Dict[str, List[str]]] = {}
+    txouts_by_datum: Dict[str, Dict[str, List[structs.TxOut]]] = {}
 
-    # aggregate TX outputs by datum hash and address
+    # aggregate TX outputs by datum and address
     for rec in txouts:
-        if rec.datum_hash not in txouts_datum_order:
-            txouts_datum_order.append(rec.datum_hash)
-        if rec.datum_hash not in txouts_by_datum:
-            txouts_by_datum[rec.datum_hash] = {}
-        txouts_by_addr = txouts_by_datum[rec.datum_hash]
+        datum_src = str(
+            rec.datum_hash
+            or rec.datum_hash_file
+            or rec.datum_hash_cbor_file
+            or rec.datum_hash_value
+            or rec.inline_datum_file
+            or rec.inline_datum_cbor_file
+            or rec.inline_datum_value
+        )
+        if datum_src not in txouts_datum_order:
+            txouts_datum_order.append(datum_src)
+        if datum_src not in txouts_by_datum:
+            txouts_by_datum[datum_src] = {}
+        txouts_by_addr = txouts_by_datum[datum_src]
         if rec.address not in txouts_by_addr:
             txouts_by_addr[rec.address] = []
-        coin = f" {rec.coin}" if rec.coin and rec.coin != consts.DEFAULT_COIN else ""
-        txouts_by_addr[rec.address].append(f"{rec.amount}{coin}")
+        txouts_by_addr[rec.address].append(rec)
 
-    # join txouts with the same address
-    for datum_hash in txouts_datum_order:
-        for addr, amounts in txouts_by_datum[datum_hash].items():
+    # join txouts with the same address and datum
+    for datum_src in txouts_datum_order:
+        for addr, recs in txouts_by_datum[datum_src].items():
+            amounts = [
+                f"{r.amount} {r.coin if r.coin != consts.DEFAULT_COIN else ''}".rstrip()
+                for r in recs
+            ]
             amounts_joined = "+".join(amounts)
-            if datum_hash:
-                txout_args.extend(
-                    [
-                        "--tx-out",
-                        f"{addr}+{amounts_joined}",
-                        "--tx-out-datum-hash",
-                        datum_hash,
-                    ]
-                )
-            else:
-                txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
+
+            txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
+            txout_args.extend(_get_txout_plutus_args(txout=recs[0]))
 
     return txout_args
 
@@ -285,17 +342,32 @@ def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
     txout_args: List[str] = []
 
     for rec in txouts:
-        if rec.datum_hash:
-            txout_args.extend(
-                [
-                    "--tx-out",
-                    f"{rec.address}+{rec.amount}",
-                    "--tx-out-datum-hash",
-                    rec.datum_hash,
-                ]
-            )
-        else:
-            txout_args.extend(["--tx-out", f"{rec.address}+{rec.amount}"])
+        txout_args.extend(
+            [
+                "--tx-out",
+                f"{rec.address}+{rec.amount} "
+                f"{rec.coin if rec.coin != consts.DEFAULT_COIN else ''}".rstrip(),
+            ]
+        )
+        txout_args.extend(_get_txout_plutus_args(txout=rec))
+
+    return txout_args
+
+
+def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> List[str]:
+    if not txouts:
+        return []
+
+    addresses = {t.address for t in txouts}
+    if len(addresses) > 1:
+        raise AssertionError("Accepts `txouts` only for single address.")
+
+    txout_records = [
+        f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
+    ]
+    # pylint: disable=consider-using-f-string
+    address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
+    txout_args = ["--tx-out-return-collateral", address_value]
 
     return txout_args
 
@@ -464,3 +536,172 @@ def get_utxo(  # noqa: C901
         return filtered_utxo
 
     return utxo
+
+
+def _get_script_args(  # noqa: C901
+    script_txins: structs.OptionalScriptTxIn,
+    mint: structs.OptionalMint,
+    complex_certs: structs.OptionalScriptCerts,
+    script_withdrawals: structs.OptionalScriptWithdrawals,
+    for_build: bool = True,
+) -> List[str]:
+    # pylint: disable=too-many-statements,too-many-branches
+    grouped_args: List[str] = []
+
+    for tin in script_txins:
+        if tin.txins:
+            grouped_args.extend(
+                [
+                    "--tx-in",
+                    # assume that all txin records are for the same UTxO and use the first one
+                    f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
+                ]
+            )
+        tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
+        grouped_args.extend(
+            [
+                *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
+            ]
+        )
+
+        if tin.script_file:
+            grouped_args.extend(
+                [
+                    "--tx-in-script-file",
+                    str(tin.script_file),
+                ]
+            )
+
+            if not for_build and tin.execution_units:
+                grouped_args.extend(
+                    [
+                        "--tx-in-execution-units",
+                        f"({tin.execution_units[0]},{tin.execution_units[1]})",
+                    ]
+                )
+
+            if tin.datum_file:
+                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
+            if tin.datum_cbor_file:
+                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
+            if tin.datum_value:
+                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
+            if tin.redeemer_file:
+                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
+            if tin.redeemer_cbor_file:
+                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
+            if tin.redeemer_value:
+                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
+
+        if tin.reference_txin:
+            grouped_args.extend(
+                [
+                    "--tx-in-reference",
+                    f"{tin.reference_txin.utxo_hash}#{tin.reference_txin.utxo_ix}",
+                ]
+            )
+
+            if tin.reference_type == consts.ScriptTypes.SIMPLE_V1:
+                grouped_args.append("--simple-script-v1")
+            elif tin.reference_type == consts.ScriptTypes.SIMPLE_V2:
+                grouped_args.append("--simple-script-v2")
+            elif tin.reference_type == consts.ScriptTypes.PLUTUS_V2:
+                grouped_args.append("--plutus-script-v2")
+
+            if not for_build and tin.execution_units:
+                grouped_args.extend(
+                    [
+                        "--reference-tx-in-execution-units",
+                        f"({tin.execution_units[0]},{tin.execution_units[1]})",
+                    ]
+                )
+
+            if tin.datum_file:
+                grouped_args.extend(["--reference-tx-in-datum-file", str(tin.datum_file)])
+            if tin.datum_cbor_file:
+                grouped_args.extend(["--reference-tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
+            if tin.datum_value:
+                grouped_args.extend(["--reference-tx-in-datum-value", str(tin.datum_value)])
+            if tin.redeemer_file:
+                grouped_args.extend(["--reference-tx-in-redeemer-file", str(tin.redeemer_file)])
+            if tin.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--reference-tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)]
+                )
+            if tin.redeemer_value:
+                grouped_args.extend(["--reference-tx-in-redeemer-value", str(tin.redeemer_value)])
+
+    for mrec in mint:
+        mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
+        grouped_args.extend(
+            [
+                *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
+                "--mint-script-file",
+                str(mrec.script_file),
+            ]
+        )
+        if not for_build and mrec.execution_units:
+            grouped_args.extend(
+                [
+                    "--mint-execution-units",
+                    f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
+                ]
+            )
+        if mrec.redeemer_file:
+            grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
+        if mrec.redeemer_cbor_file:
+            grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
+        if mrec.redeemer_value:
+            grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
+
+    for crec in complex_certs:
+        crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
+        grouped_args.extend(
+            [
+                *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
+                "--certificate-file",
+                str(crec.certificate_file),
+            ]
+        )
+        if crec.script_file:
+            grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
+        if not for_build and crec.execution_units:
+            grouped_args.extend(
+                [
+                    "--certificate-execution-units",
+                    f"({crec.execution_units[0]},{crec.execution_units[1]})",
+                ]
+            )
+        if crec.redeemer_file:
+            grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
+        if crec.redeemer_cbor_file:
+            grouped_args.extend(["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)])
+        if crec.redeemer_value:
+            grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
+
+    for wrec in script_withdrawals:
+        wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
+        grouped_args.extend(
+            [
+                *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
+                "--withdrawal",
+                f"{wrec.txout.address}+{wrec.txout.amount}",
+                "--withdrawal-script-file",
+                str(wrec.script_file),
+            ]
+        )
+        if not for_build and wrec.execution_units:
+            grouped_args.extend(
+                [
+                    "--withdrawal-execution-units",
+                    f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
+                ]
+            )
+        if wrec.redeemer_file:
+            grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
+        if wrec.redeemer_cbor_file:
+            grouped_args.extend(["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)])
+        if wrec.redeemer_value:
+            grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+
+    return grouped_args

@@ -29,3 +29,10 @@ class MultiSigTypeArgs:
 class MultiSlotTypeArgs:
     BEFORE = "before"
     AFTER = "after"
+
+
+class ScriptTypes:
+    SIMPLE_V1 = "simple_v1"
+    SIMPLE_V2 = "simple_v2"
+    PLUTUS_V1 = "plutus_v1"
+    PLUTUS_V2 = "plutus_v2"

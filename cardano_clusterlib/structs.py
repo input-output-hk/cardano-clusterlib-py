@@ -57,6 +57,13 @@ class TxOut(NamedTuple):
     amount: int
     coin: str = consts.DEFAULT_COIN
     datum_hash: str = ""
+    datum_hash_file: FileType = ""
+    datum_hash_cbor_file: FileType = ""
+    datum_hash_value: str = ""
+    inline_datum_file: FileType = ""
+    inline_datum_cbor_file: FileType = ""
+    inline_datum_value: str = ""
+    reference_script_file: FileType = ""
 
 
 # list of `TxOut`s, empty list, or empty tuple
@@ -69,7 +76,9 @@ class ScriptTxIn(NamedTuple):
     """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
 
     txins: List[UTXOData]
-    script_file: FileType
+    script_file: FileType = ""
+    reference_txin: Optional[UTXOData] = None
+    reference_type: str = ""
     # values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
@@ -172,6 +181,8 @@ class TxRawOutput(NamedTuple):
     invalid_before: Optional[int] = None
     withdrawals: OptionalTxOuts = ()
     change_address: str = ""
+    return_collateral_txouts: OptionalTxOuts = ()
+    total_collateral_amount: Optional[int] = None
 
 
 class PoolCreationOutput(NamedTuple):

@@ -1537,6 +1537,8 @@ class ClusterLib:
         fee: int,
         txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         complex_certs: structs.OptionalScriptCerts = (),
         required_signers: OptionalFiles = (),
@@ -1558,6 +1560,10 @@ class ClusterLib:
             fee: A fee amount.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -1618,121 +1624,13 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
-        grouped_args = []
-
-        for tin in script_txins:
-            if tin.txins:
-                grouped_args.extend(
-                    [
-                        "--tx-in",
-                        # assume that all txin records are for the same UTxO and use the first one
-                        f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
-                    ]
-                )
-            tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
-                    "--tx-in-script-file",
-                    str(tin.script_file),
-                ]
-            )
-            if tin.execution_units:
-                grouped_args.extend(
-                    [
-                        "--tx-in-execution-units",
-                        f"({tin.execution_units[0]},{tin.execution_units[1]})",
-                    ]
-                )
-            if tin.datum_file:
-                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
-            if tin.datum_cbor_file:
-                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
-            if tin.datum_value:
-                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
-            if tin.redeemer_file:
-                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
-            if tin.redeemer_cbor_file:
-                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
-            if tin.redeemer_value:
-                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
-
-        for mrec in mint:
-            mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
-                    "--mint-script-file",
-                    str(mrec.script_file),
-                ]
-            )
-            if mrec.execution_units:
-                grouped_args.extend(
-                    [
-                        "--mint-execution-units",
-                        f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
-                    ]
-                )
-            if mrec.redeemer_file:
-                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
-            if mrec.redeemer_cbor_file:
-                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
-            if mrec.redeemer_value:
-                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
-
-        for crec in complex_certs:
-            crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
-                    "--certificate-file",
-                    str(crec.certificate_file),
-                ]
-            )
-            if crec.script_file:
-                grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
-            if crec.execution_units:
-                grouped_args.extend(
-                    [
-                        "--certificate-execution-units",
-                        f"({crec.execution_units[0]},{crec.execution_units[1]})",
-                    ]
-                )
-            if crec.redeemer_file:
-                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
-            if crec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
-                )
-            if crec.redeemer_value:
-                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
-
-        for wrec in script_withdrawals:
-            wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
-                    "--withdrawal",
-                    f"{wrec.txout.address}+{wrec.txout.amount}",
-                    "--withdrawal-script-file",
-                    str(wrec.script_file),
-                ]
-            )
-            if wrec.execution_units:
-                grouped_args.extend(
-                    [
-                        "--withdrawal-execution-units",
-                        f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
-                    ]
-                )
-            if wrec.redeemer_file:
-                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
-            if wrec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
-                )
-            if wrec.redeemer_value:
-                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+        grouped_args = txtools._get_script_args(
+            script_txins=script_txins,
+            mint=mint,
+            complex_certs=complex_certs,
+            script_withdrawals=script_withdrawals,
+            for_build=False,
+        )
 
         grouped_args_str = " ".join(grouped_args)
         if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
@@ -1743,6 +1641,9 @@ class ClusterLib:
                     str(self.pparams_compat_file),
                 ]
             )
+
+        if total_collateral_amount:
+            cli_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
 
         cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
@@ -1765,6 +1666,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
                 *helpers._prepend_flag("--withdrawal", withdrawals_combined),
+                *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
                 *self.tx_era_arg,
             ]
@@ -1784,6 +1686,8 @@ class ClusterLib:
             invalid_before=invalid_before,
             withdrawals=withdrawals_txouts,
             era=self.tx_era,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
         )
 
     def build_raw_tx(
@@ -1793,6 +1697,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -1814,6 +1720,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -1878,6 +1788,8 @@ class ClusterLib:
             fee=fee,
             txins=txins or txins_copy,
             script_txins=script_txins,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
             mint=mint,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
@@ -1940,6 +1852,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -1961,6 +1875,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -2001,6 +1919,8 @@ class ClusterLib:
             txins=txins,
             txouts=txouts_filled,
             script_txins=script_txins,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
@@ -2075,7 +1995,9 @@ class ClusterLib:
         if len(addresses) > 1:
             raise AssertionError("Accepts `txouts` only for single address.")
 
-        txout_records = [f"{t.amount} {t.coin}" for t in txouts]
+        txout_records = [
+            f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
+        ]
         # pylint: disable=consider-using-f-string
         address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
 
@@ -2108,6 +2030,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -2134,6 +2058,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -2164,7 +2092,7 @@ class ClusterLib:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-statements,too-many-branches,too-many-locals
+        # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
         tx_files = tx_files or structs.TxFiles()
 
         if tx_files.certificate_files and complex_certs:
@@ -2234,93 +2162,13 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
-        grouped_args = []
-
-        for tin in script_txins:
-            if tin.txins:
-                grouped_args.extend(
-                    [
-                        "--tx-in",
-                        # assume that all txin records are for the same UTxO and use the first one
-                        f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
-                    ]
-                )
-            tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
-                    "--tx-in-script-file",
-                    str(tin.script_file),
-                ]
-            )
-            if tin.datum_file:
-                grouped_args.extend(["--tx-in-datum-file", str(tin.datum_file)])
-            if tin.datum_cbor_file:
-                grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
-            if tin.datum_value:
-                grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
-            if tin.redeemer_file:
-                grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
-            if tin.redeemer_cbor_file:
-                grouped_args.extend(["--tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)])
-            if tin.redeemer_value:
-                grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
-
-        for mrec in mint:
-            mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
-                    "--mint-script-file",
-                    str(mrec.script_file),
-                ]
-            )
-            if mrec.redeemer_file:
-                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
-            if mrec.redeemer_cbor_file:
-                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
-            if mrec.redeemer_value:
-                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
-
-        for crec in complex_certs:
-            crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
-                    "--certificate-file",
-                    str(crec.certificate_file),
-                ]
-            )
-            if crec.script_file:
-                grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
-            if crec.redeemer_file:
-                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
-            if crec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
-                )
-            if crec.redeemer_value:
-                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
-
-        for wrec in script_withdrawals:
-            wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
-            grouped_args.extend(
-                [
-                    *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
-                    "--withdrawal",
-                    f"{wrec.txout.address}+{wrec.txout.amount}",
-                    "--withdrawal-script-file",
-                    str(wrec.script_file),
-                ]
-            )
-            if wrec.redeemer_file:
-                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
-            if wrec.redeemer_cbor_file:
-                grouped_args.extend(
-                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
-                )
-            if wrec.redeemer_value:
-                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+        grouped_args = txtools._get_script_args(
+            script_txins=script_txins,
+            mint=mint,
+            complex_certs=complex_certs,
+            script_withdrawals=script_withdrawals,
+            for_build=True,
+        )
 
         grouped_args_str = " ".join(grouped_args)
         if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
@@ -2339,6 +2187,9 @@ class ClusterLib:
 
         if witness_override is not None:
             cli_args.extend(["--witness-override", str(witness_override)])
+
+        if total_collateral_amount:
+            cli_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
 
         cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
@@ -2363,6 +2214,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
                 *helpers._prepend_flag("--withdrawal", withdrawals_combined),
+                *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
                 *self.tx_era_arg,
                 *self.magic_args,
@@ -2391,6 +2243,8 @@ class ClusterLib:
             withdrawals=withdrawals_txouts,
             change_address=change_address or src_address,
             era=self.tx_era,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
         )
 
     def sign_tx(
@@ -2588,6 +2442,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -2611,6 +2467,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -2669,6 +2529,8 @@ class ClusterLib:
             txins=txins,
             txouts=txouts,
             script_txins=script_txins,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
@@ -2688,7 +2550,11 @@ class ClusterLib:
             destination_dir=destination_dir,
         )
         if verify_tx:
-            self.submit_tx(tx_file=tx_signed_file, txins=tx_raw_output.txins)
+            self.submit_tx(
+                tx_file=tx_signed_file,
+                txins=tx_raw_output.txins
+                or [t.txins[0] for t in tx_raw_output.script_txins if t.txins],
+            )
         else:
             self.submit_tx_bare(tx_file=tx_signed_file)
 
@@ -2766,6 +2632,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -2792,6 +2660,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
