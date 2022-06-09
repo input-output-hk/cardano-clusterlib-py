@@ -326,10 +326,10 @@ def _join_txouts(txouts: List[structs.TxOut]) -> List[str]:
     # join txouts with the same address and datum
     for datum_src in txouts_datum_order:
         for addr, recs in txouts_by_datum[datum_src].items():
-            amounts = []
-            for rec in recs:
-                coin = f" {rec.coin}" if rec.coin and rec.coin != consts.DEFAULT_COIN else ""
-                amounts.append(f"{rec.amount}{coin}")
+            amounts = [
+                f"{r.amount} {r.coin if r.coin != consts.DEFAULT_COIN else ''}".rstrip()
+                for r in recs
+            ]
             amounts_joined = "+".join(amounts)
 
             txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])

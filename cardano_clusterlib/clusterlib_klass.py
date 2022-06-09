@@ -1967,7 +1967,9 @@ class ClusterLib:
         if len(addresses) > 1:
             raise AssertionError("Accepts `txouts` only for single address.")
 
-        txout_records = [f"{t.amount} {t.coin}" for t in txouts]
+        txout_records = [
+            f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
+        ]
         # pylint: disable=consider-using-f-string
         address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
 
