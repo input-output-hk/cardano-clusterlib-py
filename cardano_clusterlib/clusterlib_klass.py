@@ -1537,6 +1537,8 @@ class ClusterLib:
         fee: int,
         txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         complex_certs: structs.OptionalScriptCerts = (),
         required_signers: OptionalFiles = (),
@@ -1558,6 +1560,10 @@ class ClusterLib:
             fee: A fee amount.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -1636,6 +1642,9 @@ class ClusterLib:
                 ]
             )
 
+        if total_collateral_amount:
+            cli_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
+
         cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
         self.cli(
@@ -1657,6 +1666,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
                 *helpers._prepend_flag("--withdrawal", withdrawals_combined),
+                *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
                 *self.tx_era_arg,
             ]
@@ -1676,6 +1686,8 @@ class ClusterLib:
             invalid_before=invalid_before,
             withdrawals=withdrawals_txouts,
             era=self.tx_era,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
         )
 
     def build_raw_tx(
@@ -1685,6 +1697,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -1706,6 +1720,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -1770,6 +1788,8 @@ class ClusterLib:
             fee=fee,
             txins=txins or txins_copy,
             script_txins=script_txins,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
             mint=mint,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
@@ -1832,6 +1852,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -1853,6 +1875,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -1893,6 +1919,8 @@ class ClusterLib:
             txins=txins,
             txouts=txouts_filled,
             script_txins=script_txins,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
@@ -2002,6 +2030,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -2028,6 +2058,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -2058,7 +2092,7 @@ class ClusterLib:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-locals
+        # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
         tx_files = tx_files or structs.TxFiles()
 
         if tx_files.certificate_files and complex_certs:
@@ -2154,6 +2188,9 @@ class ClusterLib:
         if witness_override is not None:
             cli_args.extend(["--witness-override", str(witness_override)])
 
+        if total_collateral_amount:
+            cli_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
+
         cli_args.extend(["--cddl-format"] if self.use_cddl else [])
 
         if calc_script_cost_file:
@@ -2177,6 +2214,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
                 *helpers._prepend_flag("--withdrawal", withdrawals_combined),
+                *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
                 *self.tx_era_arg,
                 *self.magic_args,
@@ -2205,6 +2243,8 @@ class ClusterLib:
             withdrawals=withdrawals_txouts,
             change_address=change_address or src_address,
             era=self.tx_era,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
         )
 
     def sign_tx(
@@ -2402,6 +2442,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -2425,6 +2467,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
@@ -2483,6 +2529,8 @@ class ClusterLib:
             txins=txins,
             txouts=txouts,
             script_txins=script_txins,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
@@ -2584,6 +2632,8 @@ class ClusterLib:
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: Optional[int] = None,
         mint: structs.OptionalMint = (),
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
@@ -2610,6 +2660,10 @@ class ClusterLib:
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
