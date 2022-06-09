@@ -2502,7 +2502,11 @@ class ClusterLib:
             destination_dir=destination_dir,
         )
         if verify_tx:
-            self.submit_tx(tx_file=tx_signed_file, txins=tx_raw_output.txins)
+            self.submit_tx(
+                tx_file=tx_signed_file,
+                txins=tx_raw_output.txins
+                or [t.txins[0] for t in tx_raw_output.script_txins if t.txins],
+            )
         else:
             self.submit_tx_bare(tx_file=tx_signed_file)
 
