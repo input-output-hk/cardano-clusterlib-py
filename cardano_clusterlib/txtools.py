@@ -342,7 +342,13 @@ def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
     txout_args: List[str] = []
 
     for rec in txouts:
-        txout_args.extend(["--tx-out", f"{rec.address}+{rec.amount}"])
+        txout_args.extend(
+            [
+                "--tx-out",
+                f"{rec.address}+{rec.amount} "
+                f"{rec.coin if rec.coin != consts.DEFAULT_COIN else ''}".rstrip(),
+            ]
+        )
         txout_args.extend(_get_txout_plutus_args(txout=rec))
 
     return txout_args
