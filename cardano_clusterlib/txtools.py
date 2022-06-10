@@ -586,6 +586,8 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(["--tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
             if tin.datum_value:
                 grouped_args.extend(["--tx-in-datum-value", str(tin.datum_value)])
+            if tin.inline_datum_present:
+                grouped_args.append("--tx-in-inline-datum-present")
             if tin.redeemer_file:
                 grouped_args.extend(["--tx-in-redeemer-file", str(tin.redeemer_file)])
             if tin.redeemer_cbor_file:
@@ -622,6 +624,8 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(["--reference-tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
             if tin.datum_value:
                 grouped_args.extend(["--reference-tx-in-datum-value", str(tin.datum_value)])
+            if tin.inline_datum_present:
+                grouped_args.append("--reference-tx-in-inline-datum-present")
             if tin.redeemer_file:
                 grouped_args.extend(["--reference-tx-in-redeemer-file", str(tin.redeemer_file)])
             if tin.redeemer_cbor_file:
