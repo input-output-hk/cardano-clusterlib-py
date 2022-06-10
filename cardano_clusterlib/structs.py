@@ -85,6 +85,7 @@ class ScriptTxIn(NamedTuple):
     datum_file: FileType = ""
     datum_cbor_file: FileType = ""
     datum_value: str = ""
+    inline_datum_present: bool = False
     redeemer_file: FileType = ""
     redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
