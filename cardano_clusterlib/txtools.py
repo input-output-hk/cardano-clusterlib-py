@@ -486,6 +486,10 @@ def get_utxo(  # noqa: C901
         utxo_address = utxo_data.get("address") or ""
         addr_data = utxo_data["value"]
         datum_hash = utxo_data.get("data") or utxo_data.get("datumhash") or ""
+        inline_datum_hash = utxo_data.get("inlineDatumhash") or ""
+        inline_datum = utxo_data.get("inlineDatum") or None
+        reference_script = utxo_data.get("referenceScript") or None
+
         for policyid, coin_data in addr_data.items():
             if policyid == consts.DEFAULT_COIN:
                 utxo.append(
@@ -496,6 +500,9 @@ def get_utxo(  # noqa: C901
                         address=address or utxo_address,
                         coin=consts.DEFAULT_COIN,
                         datum_hash=datum_hash,
+                        inline_datum_hash=inline_datum_hash,
+                        inline_datum=inline_datum,
+                        reference_script=reference_script,
                     )
                 )
                 continue
@@ -528,6 +535,9 @@ def get_utxo(  # noqa: C901
                         coin=f"{policyid}.{asset_name}" if asset_name else policyid,
                         decoded_coin=decoded_coin,
                         datum_hash=datum_hash,
+                        inline_datum_hash=inline_datum_hash,
+                        inline_datum=inline_datum,
+                        reference_script=reference_script,
                     )
                 )
 

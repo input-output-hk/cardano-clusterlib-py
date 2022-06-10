@@ -50,6 +50,9 @@ class UTXOData(NamedTuple):
     coin: str = consts.DEFAULT_COIN
     decoded_coin: str = ""
     datum_hash: str = ""
+    inline_datum_hash: str = ""
+    inline_datum: Optional[Union[str, dict]] = None
+    reference_script: Optional[dict] = None
 
 
 class TxOut(NamedTuple):
