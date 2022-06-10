@@ -487,8 +487,8 @@ def get_utxo(  # noqa: C901
         addr_data = utxo_data["value"]
         datum_hash = utxo_data.get("data") or utxo_data.get("datumhash") or ""
         inline_datum_hash = utxo_data.get("inlineDatumhash") or ""
-        inline_datum = utxo_data.get("inlineDatum") or None
-        reference_script = utxo_data.get("referenceScript") or None
+        inline_datum = utxo_data.get("inlineDatum")
+        reference_script = utxo_data.get("referenceScript")
 
         for policyid, coin_data in addr_data.items():
             if policyid == consts.DEFAULT_COIN:
