@@ -59,7 +59,6 @@ class ClusterLib:
             raise exceptions.CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
 
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
-        self.pparams_compat_file = self.state_dir / f"pparams-{self._rand_str}-compat.json"
 
         self.genesis_json = clusterlib_helpers._find_genesis_json(clusterlib_obj=self)
         with open(self.genesis_json, encoding="utf-8") as in_json:
@@ -213,30 +212,11 @@ class ClusterLib:
         """Refresh protocol parameters file."""
         self.query_cli(["protocol-parameters", "--out-file", str(self.pparams_file)])
 
-    def refresh_pparams_compat_file(self) -> None:
-        """Refresh backwards compatible protocol parameters file."""
-        with open(self.pparams_file, encoding="utf-8") as in_json:
-            pparams: dict = json.load(in_json)
-
-        if pparams.get("decentralization") is None:
-            pparams["decentralization"] = 0
-
-        with open(self.pparams_compat_file, "w", encoding="utf-8") as fp_out:
-            json.dump(pparams, fp_out, indent=4)
-
     def create_pparams_file(self) -> None:
         """Create protocol parameters file if it doesn't exist."""
         if self.pparams_file.exists():
             return
         self.refresh_pparams_file()
-
-    def create_pparams_compat_file(self) -> None:
-        """Create backwards compatible protocol parameters file if it doesn't exist."""
-        if self.pparams_compat_file.exists():
-            return
-
-        self.create_pparams_file()
-        self.refresh_pparams_compat_file()
 
     def get_utxo(
         self,
@@ -1634,11 +1614,11 @@ class ClusterLib:
 
         grouped_args_str = " ".join(grouped_args)
         if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
-            self.create_pparams_compat_file()
+            self.create_pparams_file()
             grouped_args.extend(
                 [
                     "--protocol-params-file",
-                    str(self.pparams_compat_file),
+                    str(self.pparams_file),
                 ]
             )
 
