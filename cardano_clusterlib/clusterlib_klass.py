@@ -2972,8 +2972,8 @@ class ClusterLib:
             time.sleep((self.slot_length * blocks_to_go) + tip_throttle)
 
             this_tip = self.get_tip()
-            this_slot = this_tip["slot"]
-            this_block = this_tip["block"]
+            this_slot = int(this_tip["slot"])
+            this_block = int(this_tip["block"])
 
             if this_block >= expected_block:
                 break
@@ -3101,16 +3101,17 @@ class ClusterLib:
         LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
         return this_epoch
 
-    def time_to_epoch_end(self) -> float:
+    def time_to_epoch_end(self, tip: Optional[dict] = None) -> float:
         """How many seconds to go to start of a new epoch."""
-        slots_to_go = (self.get_epoch() + 1) * self.epoch_length - (
-            self.get_slot_no() + self.slots_offset - 1
-        )
+        tip = tip or self.get_tip()
+        epoch = int(tip["epoch"])
+        slot = int(tip["slot"])
+        slots_to_go = (epoch + 1) * self.epoch_length - (slot + self.slots_offset - 1)
         return float(slots_to_go * self.slot_length)
 
-    def time_from_epoch_start(self) -> float:
+    def time_from_epoch_start(self, tip: Optional[dict] = None) -> float:
         """How many seconds passed from start of the current epoch."""
-        s_to_epoch_stop = self.time_to_epoch_end()
+        s_to_epoch_stop = self.time_to_epoch_end(tip=tip)
         return float(self.epoch_length_sec - s_to_epoch_stop)
 
     def register_stake_pool(
