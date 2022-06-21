@@ -605,44 +605,56 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
 
         if tin.reference_txin:
-            grouped_args.extend(
-                [
-                    "--tx-in-reference",
-                    f"{tin.reference_txin.utxo_hash}#{tin.reference_txin.utxo_ix}",
-                ]
-            )
+            reference_txin_id = f"{tin.reference_txin.utxo_hash}#{tin.reference_txin.utxo_ix}"
 
-            if tin.reference_type == consts.ScriptTypes.SIMPLE_V1:
-                grouped_args.append("--simple-script-v1")
-            elif tin.reference_type == consts.ScriptTypes.SIMPLE_V2:
-                grouped_args.append("--simple-script-v2")
+            if tin.reference_type in (consts.ScriptTypes.SIMPLE_V1, consts.ScriptTypes.SIMPLE_V2):
+                grouped_args.extend(
+                    [
+                        "--simple-script-tx-in-reference",
+                        reference_txin_id,
+                    ]
+                )
             elif tin.reference_type == consts.ScriptTypes.PLUTUS_V2:
-                grouped_args.append("--plutus-script-v2")
+                grouped_args.extend(
+                    [
+                        "--spending-tx-in-reference",
+                        reference_txin_id,
+                        "--spending-plutus-script-v2",
+                    ]
+                )
 
             if not for_build and tin.execution_units:
                 grouped_args.extend(
                     [
-                        "--reference-tx-in-execution-units",
+                        "--spending-reference-tx-in-execution-units",
                         f"({tin.execution_units[0]},{tin.execution_units[1]})",
                     ]
                 )
 
             if tin.datum_file:
-                grouped_args.extend(["--reference-tx-in-datum-file", str(tin.datum_file)])
+                grouped_args.extend(["--spending-reference-tx-in-datum-file", str(tin.datum_file)])
             if tin.datum_cbor_file:
-                grouped_args.extend(["--reference-tx-in-datum-cbor-file", str(tin.datum_cbor_file)])
+                grouped_args.extend(
+                    ["--spending-reference-tx-in-datum-cbor-file", str(tin.datum_cbor_file)]
+                )
             if tin.datum_value:
-                grouped_args.extend(["--reference-tx-in-datum-value", str(tin.datum_value)])
+                grouped_args.extend(
+                    ["--spending-reference-tx-in-datum-value", str(tin.datum_value)]
+                )
             if tin.inline_datum_present:
-                grouped_args.append("--reference-tx-in-inline-datum-present")
+                grouped_args.append("--spending-reference-tx-in-inline-datum-present")
             if tin.redeemer_file:
-                grouped_args.extend(["--reference-tx-in-redeemer-file", str(tin.redeemer_file)])
+                grouped_args.extend(
+                    ["--spending-reference-tx-in-redeemer-file", str(tin.redeemer_file)]
+                )
             if tin.redeemer_cbor_file:
                 grouped_args.extend(
-                    ["--reference-tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)]
+                    ["--spending-reference-tx-in-redeemer-cbor-file", str(tin.redeemer_cbor_file)]
                 )
             if tin.redeemer_value:
-                grouped_args.extend(["--reference-tx-in-redeemer-value", str(tin.redeemer_value)])
+                grouped_args.extend(
+                    ["--spending-reference-tx-in-redeemer-value", str(tin.redeemer_value)]
+                )
 
     for mrec in mint:
         mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
