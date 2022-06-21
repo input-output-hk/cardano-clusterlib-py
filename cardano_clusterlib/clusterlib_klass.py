@@ -2092,7 +2092,11 @@ class ClusterLib:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
+        # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
+        max_txout = [o for o in txouts if o.amount == -1 and o.coin in ("", consts.DEFAULT_COIN)]
+        if max_txout and change_address:
+            raise AssertionError("Cannot use '-1' amount and change address at the same time.")
+
         tx_files = tx_files or structs.TxFiles()
 
         if tx_files.certificate_files and complex_certs:
@@ -2180,7 +2184,9 @@ class ClusterLib:
             )
 
         cli_args.append("--change-address")
-        if change_address:
+        if max_txout:
+            cli_args.append(max_txout[0].address)
+        elif change_address:
             cli_args.append(change_address)
         else:
             cli_args.append(src_address)
