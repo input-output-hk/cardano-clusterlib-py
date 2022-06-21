@@ -1516,6 +1516,7 @@ class ClusterLib:
         tx_files: structs.TxFiles,
         fee: int,
         txins: structs.OptionalUTXOData = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
         total_collateral_amount: Optional[int] = None,
@@ -1539,6 +1540,8 @@ class ClusterLib:
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
             fee: A fee amount.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
                 for excess collateral (optional).
@@ -1604,6 +1607,9 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
+        for txin in readonly_reference_txins:
+            cli_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
+
         grouped_args = txtools._get_script_args(
             script_txins=script_txins,
             mint=mint,
@@ -1668,6 +1674,7 @@ class ClusterLib:
             era=self.tx_era,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
+            readonly_reference_txins=readonly_reference_txins,
         )
 
     def build_raw_tx(
@@ -1676,6 +1683,7 @@ class ClusterLib:
         tx_name: str,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
         total_collateral_amount: Optional[int] = None,
@@ -1699,6 +1707,8 @@ class ClusterLib:
             tx_name: A name of the transaction.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
                 for excess collateral (optional).
@@ -1767,6 +1777,7 @@ class ClusterLib:
             tx_files=tx_files,
             fee=fee,
             txins=txins or txins_copy,
+            readonly_reference_txins=readonly_reference_txins,
             script_txins=script_txins,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
@@ -1831,6 +1842,7 @@ class ClusterLib:
         dst_addresses: Optional[List[str]] = None,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
         total_collateral_amount: Optional[int] = None,
@@ -1854,6 +1866,8 @@ class ClusterLib:
             dst_addresses: A list of destination addresses (optional)
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
                 for excess collateral (optional).
@@ -1898,6 +1912,7 @@ class ClusterLib:
             tx_name=tx_name,
             txins=txins,
             txouts=txouts_filled,
+            readonly_reference_txins=readonly_reference_txins,
             script_txins=script_txins,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
@@ -2009,6 +2024,7 @@ class ClusterLib:
         tx_name: str,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
         total_collateral_amount: Optional[int] = None,
@@ -2037,6 +2053,8 @@ class ClusterLib:
             tx_name: A name of the transaction.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
                 for excess collateral (optional).
@@ -2146,6 +2164,9 @@ class ClusterLib:
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
+        for txin in readonly_reference_txins:
+            cli_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
+
         grouped_args = txtools._get_script_args(
             script_txins=script_txins,
             mint=mint,
@@ -2231,6 +2252,7 @@ class ClusterLib:
             era=self.tx_era,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
+            readonly_reference_txins=readonly_reference_txins,
         )
 
     def sign_tx(
@@ -2427,6 +2449,7 @@ class ClusterLib:
         tx_name: str,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
         total_collateral_amount: Optional[int] = None,
@@ -2452,6 +2475,8 @@ class ClusterLib:
             tx_name: A name of the transaction.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
                 for excess collateral (optional).
@@ -2495,6 +2520,7 @@ class ClusterLib:
                 tx_name=tx_name,
                 txins=txins,
                 txouts=txouts,
+                readonly_reference_txins=readonly_reference_txins,
                 script_txins=script_txins,
                 mint=mint,
                 tx_files=tx_files,
@@ -2514,6 +2540,7 @@ class ClusterLib:
             tx_name=tx_name,
             txins=txins,
             txouts=txouts,
+            readonly_reference_txins=readonly_reference_txins,
             script_txins=script_txins,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
@@ -2617,6 +2644,7 @@ class ClusterLib:
         tx_name: str,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
         total_collateral_amount: Optional[int] = None,
@@ -2645,6 +2673,8 @@ class ClusterLib:
             tx_name: A name of the transaction.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
             script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
             return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
                 for excess collateral (optional).
