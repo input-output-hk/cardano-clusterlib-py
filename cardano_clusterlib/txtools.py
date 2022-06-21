@@ -11,7 +11,6 @@ from typing import Tuple
 from typing import Union
 
 from cardano_clusterlib import consts
-from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import types  # pylint: disable=unused-import
@@ -156,7 +155,7 @@ def _balance_txouts(
         # the value "-1" means all available funds
         max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
         if len(max_index) > 1:
-            raise exceptions.CLIError("Cannot send all remaining funds to more than one address.")
+            raise AssertionError("Cannot send all remaining funds to more than one address.")
         if max_index:
             max_address = coin_txouts.pop(max_index[0]).address
 
