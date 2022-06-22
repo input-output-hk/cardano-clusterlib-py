@@ -557,6 +557,7 @@ def _get_script_args(  # noqa: C901
     # pylint: disable=too-many-statements,too-many-branches
     grouped_args: List[str] = []
 
+    # spending
     for tin in script_txins:
         if tin.txins:
             grouped_args.extend(
@@ -605,23 +606,26 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(["--tx-in-redeemer-value", str(tin.redeemer_value)])
 
         if tin.reference_txin:
-            reference_txin_id = f"{tin.reference_txin.utxo_hash}#{tin.reference_txin.utxo_ix}"
+            tin_reference_txin_id = f"{tin.reference_txin.utxo_hash}#{tin.reference_txin.utxo_ix}"
+            tin_reference_type = tin.reference_type or consts.ScriptTypes.PLUTUS_V2
 
-            if tin.reference_type in (consts.ScriptTypes.SIMPLE_V1, consts.ScriptTypes.SIMPLE_V2):
+            if tin_reference_type in (consts.ScriptTypes.SIMPLE_V1, consts.ScriptTypes.SIMPLE_V2):
                 grouped_args.extend(
                     [
                         "--simple-script-tx-in-reference",
-                        reference_txin_id,
+                        tin_reference_txin_id,
                     ]
                 )
-            elif tin.reference_type == consts.ScriptTypes.PLUTUS_V2:
+            else:
                 grouped_args.extend(
                     [
                         "--spending-tx-in-reference",
-                        reference_txin_id,
-                        "--spending-plutus-script-v2",
+                        tin_reference_txin_id,
                     ]
                 )
+
+            if tin.reference_type == consts.ScriptTypes.PLUTUS_V2:
+                grouped_args.append("--spending-plutus-script-v2")
 
             if not for_build and tin.execution_units:
                 grouped_args.extend(
@@ -656,29 +660,74 @@ def _get_script_args(  # noqa: C901
                     ["--spending-reference-tx-in-redeemer-value", str(tin.redeemer_value)]
                 )
 
+    # minting
     for mrec in mint:
         mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
         grouped_args.extend(
             [
                 *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
-                "--mint-script-file",
-                str(mrec.script_file),
             ]
         )
-        if not for_build and mrec.execution_units:
+
+        if mrec.script_file:
             grouped_args.extend(
                 [
-                    "--mint-execution-units",
-                    f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
+                    "--mint-script-file",
+                    str(mrec.script_file),
                 ]
             )
-        if mrec.redeemer_file:
-            grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
-        if mrec.redeemer_cbor_file:
-            grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
-        if mrec.redeemer_value:
-            grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
 
+            if not for_build and mrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--mint-execution-units",
+                        f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
+                    ]
+                )
+
+            if mrec.redeemer_file:
+                grouped_args.extend(["--mint-redeemer-file", str(mrec.redeemer_file)])
+            if mrec.redeemer_cbor_file:
+                grouped_args.extend(["--mint-redeemer-cbor-file", str(mrec.redeemer_cbor_file)])
+            if mrec.redeemer_value:
+                grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
+
+        if mrec.reference_txin:
+            grouped_args.extend(
+                [
+                    "--mint-tx-in-reference",
+                    f"{mrec.reference_txin.utxo_hash}#{mrec.reference_txin.utxo_ix}",
+                ]
+            )
+
+            mrec_reference_type = mrec.reference_type or consts.ScriptTypes.PLUTUS_V2
+            if mrec_reference_type == consts.ScriptTypes.PLUTUS_V2:
+                grouped_args.append("--mint-plutus-script-v2")
+
+            if not for_build and mrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--mint-reference-execution-units",
+                        f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
+                    ]
+                )
+
+            if mrec.redeemer_file:
+                grouped_args.extend(
+                    ["--mint-reference-tx-in-redeemer-file", str(mrec.redeemer_file)]
+                )
+            if mrec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--mint-reference-tx-in-redeemer-cbor-file", str(mrec.redeemer_cbor_file)]
+                )
+            if mrec.redeemer_value:
+                grouped_args.extend(
+                    ["--mint-reference-tx-in-redeemer-value", str(mrec.redeemer_value)]
+                )
+            if mrec.policyid:
+                grouped_args.extend(["--policy-id", str(mrec.policyid)])
+
+    # certificates
     for crec in complex_certs:
         crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
         grouped_args.extend(
@@ -688,22 +737,64 @@ def _get_script_args(  # noqa: C901
                 str(crec.certificate_file),
             ]
         )
+
         if crec.script_file:
             grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
-        if not for_build and crec.execution_units:
+
+            if not for_build and crec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--certificate-execution-units",
+                        f"({crec.execution_units[0]},{crec.execution_units[1]})",
+                    ]
+                )
+
+            if crec.redeemer_file:
+                grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
+            if crec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)]
+                )
+            if crec.redeemer_value:
+                grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
+
+        if crec.reference_txin:
             grouped_args.extend(
                 [
-                    "--certificate-execution-units",
-                    f"({crec.execution_units[0]},{crec.execution_units[1]})",
+                    "--certificate-tx-in-reference",
+                    f"{crec.reference_txin.utxo_hash}#{crec.reference_txin.utxo_ix}",
                 ]
             )
-        if crec.redeemer_file:
-            grouped_args.extend(["--certificate-redeemer-file", str(crec.redeemer_file)])
-        if crec.redeemer_cbor_file:
-            grouped_args.extend(["--certificate-redeemer-cbor-file", str(crec.redeemer_cbor_file)])
-        if crec.redeemer_value:
-            grouped_args.extend(["--certificate-redeemer-value", str(crec.redeemer_value)])
 
+            crec_reference_type = crec.reference_type or consts.ScriptTypes.PLUTUS_V2
+            if crec_reference_type == consts.ScriptTypes.PLUTUS_V2:
+                grouped_args.append("--certificate-plutus-script-v2")
+
+            if not for_build and crec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--certificate-reference-execution-units",
+                        f"({crec.execution_units[0]},{crec.execution_units[1]})",
+                    ]
+                )
+
+            if crec.redeemer_file:
+                grouped_args.extend(
+                    ["--certificate-reference-tx-in-redeemer-file", str(crec.redeemer_file)]
+                )
+            if crec.redeemer_cbor_file:
+                grouped_args.extend(
+                    [
+                        "--certificate-reference-tx-in-redeemer-cbor-file",
+                        str(crec.redeemer_cbor_file),
+                    ]
+                )
+            if crec.redeemer_value:
+                grouped_args.extend(
+                    ["--certificate-reference-tx-in-redeemer-value", str(crec.redeemer_value)]
+                )
+
+    # withdrawals
     for wrec in script_withdrawals:
         wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
         grouped_args.extend(
@@ -711,22 +802,68 @@ def _get_script_args(  # noqa: C901
                 *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
                 "--withdrawal",
                 f"{wrec.txout.address}+{wrec.txout.amount}",
-                "--withdrawal-script-file",
-                str(wrec.script_file),
             ]
         )
-        if not for_build and wrec.execution_units:
+
+        if wrec.script_file:
             grouped_args.extend(
                 [
-                    "--withdrawal-execution-units",
-                    f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
+                    "--withdrawal-script-file",
+                    str(wrec.script_file),
                 ]
             )
-        if wrec.redeemer_file:
-            grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
-        if wrec.redeemer_cbor_file:
-            grouped_args.extend(["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)])
-        if wrec.redeemer_value:
-            grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+
+            if not for_build and wrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--withdrawal-execution-units",
+                        f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
+                    ]
+                )
+
+            if wrec.redeemer_file:
+                grouped_args.extend(["--withdrawal-redeemer-file", str(wrec.redeemer_file)])
+            if wrec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--withdrawal-redeemer-cbor-file", str(wrec.redeemer_cbor_file)]
+                )
+            if wrec.redeemer_value:
+                grouped_args.extend(["--withdrawal-redeemer-value", str(wrec.redeemer_value)])
+
+        if wrec.reference_txin:
+            grouped_args.extend(
+                [
+                    "--withdrawal-tx-in-reference",
+                    f"{wrec.reference_txin.utxo_hash}#{wrec.reference_txin.utxo_ix}",
+                ]
+            )
+
+            wrec_reference_type = wrec.reference_type or consts.ScriptTypes.PLUTUS_V2
+            if wrec_reference_type == consts.ScriptTypes.PLUTUS_V2:
+                grouped_args.append("--withdrawal-plutus-script-v2")
+
+            if not for_build and wrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--withdrawal-reference-execution-units",
+                        f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
+                    ]
+                )
+
+            if wrec.redeemer_file:
+                grouped_args.extend(
+                    ["--withdrawal-reference-tx-in-redeemer-file", str(wrec.redeemer_file)]
+                )
+            if wrec.redeemer_cbor_file:
+                grouped_args.extend(
+                    [
+                        "--withdrawal-reference-tx-in-redeemer-cbor-file",
+                        str(wrec.redeemer_cbor_file),
+                    ]
+                )
+            if wrec.redeemer_value:
+                grouped_args.extend(
+                    ["--withdrawal-reference-tx-in-redeemer-value", str(wrec.redeemer_value)]
+                )
 
     return grouped_args

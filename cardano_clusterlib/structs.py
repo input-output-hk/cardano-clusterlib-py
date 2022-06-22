@@ -98,7 +98,9 @@ class ScriptWithdrawal(NamedTuple):
     """Data structure for withdrawals that are combined with Plutus scripts."""
 
     txout: TxOut
-    script_file: FileType
+    script_file: FileType = ""
+    reference_txin: Optional[UTXOData] = None
+    reference_type: str = ""
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
@@ -116,6 +118,8 @@ class ComplexCert(NamedTuple):
 
     certificate_file: FileType
     script_file: FileType = ""
+    reference_txin: Optional[UTXOData] = None
+    reference_type: str = ""
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
@@ -125,13 +129,16 @@ class ComplexCert(NamedTuple):
 
 class Mint(NamedTuple):
     txouts: List[TxOut]
-    script_file: FileType
+    script_file: FileType = ""
+    reference_txin: Optional[UTXOData] = None
+    reference_type: str = ""
     # values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
     redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
+    policyid: str = ""
 
 
 # list of `ScriptTxIn`s, empty list, or empty tuple
