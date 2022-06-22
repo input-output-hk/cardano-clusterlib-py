@@ -2496,6 +2496,8 @@ class ClusterLib:
                 txins=txins,
                 txouts=txouts,
                 script_txins=script_txins,
+                return_collateral_txouts=return_collateral_txouts,
+                total_collateral_amount=total_collateral_amount,
                 mint=mint,
                 tx_files=tx_files,
                 complex_certs=complex_certs,
@@ -2506,6 +2508,7 @@ class ClusterLib:
                 join_txouts=join_txouts,
                 destination_dir=destination_dir,
             )
+
             # add 10% to the estimated fee, as the estimation is not precise enough
             fee = int(fee * 1.1)
 
