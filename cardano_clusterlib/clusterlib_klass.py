@@ -222,6 +222,7 @@ class ClusterLib:
         self,
         address: str = "",
         txin: str = "",
+        utxo: Optional[structs.UTXOData] = None,
         coins: UnpackableSequence = (),
     ) -> List[structs.UTXOData]:
         """Return UTxO info for payment address.
@@ -229,7 +230,8 @@ class ClusterLib:
         Args:
             address: A payment address.
             txin: A transaction input (TxId#TxIx).
-            coins: A list (iterable) of coin names (asset IDs).
+            utxo: A representation of UTxO data (`structs.UTXOData`).
+            coins: A list (iterable) of coin names (asset IDs, optional).
 
         Returns:
             List[structs.UTXOData]: A list of UTxO data.
@@ -237,10 +239,12 @@ class ClusterLib:
         cli_args = ["utxo", "--out-file", "/dev/stdout"]
         if address:
             cli_args.extend(["--address", address])
-        elif txin:  # noqa: SIM106
+        elif txin:
             cli_args.extend(["--tx-in", txin])
+        elif utxo:  # noqa: SIM106
+            cli_args.extend(["--tx-in", f"{utxo.utxo_hash}#{utxo.utxo_ix}"])
         else:
-            raise AssertionError("Either `address` or `txin` need to be specified.")
+            raise AssertionError("Either `address`, `txin` or `utxo` need to be specified.")
 
         utxo_dict = json.loads(self.query_cli(cli_args))
         return txtools.get_utxo(utxo_dict=utxo_dict, address=address, coins=coins)
@@ -1265,6 +1269,7 @@ class ClusterLib:
 
         Args:
             address: A payment address string.
+            coin: A coin name (asset IDs).
 
         Returns:
             int: A total balance.
@@ -1280,6 +1285,7 @@ class ClusterLib:
 
         Args:
             address: A payment address string.
+            coin: A coin name (asset IDs).
 
         Returns:
             structs.UTXOData: An UTxO record with the highest amount.

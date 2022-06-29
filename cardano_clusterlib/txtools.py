@@ -547,6 +547,39 @@ def get_utxo(  # noqa: C901
     return utxo
 
 
+def calculate_utxos_balance(utxos: List[structs.UTXOData], coin: str = consts.DEFAULT_COIN) -> int:
+    """Calculate sum of UTxO balances.
+
+    Args:
+        utxos: A list of UTxO data.
+        coin: A coin name (asset IDs).
+
+    Returns:
+        int: A total balance.
+    """
+    filtered_utxos = [u for u in utxos if u.coin == coin]
+    address_balance = functools.reduce(lambda x, y: x + y.amount, filtered_utxos, 0)
+    return int(address_balance)
+
+
+def filter_utxo_with_highest_amount(
+    utxos: List[structs.UTXOData],
+    coin: str = consts.DEFAULT_COIN,
+) -> structs.UTXOData:
+    """Return data for UTxO with highest amount.
+
+    Args:
+        utxos: A list of UTxO data.
+        coin: A coin name (asset IDs).
+
+    Returns:
+        structs.UTXOData: An UTxO record with the highest amount.
+    """
+    filtered_utxos = [u for u in utxos if u.coin == coin]
+    highest_amount_rec = max(filtered_utxos, key=lambda x: x.amount)
+    return highest_amount_rec
+
+
 def _get_script_args(  # noqa: C901
     script_txins: structs.OptionalScriptTxIn,
     mint: structs.OptionalMint,
