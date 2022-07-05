@@ -2005,6 +2005,11 @@ class ClusterLib:
         datum_hash = txouts[0].datum_hash
         datum_hash_args = [] if not datum_hash else ["--tx-out-datum-hash", str(datum_hash)]
 
+        inline_datum_file = txouts[0].inline_datum_file
+        inline_datum_args = (
+            [] if not inline_datum_file else ["--tx-out-inline-datum-file", str(inline_datum_file)]
+        )
+
         era = self.get_era()
         era_arg = f"--{era.lower()}-era"
 
@@ -2019,6 +2024,7 @@ class ClusterLib:
                 "--tx-out",
                 address_value,
                 *datum_hash_args,
+                *inline_datum_args,
             ]
         ).stdout
         coin, value = stdout.decode().split()
