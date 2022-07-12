@@ -2439,10 +2439,7 @@ class ClusterLib:
             # An input is spent when its combination of hash and ix is not found in the list
             # of current UTxOs.
             # TODO: check that the transaction is 1-block deep (can't be done in CLI alone)
-            txin = txins[0]
-            txin_hash = txin.utxo_hash
-            txin_ix = txin.utxo_ix
-            utxo_data = self.get_utxo(txin=f"{txin_hash}#{txin_ix}")
+            utxo_data = self.get_utxo(utxo=txins[0])
 
             if not utxo_data:
                 break
