@@ -740,7 +740,7 @@ def _get_script_args(  # noqa: C901
             if not for_build and mrec.execution_units:
                 grouped_args.extend(
                     [
-                        "--mint-reference-execution-units",
+                        "--mint-reference-tx-in-execution-units",
                         f"({mrec.execution_units[0]},{mrec.execution_units[1]})",
                     ]
                 )
