@@ -12,6 +12,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
@@ -220,34 +221,44 @@ class ClusterLib:
 
     def get_utxo(
         self,
-        address: str = "",
-        txin: str = "",
-        utxo: Optional[structs.UTXOData] = None,
+        address: Union[str, List[str]] = "",
+        txin: Union[str, List[str]] = "",
+        utxo: Union[structs.UTXOData, structs.OptionalUTXOData] = (),
         coins: UnpackableSequence = (),
     ) -> List[structs.UTXOData]:
         """Return UTxO info for payment address.
 
         Args:
-            address: A payment address.
-            txin: A transaction input (TxId#TxIx).
-            utxo: A representation of UTxO data (`structs.UTXOData`).
+            address: Payment address(es).
+            txin: Transaction input(s) (TxId#TxIx).
+            utxo: Representation of UTxO data (`structs.UTXOData`).
             coins: A list (iterable) of coin names (asset IDs, optional).
 
         Returns:
             List[structs.UTXOData]: A list of UTxO data.
         """
         cli_args = ["utxo", "--out-file", "/dev/stdout"]
+
+        address_single = ""
         if address:
-            cli_args.extend(["--address", address])
+            if isinstance(address, str):
+                address_single = address
+                address = [address]
+            cli_args.extend(helpers._prepend_flag("--address", address))
         elif txin:
-            cli_args.extend(["--tx-in", txin])
+            if isinstance(txin, str):
+                txin = [txin]
+            cli_args.extend(helpers._prepend_flag("--tx-in", txin))
         elif utxo:  # noqa: SIM106
-            cli_args.extend(["--tx-in", f"{utxo.utxo_hash}#{utxo.utxo_ix}"])
+            if isinstance(utxo, structs.UTXOData):
+                utxo = [utxo]
+            utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
+            cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
         else:
             raise AssertionError("Either `address`, `txin` or `utxo` need to be specified.")
 
         utxo_dict = json.loads(self.query_cli(cli_args))
-        return txtools.get_utxo(utxo_dict=utxo_dict, address=address, coins=coins)
+        return txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
 
     def get_tip(self) -> dict:
         """Return current tip - last block successfully applied to the ledger."""
