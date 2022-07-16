@@ -245,7 +245,7 @@ def _get_withdrawals(
     return withdrawals, script_withdrawals, withdrawals_txouts
 
 
-def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:
+def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
     txout_args = []
 
     # add datum arguments
@@ -268,6 +268,21 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:
         txout_args = [
             "--tx-out-datum-hash-value",
             str(txout.datum_hash_value),
+        ]
+    elif txout.datum_embed_file:
+        txout_args = [
+            "--tx-out-datum-embed-file",
+            str(txout.datum_embed_file),
+        ]
+    elif txout.datum_embed_cbor_file:
+        txout_args = [
+            "--tx-out-datum-embed-cbor-file",
+            str(txout.datum_embed_cbor_file),
+        ]
+    elif txout.datum_embed_value:
+        txout_args = [
+            "--tx-out-datum-embed-value",
+            str(txout.datum_embed_value),
         ]
     elif txout.inline_datum_file:
         txout_args = [
