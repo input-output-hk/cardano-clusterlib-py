@@ -1636,7 +1636,12 @@ class ClusterLib:
         )
 
         grouped_args_str = " ".join(grouped_args)
-        if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
+        pparams_for_txins = grouped_args and (
+            "-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str
+        )
+        # TODO: see https://github.com/input-output-hk/cardano-node/issues/4058
+        pparams_for_txouts = "datum-embed-" in " ".join(txout_args)
+        if pparams_for_txins or pparams_for_txouts:
             self.create_pparams_file()
             grouped_args.extend(
                 [
@@ -1992,10 +1997,10 @@ class ClusterLib:
         self,
         txouts: List[structs.TxOut],
     ) -> structs.Value:
-        """Calculate the minimum required UTxO for a transaction output.
+        """Calculate the minimum required UTxO for a single transaction output.
 
         Args:
-            txouts: A list of `TxOuts` for given address.
+            txouts: A list of `TxOut` records that correspond to a single transaction output (UTxO).
 
         Returns:
             structs.Value: A tuple describing the value.
@@ -2005,7 +2010,7 @@ class ClusterLib:
 
         addresses = {t.address for t in txouts}
         if len(addresses) > 1:
-            raise AssertionError("Accepts `txouts` only for single address.")
+            raise AssertionError("Accepts `txouts` only for a single address.")
 
         txout_records = [
             f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
@@ -2013,13 +2018,7 @@ class ClusterLib:
         # pylint: disable=consider-using-f-string
         address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
 
-        datum_hash = txouts[0].datum_hash
-        datum_hash_args = [] if not datum_hash else ["--tx-out-datum-hash", str(datum_hash)]
-
-        inline_datum_file = txouts[0].inline_datum_file
-        inline_datum_args = (
-            [] if not inline_datum_file else ["--tx-out-inline-datum-file", str(inline_datum_file)]
-        )
+        txout_args = txtools._get_txout_plutus_args(txout=txouts[0])
 
         era = self.get_era()
         era_arg = f"--{era.lower()}-era"
@@ -2034,8 +2033,7 @@ class ClusterLib:
                 era_arg,
                 "--tx-out",
                 address_value,
-                *datum_hash_args,
-                *inline_datum_args,
+                *txout_args,
             ]
         ).stdout
         coin, value = stdout.decode().split()
@@ -2199,7 +2197,12 @@ class ClusterLib:
         )
 
         grouped_args_str = " ".join(grouped_args)
-        if grouped_args and ("-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str):
+        pparams_for_txins = grouped_args and (
+            "-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str
+        )
+        # TODO: see https://github.com/input-output-hk/cardano-node/issues/4058
+        pparams_for_txouts = "-embed-" in " ".join(txout_args)
+        if pparams_for_txins or pparams_for_txouts:
             grouped_args.extend(
                 [
                     "--protocol-params-file",
