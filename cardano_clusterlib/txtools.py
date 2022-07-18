@@ -562,11 +562,13 @@ def get_utxo(  # noqa: C901
     return utxo
 
 
-def calculate_utxos_balance(utxos: List[structs.UTXOData], coin: str = consts.DEFAULT_COIN) -> int:
+def calculate_utxos_balance(
+    utxos: Union[List[structs.UTXOData], List[structs.TxOut]], coin: str = consts.DEFAULT_COIN
+) -> int:
     """Calculate sum of UTxO balances.
 
     Args:
-        utxos: A list of UTxO data.
+        utxos: A list of UTxO data (either `structs.UTXOData` or `structs.TxOut`).
         coin: A coin name (asset IDs).
 
     Returns:
