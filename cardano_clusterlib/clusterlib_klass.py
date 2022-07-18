@@ -2442,7 +2442,7 @@ class ClusterLib:
                     self.submit_tx_bare(tx_file)
                 except exceptions.CLIError as exc:
                     # check if resubmitting failed because an input UTxO was already spent
-                    if "UtxoFailure (BadInputsUTxO" not in str(exc):
+                    if "(BadInputsUTxO" not in str(exc):
                         raise
                     err = exc
                 else:
