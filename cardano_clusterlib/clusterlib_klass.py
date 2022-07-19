@@ -224,6 +224,7 @@ class ClusterLib:
         address: Union[str, List[str]] = "",
         txin: Union[str, List[str]] = "",
         utxo: Union[structs.UTXOData, structs.OptionalUTXOData] = (),
+        tx_raw_output: Optional[structs.TxRawOutput] = None,
         coins: UnpackableSequence = (),
     ) -> List[structs.UTXOData]:
         """Return UTxO info for payment address.
@@ -232,6 +233,7 @@ class ClusterLib:
             address: Payment address(es).
             txin: Transaction input(s) (TxId#TxIx).
             utxo: Representation of UTxO data (`structs.UTXOData`).
+            tx_raw_output: A data used when building a transaction (`structs.TxRawOutput`).
             coins: A list (iterable) of coin names (asset IDs, optional).
 
         Returns:
@@ -249,13 +251,21 @@ class ClusterLib:
             if isinstance(txin, str):
                 txin = [txin]
             cli_args.extend(helpers._prepend_flag("--tx-in", txin))
-        elif utxo:  # noqa: SIM106
+        elif utxo:
             if isinstance(utxo, structs.UTXOData):
                 utxo = [utxo]
             utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
+        elif tx_raw_output:  # noqa: SIM106
+            change_txout_num = 1 if tx_raw_output.change_address else 0
+            num_of_txouts = len(tx_raw_output.txouts) + change_txout_num
+            utxo_hash = self.get_txid(tx_body_file=tx_raw_output.out_file)
+            utxo_formatted = [f"{utxo_hash}#{ix}" for ix in range(num_of_txouts)]
+            cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
         else:
-            raise AssertionError("Either `address`, `txin` or `utxo` need to be specified.")
+            raise AssertionError(
+                "Either `address`, `txin`, `utxo` or `tx_raw_output` need to be specified."
+            )
 
         utxo_dict = json.loads(self.query_cli(cli_args))
         return txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
