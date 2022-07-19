@@ -46,4 +46,5 @@ from cardano_clusterlib.structs import UTXOData
 from cardano_clusterlib.structs import Value
 from cardano_clusterlib.txtools import calculate_utxos_balance
 from cardano_clusterlib.txtools import filter_utxo_with_highest_amount
+from cardano_clusterlib.txtools import filter_utxos
 from cardano_clusterlib.types import FileType

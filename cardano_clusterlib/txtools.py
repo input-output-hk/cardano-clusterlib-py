@@ -597,6 +597,53 @@ def filter_utxo_with_highest_amount(
     return highest_amount_rec
 
 
+def filter_utxos(
+    utxos: List[structs.UTXOData],
+    utxo_hash: str = "",
+    utxo_ix: Optional[int] = None,
+    amount: Optional[int] = None,
+    address: str = "",
+    coin: str = "",
+    datum_hash: str = "",
+    inline_datum_hash: str = "",
+) -> List[structs.UTXOData]:
+    """Get UTxO records that match given filtering criteria.
+
+    Args:
+        utxos: A list of UTxO data.
+        utxo_hash: A transaction identifier (optional).
+        utxo_ix: A UTxO index (optional).
+        amount: An amount of coin (optional).
+        address: A payment address (optional).
+        coin: A coin name (asset ID; optional).
+        datum_hash: A datum hash (optional).
+        inline_datum_hash: An inline datum hash (optional).
+
+    Returns:
+        structs.UTXOData: UTxO records that match given filtering criteria.
+    """
+    filtered_utxos = []
+
+    for u in utxos:
+        if utxo_hash and u.utxo_hash != utxo_hash:
+            continue
+        if utxo_ix and utxo_ix != u.utxo_ix:
+            continue
+        if amount and amount != u.amount:
+            continue
+        if address and u.address != address:
+            continue
+        if coin and u.coin != coin:
+            continue
+        if datum_hash and u.datum_hash != datum_hash:
+            continue
+        if inline_datum_hash and u.inline_datum_hash != inline_datum_hash:
+            continue
+        filtered_utxos.append(u)
+
+    return filtered_utxos
+
+
 def _get_script_args(  # noqa: C901
     script_txins: structs.OptionalScriptTxIn,
     mint: structs.OptionalMint,
