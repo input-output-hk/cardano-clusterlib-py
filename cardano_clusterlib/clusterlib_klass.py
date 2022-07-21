@@ -1134,7 +1134,7 @@ class ClusterLib:
         )
 
         # in node 1.35.1+ the information is nested under hex encoded stake pool ID
-        if "poolParams" not in pool_params:
+        if pool_params and "poolParams" not in pool_params:
             pool_params = next(iter(pool_params.values()))
 
         retiring = pool_params.get("retiring")  # pool retiring epoch
