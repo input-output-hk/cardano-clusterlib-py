@@ -1132,6 +1132,11 @@ class ClusterLib:
         pool_params: dict = json.loads(
             self.query_cli(["pool-params", "--stake-pool-id", stake_pool_id])
         )
+
+        # in node 1.35.1+ the information is nested under hex encoded stake pool ID
+        if "poolParams" not in pool_params:
+            pool_params = next(iter(pool_params.values()))
+
         retiring = pool_params.get("retiring")  # pool retiring epoch
         pparams_top = structs.PoolParamsTop(
             pool_params=pool_params.get("poolParams") or {},
