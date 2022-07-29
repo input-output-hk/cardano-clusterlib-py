@@ -2458,7 +2458,6 @@ class ClusterLib:
         for r in range(3):
             if r == 0:
                 self.submit_tx_bare(tx_file)
-                self.wait_for_new_block(wait_blocks)
             else:
                 txid = txid or self.get_txid(tx_file=tx_file)
                 LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
@@ -2469,8 +2468,9 @@ class ClusterLib:
                     if "(BadInputsUTxO" not in str(exc):
                         raise
                     err = exc
-                else:
-                    self.wait_for_new_block(wait_blocks)
+
+            # wait for new blocks even in case of error, so `query utxo` returns up-to-date data
+            self.wait_for_new_block(wait_blocks)
 
             # Check that one of the input UTxOs was spent to verify the TX was
             # successfully submitted to the chain.
@@ -2478,9 +2478,9 @@ class ClusterLib:
             # of current UTxOs.
             # TODO: check that the transaction is 1-block deep (can't be done in CLI alone)
             utxo_data = self.get_utxo(utxo=txins[0])
-
             if not utxo_data:
                 break
+
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
                 # spent, but it was not the case. Reraising the exception.
