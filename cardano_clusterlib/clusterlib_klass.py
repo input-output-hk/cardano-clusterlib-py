@@ -1,4 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
+import contextlib
 import datetime
 import functools
 import itertools
@@ -8,6 +9,7 @@ import subprocess
 import time
 import warnings
 from pathlib import Path
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -270,9 +272,16 @@ class ClusterLib:
         utxo_dict = json.loads(self.query_cli(cli_args))
         return txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
 
-    def get_tip(self) -> dict:
+    def get_tip(self) -> Dict[str, Any]:
         """Return current tip - last block successfully applied to the ledger."""
-        tip: dict = json.loads(self.query_cli(["tip"]))
+        tip: Dict[str, Any] = json.loads(self.query_cli(["tip"]))
+
+        # "syncProgress" is returned as string
+        sync_progress = tip.get("syncProgress")
+        if sync_progress:
+            with contextlib.suppress(ValueError):
+                tip["syncProgress"] = float(sync_progress)
+
         return tip
 
     def gen_genesis_addr(
