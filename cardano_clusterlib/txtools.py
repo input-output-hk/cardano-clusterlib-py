@@ -245,6 +245,24 @@ def _get_withdrawals(
     return withdrawals, script_withdrawals, withdrawals_txouts
 
 
+def _get_txin_strings(
+    txins: structs.OptionalUTXOData, script_txins: structs.OptionalScriptTxIn
+) -> Set[str]:
+    """Get list of txin strings for normal (non-script) inputs."""
+    # filter out duplicate txins
+    txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
+
+    # assume that all plutus txin records are for the same UTxO and use the first one
+    plutus_txins_utxos = {
+        f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in script_txins if x.txins
+    }
+
+    # remove plutus txin records from normal txins
+    txins_combined = txins_utxos.difference(plutus_txins_utxos)
+
+    return txins_combined
+
+
 def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
     txout_args = []
 
