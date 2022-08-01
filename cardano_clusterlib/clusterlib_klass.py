@@ -1625,9 +1625,9 @@ class ClusterLib:
         required_signer_hashes = required_signer_hashes or []
         txout_args = txtools._process_txouts(txouts=txouts, join_txouts=join_txouts)
 
-        # filter out duplicates
-        txins_combined = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
-        withdrawals_combined = {f"{x.address}+{x.amount}" for x in withdrawals}
+        txin_strings = txtools._get_txin_strings(txins=txins, script_txins=script_txins)
+
+        withdrawal_strings = {f"{x.address}+{x.amount}" for x in withdrawals}
 
         mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
@@ -1688,7 +1688,7 @@ class ClusterLib:
                 "--out-file",
                 str(out_file),
                 *grouped_args,
-                *helpers._prepend_flag("--tx-in", txins_combined),
+                *helpers._prepend_flag("--tx-in", txin_strings),
                 *txout_args,
                 *helpers._prepend_flag("--required-signer", required_signers),
                 *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
@@ -1697,7 +1697,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
                 *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *helpers._prepend_flag("--withdrawal", withdrawals_combined),
+                *helpers._prepend_flag("--withdrawal", withdrawal_strings),
                 *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
                 *self.tx_era_arg,
@@ -2185,15 +2185,9 @@ class ClusterLib:
 
         txout_args = txtools._process_txouts(txouts=txouts_copy, join_txouts=join_txouts)
 
-        # filter out duplicate txins
-        txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins_copy}
-        # assume that all plutus txin records are for the same UTxO and use the first one
-        plutus_txins_utxos = {
-            f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in script_txins if x.txins
-        }
-        txins_combined = txins_utxos.difference(plutus_txins_utxos)
+        txin_strings = txtools._get_txin_strings(txins=txins_copy, script_txins=script_txins)
 
-        withdrawals_combined = [f"{x.address}+{x.amount}" for x in withdrawals]
+        withdrawal_strings = [f"{x.address}+{x.amount}" for x in withdrawals]
 
         cli_args = []
 
@@ -2261,7 +2255,7 @@ class ClusterLib:
                 "transaction",
                 "build",
                 *grouped_args,
-                *helpers._prepend_flag("--tx-in", txins_combined),
+                *helpers._prepend_flag("--tx-in", txin_strings),
                 *txout_args,
                 *helpers._prepend_flag("--required-signer", required_signers),
                 *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
@@ -2270,7 +2264,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
                 *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
                 *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *helpers._prepend_flag("--withdrawal", withdrawals_combined),
+                *helpers._prepend_flag("--withdrawal", withdrawal_strings),
                 *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
                 *self.tx_era_arg,
