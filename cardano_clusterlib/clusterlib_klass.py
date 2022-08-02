@@ -1509,47 +1509,6 @@ class ClusterLib:
 
         return deposit
 
-    def get_tx_ins_outs(
-        self,
-        src_address: str,
-        tx_files: structs.TxFiles,
-        txins: structs.OptionalUTXOData = (),
-        txouts: structs.OptionalTxOuts = (),
-        fee: int = 0,
-        deposit: Optional[int] = None,
-        withdrawals: structs.OptionalTxOuts = (),
-        mint_txouts: structs.OptionalTxOuts = (),
-        lovelace_balanced: bool = False,
-    ) -> Tuple[List[structs.UTXOData], List[structs.TxOut]]:
-        """Return list of transaction's inputs and outputs.
-
-        Args:
-            src_address: An address used for fee and inputs (if inputs not specified by `txins`).
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
-            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
-            txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
-            fee: A fee amount (optional).
-            deposit: A deposit amount needed by the transaction (optional).
-            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
-            mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
-
-        Returns:
-            Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
-                outputs.
-        """
-        return txtools._get_tx_ins_outs(
-            clusterlib_obj=self,
-            src_address=src_address,
-            tx_files=tx_files,
-            txins=txins,
-            txouts=txouts,
-            fee=fee,
-            deposit=deposit,
-            withdrawals=withdrawals,
-            mint_txouts=mint_txouts,
-            lovelace_balanced=lovelace_balanced,
-        )
-
     def build_raw_tx_bare(  # noqa: C901
         self,
         out_file: FileType,
@@ -1787,49 +1746,38 @@ class ClusterLib:
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
         tx_files = tx_files or structs.TxFiles()
+
+        collected_data = txtools.collect_data_for_build(
+            clusterlib_obj=self,
+            src_address=src_address,
+            txins=txins,
+            txouts=txouts,
+            script_txins=script_txins,
+            mint=mint,
+            tx_files=tx_files,
+            complex_certs=complex_certs,
+            fee=fee,
+            withdrawals=withdrawals,
+            script_withdrawals=script_withdrawals,
+            deposit=deposit,
+        )
+
         if ttl is None and invalid_hereafter is None and self.tx_era == consts.Eras.SHELLEY:
             invalid_hereafter = self.calculate_tx_ttl()
 
-        withdrawals, script_withdrawals, withdrawals_txouts = txtools._get_withdrawals(
-            clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
-        )
-
-        # combine txins and make sure we have enough funds to satisfy all txouts
-        combined_txins = [
-            *txins,
-            *itertools.chain.from_iterable(r.txins for r in script_txins),
-        ]
-        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
-        combined_tx_files = tx_files._replace(
-            certificate_files=[
-                *tx_files.certificate_files,
-                *[c.certificate_file for c in complex_certs],
-            ]
-        )
-        txins_copy, txouts_copy = self.get_tx_ins_outs(
-            src_address=src_address,
-            tx_files=combined_tx_files,
-            txins=combined_txins,
-            txouts=txouts,
-            fee=fee,
-            deposit=deposit,
-            withdrawals=withdrawals_txouts,
-            mint_txouts=mint_txouts,
-        )
-
         tx_raw_output = self.build_raw_tx_bare(
             out_file=out_file,
-            txouts=txouts_copy,
+            txouts=collected_data.txouts,
             tx_files=tx_files,
             fee=fee,
-            txins=txins or txins_copy,
+            txins=collected_data.txins,
             readonly_reference_txins=readonly_reference_txins,
             script_txins=script_txins,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             mint=mint,
-            withdrawals=withdrawals,
-            script_withdrawals=script_withdrawals,
+            withdrawals=collected_data.withdrawals,
+            script_withdrawals=collected_data.script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             join_txouts=join_txouts,
@@ -2141,7 +2089,6 @@ class ClusterLib:
             raise AssertionError("Cannot use '-1' amount and change address at the same time.")
 
         tx_files = tx_files or structs.TxFiles()
-
         if tx_files.certificate_files and complex_certs:
             LOGGER.warning(
                 "Mixing `tx_files.certificate_files` and `complex_certs`, "
@@ -2149,45 +2096,37 @@ class ClusterLib:
             )
 
         destination_dir = Path(destination_dir).expanduser()
+
         out_file = destination_dir / f"{tx_name}_tx.body"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self)
 
-        withdrawals, script_withdrawals, withdrawals_txouts = txtools._get_withdrawals(
-            clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
+        collected_data = txtools.collect_data_for_build(
+            clusterlib_obj=self,
+            src_address=src_address,
+            txins=txins,
+            txouts=txouts,
+            script_txins=script_txins,
+            mint=mint,
+            tx_files=tx_files,
+            complex_certs=complex_certs,
+            fee=fee_buffer or 0,
+            withdrawals=withdrawals,
+            script_withdrawals=script_withdrawals,
+            deposit=deposit,
+            lovelace_balanced=True,
         )
 
         required_signer_hashes = required_signer_hashes or []
 
         mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
-        # combine txins and make sure we have enough funds to satisfy all txouts
-        combined_txins = [
-            *txins,
-            *itertools.chain.from_iterable(r.txins for r in script_txins),
-        ]
-        combined_tx_files = tx_files._replace(
-            certificate_files=[
-                *tx_files.certificate_files,
-                *[c.certificate_file for c in complex_certs],
-            ]
-        )
-        txins_copy, txouts_copy = self.get_tx_ins_outs(
-            src_address=src_address,
-            tx_files=combined_tx_files,
-            txins=combined_txins,
-            txouts=txouts,
-            fee=fee_buffer or 0,
-            deposit=deposit,
-            withdrawals=withdrawals_txouts,
-            mint_txouts=mint_txouts,
-            lovelace_balanced=True,
+        txout_args = txtools._process_txouts(txouts=collected_data.txouts, join_txouts=join_txouts)
+
+        txin_strings = txtools._get_txin_strings(
+            txins=collected_data.txins, script_txins=script_txins
         )
 
-        txout_args = txtools._process_txouts(txouts=txouts_copy, join_txouts=join_txouts)
-
-        txin_strings = txtools._get_txin_strings(txins=txins_copy, script_txins=script_txins)
-
-        withdrawal_strings = [f"{x.address}+{x.amount}" for x in withdrawals]
+        withdrawal_strings = [f"{x.address}+{x.amount}" for x in collected_data.withdrawals]
 
         cli_args = []
 
@@ -2210,7 +2149,7 @@ class ClusterLib:
             script_txins=script_txins,
             mint=mint,
             complex_certs=complex_certs,
-            script_withdrawals=script_withdrawals,
+            script_withdrawals=collected_data.script_withdrawals,
             for_build=True,
         )
 
@@ -2280,18 +2219,18 @@ class ClusterLib:
             estimated_fee = int(stdout_dec.split()[-1])
 
         return structs.TxRawOutput(
-            txins=list(txins_copy),
+            txins=list(collected_data.txins),
             script_txins=script_txins,
-            script_withdrawals=script_withdrawals,
+            script_withdrawals=collected_data.script_withdrawals,
             complex_certs=complex_certs,
             mint=mint,
-            txouts=list(txouts_copy),
+            txouts=list(collected_data.txouts),
             tx_files=tx_files,
             out_file=out_file,
             fee=estimated_fee,
             invalid_hereafter=invalid_hereafter,
             invalid_before=invalid_before,
-            withdrawals=withdrawals_txouts,
+            withdrawals=collected_data.withdrawals,
             change_address=change_address or src_address,
             era=self.tx_era,
             return_collateral_txouts=return_collateral_txouts,
@@ -2551,6 +2490,9 @@ class ClusterLib:
         # pylint: disable=too-many-arguments
         tx_files = tx_files or structs.TxFiles()
 
+        # resolve withdrawal amounts here (where -1 for total rewards amount is used) so the
+        # resolved values can be passed around and it is not needed to resolve them again
+        # every time `_get_withdrawals` is called
         withdrawals, script_withdrawals, *__ = txtools._get_withdrawals(
             clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
         )
@@ -2576,7 +2518,8 @@ class ClusterLib:
                 destination_dir=destination_dir,
             )
 
-            # add 10% to the estimated fee, as the estimation is not precise enough
+            # add 10% to the estimated fee, as the estimation is not precise enough, and there
+            # might be another txin in the final tx once fee is added to the total needed amount
             fee = int(fee * 1.1)
 
         tx_raw_output = self.build_raw_tx(

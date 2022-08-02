@@ -206,6 +206,7 @@ def _resolve_withdrawals(
     The `structs.TxOut.amount` can be '-1', meaning all available funds.
 
     Args:
+        clusterlib_obj: An instance of `ClusterLib`.
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals.
 
     Returns:
@@ -425,6 +426,7 @@ def _get_tx_ins_outs(
     """Return list of transaction's inputs and outputs.
 
     Args:
+        clusterlib_obj: An instance of `ClusterLib`.
         src_address: An address used for fee and inputs (if inputs not specified by `txins`).
         tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
         txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
@@ -495,6 +497,87 @@ def _get_tx_ins_outs(
     )
 
     return txins_filtered, txouts_balanced
+
+
+def collect_data_for_build(
+    clusterlib_obj: "types.ClusterLib",
+    src_address: str,
+    txins: structs.OptionalUTXOData = (),
+    txouts: structs.OptionalTxOuts = (),
+    script_txins: structs.OptionalScriptTxIn = (),
+    mint: structs.OptionalMint = (),
+    tx_files: Optional[structs.TxFiles] = None,
+    complex_certs: structs.OptionalScriptCerts = (),
+    fee: int = 0,
+    withdrawals: structs.OptionalTxOuts = (),
+    script_withdrawals: structs.OptionalScriptWithdrawals = (),
+    deposit: Optional[int] = None,
+    lovelace_balanced: bool = False,
+) -> structs.DataForBuild:
+    """Collect data (txins, txouts, withdrawals) needed for building a transaction.
+
+    Args:
+        clusterlib_obj: An instance of `ClusterLib`.
+        src_address: An address used for fee and inputs (if inputs not specified by `txins`).
+        txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
+        txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+        script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+        mint: An iterable of `Mint`, specifying script minting data (optional).
+        tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            (optional).
+        complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+            (optional).
+        fee: A fee amount (optional).
+        withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+        script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+            data (optional).
+        deposit: A deposit amount needed by the transaction (optional).
+        lovelace_balanced: A bool indicating whether Lovelace ins/outs are ballanced
+            (by `build` command; optional)
+
+    Returns:
+        structs.DataForBuild: A tuple with data for build(-raw) commands.
+    """
+    # pylint: disable=too-many-arguments
+    tx_files = tx_files or structs.TxFiles()
+
+    withdrawals, script_withdrawals, withdrawals_txouts = _get_withdrawals(
+        clusterlib_obj=clusterlib_obj,
+        withdrawals=withdrawals,
+        script_withdrawals=script_withdrawals,
+    )
+
+    # combine txins and make sure we have enough funds to satisfy all txouts
+    combined_txins = [
+        *txins,
+        *itertools.chain.from_iterable(r.txins for r in script_txins),
+    ]
+    mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
+    combined_tx_files = tx_files._replace(
+        certificate_files=[
+            *tx_files.certificate_files,
+            *[c.certificate_file for c in complex_certs],
+        ]
+    )
+    txins_copy, txouts_copy = _get_tx_ins_outs(
+        clusterlib_obj=clusterlib_obj,
+        src_address=src_address,
+        tx_files=combined_tx_files,
+        txins=combined_txins,
+        txouts=txouts,
+        fee=fee,
+        deposit=deposit,
+        withdrawals=withdrawals_txouts,
+        mint_txouts=mint_txouts,
+        lovelace_balanced=lovelace_balanced,
+    )
+
+    return structs.DataForBuild(
+        txins=txins or txins_copy,
+        txouts=txouts_copy,
+        withdrawals=withdrawals,
+        script_withdrawals=script_withdrawals,
+    )
 
 
 def get_utxo(  # noqa: C901

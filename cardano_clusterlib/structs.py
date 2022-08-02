@@ -240,3 +240,10 @@ class Value(NamedTuple):
 class LeadershipSchedule(NamedTuple):
     slot_no: int
     utc_time: datetime.datetime
+
+
+class DataForBuild(NamedTuple):
+    txins: List[UTXOData]
+    txouts: List[TxOut]
+    withdrawals: OptionalTxOuts
+    script_withdrawals: OptionalScriptWithdrawals
