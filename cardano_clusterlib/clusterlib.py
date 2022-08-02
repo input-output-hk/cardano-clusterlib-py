@@ -22,6 +22,7 @@ from cardano_clusterlib.structs import AddressRecord
 from cardano_clusterlib.structs import CLIOut
 from cardano_clusterlib.structs import ColdKeyPair
 from cardano_clusterlib.structs import ComplexCert
+from cardano_clusterlib.structs import DataForBuild
 from cardano_clusterlib.structs import GenesisKeys
 from cardano_clusterlib.structs import KeyPair
 from cardano_clusterlib.structs import LeadershipSchedule
@@ -45,6 +46,7 @@ from cardano_clusterlib.structs import TxRawOutput
 from cardano_clusterlib.structs import UTXOData
 from cardano_clusterlib.structs import Value
 from cardano_clusterlib.txtools import calculate_utxos_balance
+from cardano_clusterlib.txtools import collect_data_for_build
 from cardano_clusterlib.txtools import filter_utxo_with_highest_amount
 from cardano_clusterlib.txtools import filter_utxos
 from cardano_clusterlib.types import FileType
