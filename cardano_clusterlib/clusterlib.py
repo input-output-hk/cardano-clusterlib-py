@@ -44,6 +44,7 @@ from cardano_clusterlib.structs import TxFiles
 from cardano_clusterlib.structs import TxOut
 from cardano_clusterlib.structs import TxRawOutput
 from cardano_clusterlib.structs import UTXOData
+from cardano_clusterlib.structs import UTXODbsyncData
 from cardano_clusterlib.structs import Value
 from cardano_clusterlib.txtools import calculate_utxos_balance
 from cardano_clusterlib.txtools import collect_data_for_build

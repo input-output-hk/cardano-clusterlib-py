@@ -42,6 +42,18 @@ class StakeAddrInfo(NamedTuple):
         return bool(self.address)
 
 
+class UTXODbsyncData(NamedTuple):
+    utxo_hash: str
+    utxo_ix: int
+    amount: int
+    address: str
+    coin: str = consts.DEFAULT_COIN
+    decoded_coin: str = ""
+    datum_hash: str = ""
+    inline_datum_hash: str = ""
+    reference_script_hash: str = ""
+
+
 class UTXOData(NamedTuple):
     utxo_hash: str
     utxo_ix: int
