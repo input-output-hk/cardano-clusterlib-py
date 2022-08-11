@@ -101,15 +101,15 @@ def _select_utxos(
         coin_txins = txins_db.get(coin) or []
         coin_txouts = txouts_passed_db.get(coin) or []
 
-        # the value "-1" means all available funds
-        max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
-        if max_index:
-            utxo_ids.update(f"{rec.utxo_hash}#{rec.utxo_ix}" for rec in coin_txins)
-            continue
-
         total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
 
         if coin == consts.DEFAULT_COIN:
+            # the value "-1" means all available funds
+            max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
+            if max_index:
+                utxo_ids.update(f"{rec.utxo_hash}#{rec.utxo_ix}" for rec in coin_txins)
+                continue
+
             tx_fee = fee if fee > 1 else 1
             funds_needed = total_output_amount + tx_fee + deposit
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
@@ -131,8 +131,8 @@ def _select_utxos(
     return utxo_ids
 
 
-def _balance_txouts(
-    src_address: str,
+def _balance_txouts(  # noqa: C901
+    change_address: str,
     txouts: structs.OptionalTxOuts,
     txins_db: Dict[str, List[structs.UTXOData]],
     txouts_passed_db: Dict[str, List[structs.TxOut]],
@@ -143,21 +143,29 @@ def _balance_txouts(
     lovelace_balanced: bool = False,
 ) -> List[structs.TxOut]:
     """Balance the transaction by adding change output for each coin."""
+    # records for burning tokens, i.e. records with negative amount, are not allowed in `txouts`
+    burning_txouts = [r for r in txouts if r.amount < 0 and r.coin != consts.DEFAULT_COIN]
+    if burning_txouts:
+        raise AssertionError(f"Token burning is not allowed in txouts: {burning_txouts}")
+
     txouts_result: List[structs.TxOut] = list(txouts)
 
     # iterate over coins both in txins and txouts
     for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
         max_address = None
         change = 0
+
         coin_txins = txins_db.get(coin) or []
         coin_txouts = txouts_passed_db.get(coin) or []
 
-        # the value "-1" means all available funds
-        max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
-        if len(max_index) > 1:
-            raise AssertionError("Cannot send all remaining funds to more than one address.")
-        if max_index:
-            max_address = coin_txouts.pop(max_index[0]).address
+        if coin == consts.DEFAULT_COIN:
+            # the value "-1" means all available funds
+            max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
+            if len(max_index) > 1:
+                raise AssertionError("Cannot send all remaining funds to more than one address.")
+            if max_index:
+                # remove the "-1" record and get its address
+                max_address = coin_txouts.pop(max_index[0]).address
 
         total_input_amount = functools.reduce(lambda x, y: x + y.amount, coin_txins, 0)
         total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
@@ -189,10 +197,10 @@ def _balance_txouts(
 
         if change > 0:
             txouts_result.append(
-                structs.TxOut(address=(max_address or src_address), amount=change, coin=coin)
+                structs.TxOut(address=(max_address or change_address), amount=change, coin=coin)
             )
 
-    # filter out negative amounts (tokens burning and -1 "max" amounts)
+    # filter out negative amounts (-1 "max" amounts)
     txouts_result = [r for r in txouts_result if r.amount > 0]
 
     return txouts_result
@@ -485,7 +493,13 @@ def _get_tx_ins_outs(
 
     # balance the transaction
     txouts_balanced = _balance_txouts(
-        src_address=src_address,
+        # Return change to `src_address`.
+        # When using `build_tx`, Lovelace change is returned to `change_address` (this is handled
+        # automatically by `transaction build`) and only tokens change is returned back to
+        # `src_address`. It is up to user to specify Lovelace output for `src_address` with high
+        # enough Lovelace value when token change is needed and `change_address` differs from
+        # `src_address`.
+        change_address=src_address,
         txouts=txouts,
         txins_db=txins_db_filtered,
         txouts_passed_db=txouts_passed_db,
