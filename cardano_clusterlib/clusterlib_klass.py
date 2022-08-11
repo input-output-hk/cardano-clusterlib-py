@@ -2085,8 +2085,12 @@ class ClusterLib:
         """
         # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
         max_txout = [o for o in txouts if o.amount == -1 and o.coin in ("", consts.DEFAULT_COIN)]
-        if max_txout and change_address:
-            raise AssertionError("Cannot use '-1' amount and change address at the same time.")
+        if max_txout:
+            if change_address:
+                raise AssertionError("Cannot use '-1' amount and change address at the same time.")
+            change_address = max_txout[0].address
+        else:
+            change_address = change_address or src_address
 
         tx_files = tx_files or structs.TxFiles()
         if tx_files.certificate_files and complex_certs:
@@ -2167,13 +2171,7 @@ class ClusterLib:
                 ]
             )
 
-        cli_args.append("--change-address")
-        if max_txout:
-            cli_args.append(max_txout[0].address)
-        elif change_address:
-            cli_args.append(change_address)
-        else:
-            cli_args.append(src_address)
+        cli_args.extend(["--change-address", change_address])
 
         if witness_override is not None:
             cli_args.extend(["--witness-override", str(witness_override)])
