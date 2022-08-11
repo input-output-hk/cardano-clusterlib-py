@@ -891,14 +891,25 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(["--mint-redeemer-value", str(mrec.redeemer_value)])
 
         if mrec.reference_txin:
-            grouped_args.extend(
-                [
-                    "--mint-tx-in-reference",
-                    f"{mrec.reference_txin.utxo_hash}#{mrec.reference_txin.utxo_ix}",
-                ]
+            mrec_reference_txin_id = (
+                f"{mrec.reference_txin.utxo_hash}#{mrec.reference_txin.utxo_ix}"
             )
-
             mrec_reference_type = mrec.reference_type or consts.ScriptTypes.PLUTUS_V2
+
+            if mrec_reference_type in (consts.ScriptTypes.SIMPLE_V1, consts.ScriptTypes.SIMPLE_V2):
+                grouped_args.extend(
+                    [
+                        "--simple-minting-script-tx-in-reference",
+                        mrec_reference_txin_id,
+                    ]
+                )
+            else:
+                grouped_args.extend(
+                    [
+                        "--mint-tx-in-reference",
+                        mrec_reference_txin_id,
+                    ]
+                )
             if mrec_reference_type == consts.ScriptTypes.PLUTUS_V2:
                 grouped_args.append("--mint-plutus-script-v2")
 
