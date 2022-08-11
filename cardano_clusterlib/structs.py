@@ -135,13 +135,13 @@ class Mint(NamedTuple):
     script_file: FileType = ""
     reference_txin: Optional[UTXOData] = None
     reference_type: str = ""
+    policyid: str = ""
     # values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: Optional[Tuple[int, int]] = None
     redeemer_file: FileType = ""
     redeemer_cbor_file: FileType = ""
     redeemer_value: str = ""
-    policyid: str = ""
 
 
 # list of `ScriptTxIn`s, empty list, or empty tuple
