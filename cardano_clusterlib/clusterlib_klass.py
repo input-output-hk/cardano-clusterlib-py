@@ -1582,7 +1582,10 @@ class ClusterLib:
         )
 
         required_signer_hashes = required_signer_hashes or []
-        txout_args = txtools._process_txouts(txouts=txouts, join_txouts=join_txouts)
+
+        txout_args, processed_txouts = txtools._process_txouts(
+            txouts=txouts, join_txouts=join_txouts
+        )
 
         txin_strings = txtools._get_txin_strings(txins=txins, script_txins=script_txins)
 
@@ -1669,7 +1672,7 @@ class ClusterLib:
             script_withdrawals=script_withdrawals,
             complex_certs=complex_certs,
             mint=mint,
-            txouts=txouts,
+            txouts=processed_txouts,
             tx_files=tx_files,
             out_file=out_file,
             fee=fee,
@@ -2122,15 +2125,17 @@ class ClusterLib:
 
         required_signer_hashes = required_signer_hashes or []
 
-        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
-
-        txout_args = txtools._process_txouts(txouts=collected_data.txouts, join_txouts=join_txouts)
+        txout_args, processed_txouts = txtools._process_txouts(
+            txouts=collected_data.txouts, join_txouts=join_txouts
+        )
 
         txin_strings = txtools._get_txin_strings(
             txins=collected_data.txins, script_txins=script_txins
         )
 
         withdrawal_strings = [f"{x.address}+{x.amount}" for x in collected_data.withdrawals]
+
+        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
         cli_args = []
 
@@ -2222,7 +2227,7 @@ class ClusterLib:
             script_withdrawals=collected_data.script_withdrawals,
             complex_certs=complex_certs,
             mint=mint,
-            txouts=list(collected_data.txouts),
+            txouts=processed_txouts,
             tx_files=tx_files,
             out_file=out_file,
             fee=estimated_fee,
