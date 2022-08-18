@@ -52,6 +52,9 @@ def _get_utxos_with_coins(
     seen_ids = set()
     for rec in address_utxos:
         utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
+        # don't select locked UTxOs
+        if rec.datum_hash or rec.inline_datum_hash:
+            continue
         if rec.coin in coins and utxo_id not in seen_ids:
             seen_ids.add(utxo_id)
             txins.extend(txins_by_id[utxo_id])
@@ -342,8 +345,9 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
 
 def _join_txouts(  # noqa: C901
     txouts: List[structs.TxOut],
-) -> Tuple[List[str], List[structs.TxOut]]:
+) -> Tuple[List[str], List[structs.TxOut], int]:
     txout_args: List[str] = []
+    txouts_count: int = 0
     txouts_datum_order: List[str] = []
     txouts_by_datum: Dict[str, Dict[str, List[structs.TxOut]]] = {}
     joined_txouts: List[structs.TxOut] = []
@@ -400,8 +404,9 @@ def _join_txouts(  # noqa: C901
 
             txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
             txout_args.extend(_get_txout_plutus_args(txout=recs[0]))
+            txouts_count += 1
 
-    return txout_args, joined_txouts
+    return txout_args, joined_txouts, txouts_count
 
 
 def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
@@ -440,10 +445,10 @@ def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> List[st
 
 def _process_txouts(
     txouts: List[structs.TxOut], join_txouts: bool
-) -> Tuple[List[str], List[structs.TxOut]]:
+) -> Tuple[List[str], List[structs.TxOut], int]:
     if join_txouts:
         return _join_txouts(txouts=txouts)
-    return _list_txouts(txouts=txouts), txouts
+    return _list_txouts(txouts=txouts), txouts, len(txouts)
 
 
 def _get_tx_ins_outs(
@@ -588,10 +593,12 @@ def collect_data_for_build(
         script_withdrawals=script_withdrawals,
     )
 
+    script_txins_records = list(itertools.chain.from_iterable(r.txins for r in script_txins))
+
     # combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [
         *txins,
-        *itertools.chain.from_iterable(r.txins for r in script_txins),
+        *script_txins_records,
     ]
     mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
     combined_tx_files = tx_files._replace(
@@ -613,8 +620,13 @@ def collect_data_for_build(
         lovelace_balanced=lovelace_balanced,
     )
 
+    payment_txins = txins or txins_copy
+    # don't include script txins in list of payment txins
+    if script_txins_records:
+        payment_txins = txins or []
+
     return structs.DataForBuild(
-        txins=txins or txins_copy,
+        txins=payment_txins,
         txouts=txouts_copy,
         withdrawals=withdrawals,
         script_withdrawals=script_withdrawals,
@@ -769,9 +781,9 @@ def filter_utxos(
     for u in utxos:
         if utxo_hash and u.utxo_hash != utxo_hash:
             continue
-        if utxo_ix and utxo_ix != u.utxo_ix:
+        if utxo_ix is not None and utxo_ix != u.utxo_ix:
             continue
-        if amount and amount != u.amount:
+        if amount is not None and amount != u.amount:
             continue
         if address and u.address != address:
             continue

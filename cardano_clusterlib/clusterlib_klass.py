@@ -260,7 +260,10 @@ class ClusterLib:
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
         elif tx_raw_output:  # noqa: SIM106
             change_txout_num = 1 if tx_raw_output.change_address else 0
-            num_of_txouts = len(tx_raw_output.txouts) + change_txout_num
+            return_collateral_txout_num = 1 if tx_raw_output.script_txins else 0
+            num_of_txouts = (
+                tx_raw_output.txouts_count + change_txout_num + return_collateral_txout_num
+            )
             utxo_hash = self.get_txid(tx_body_file=tx_raw_output.out_file)
             utxo_formatted = [f"{utxo_hash}#{ix}" for ix in range(num_of_txouts)]
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
@@ -1583,7 +1586,7 @@ class ClusterLib:
 
         required_signer_hashes = required_signer_hashes or []
 
-        txout_args, processed_txouts = txtools._process_txouts(
+        txout_args, processed_txouts, txouts_count = txtools._process_txouts(
             txouts=txouts, join_txouts=join_txouts
         )
 
@@ -1668,21 +1671,23 @@ class ClusterLib:
 
         return structs.TxRawOutput(
             txins=list(txins),
-            script_txins=script_txins,
-            script_withdrawals=script_withdrawals,
-            complex_certs=complex_certs,
-            mint=mint,
+            txouts_count=txouts_count,
             txouts=processed_txouts,
             tx_files=tx_files,
             out_file=out_file,
             fee=fee,
+            era=self.tx_era,
+            script_txins=script_txins,
+            script_withdrawals=script_withdrawals,
+            complex_certs=complex_certs,
+            mint=mint,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             withdrawals=withdrawals_txouts,
-            era=self.tx_era,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
+            script_valid=script_valid,
         )
 
     def build_raw_tx(
@@ -2125,7 +2130,7 @@ class ClusterLib:
 
         required_signer_hashes = required_signer_hashes or []
 
-        txout_args, processed_txouts = txtools._process_txouts(
+        txout_args, processed_txouts, txouts_count = txtools._process_txouts(
             txouts=collected_data.txouts, join_txouts=join_txouts
         )
 
@@ -2223,22 +2228,24 @@ class ClusterLib:
 
         return structs.TxRawOutput(
             txins=list(collected_data.txins),
+            txouts=processed_txouts,
+            txouts_count=txouts_count,
+            tx_files=tx_files,
+            out_file=out_file,
+            fee=estimated_fee,
+            era=self.tx_era,
             script_txins=script_txins,
             script_withdrawals=collected_data.script_withdrawals,
             complex_certs=complex_certs,
             mint=mint,
-            txouts=processed_txouts,
-            tx_files=tx_files,
-            out_file=out_file,
-            fee=estimated_fee,
             invalid_hereafter=invalid_hereafter,
             invalid_before=invalid_before,
             withdrawals=collected_data.withdrawals,
             change_address=change_address or src_address,
-            era=self.tx_era,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
+            script_valid=script_valid,
         )
 
     def sign_tx(
