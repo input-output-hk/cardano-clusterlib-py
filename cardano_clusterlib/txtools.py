@@ -772,9 +772,9 @@ def filter_utxos(
     for u in utxos:
         if utxo_hash and u.utxo_hash != utxo_hash:
             continue
-        if utxo_ix and utxo_ix != u.utxo_ix:
+        if utxo_ix is not None and utxo_ix != u.utxo_ix:
             continue
-        if amount and amount != u.amount:
+        if amount is not None and amount != u.amount:
             continue
         if address and u.address != address:
             continue
