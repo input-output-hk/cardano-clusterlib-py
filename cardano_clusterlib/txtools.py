@@ -591,10 +591,12 @@ def collect_data_for_build(
         script_withdrawals=script_withdrawals,
     )
 
+    script_txins_records = list(itertools.chain.from_iterable(r.txins for r in script_txins))
+
     # combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [
         *txins,
-        *itertools.chain.from_iterable(r.txins for r in script_txins),
+        *script_txins_records,
     ]
     mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
     combined_tx_files = tx_files._replace(
@@ -616,8 +618,13 @@ def collect_data_for_build(
         lovelace_balanced=lovelace_balanced,
     )
 
+    payment_txins = txins or txins_copy
+    # don't include script txins in list of payment txins
+    if script_txins_records:
+        payment_txins = txins or []
+
     return structs.DataForBuild(
-        txins=txins or txins_copy,
+        txins=payment_txins,
         txouts=txouts_copy,
         withdrawals=withdrawals,
         script_withdrawals=script_withdrawals,
