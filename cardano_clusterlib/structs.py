@@ -183,6 +183,7 @@ class PoolData(NamedTuple):
 class TxRawOutput(NamedTuple):
     txins: List[UTXOData]
     txouts: List[TxOut]
+    txouts_count: int
     tx_files: TxFiles
     out_file: Path
     fee: int

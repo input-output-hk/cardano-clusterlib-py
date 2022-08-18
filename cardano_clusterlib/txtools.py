@@ -345,8 +345,9 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
 
 def _join_txouts(  # noqa: C901
     txouts: List[structs.TxOut],
-) -> Tuple[List[str], List[structs.TxOut]]:
+) -> Tuple[List[str], List[structs.TxOut], int]:
     txout_args: List[str] = []
+    txouts_count: int = 0
     txouts_datum_order: List[str] = []
     txouts_by_datum: Dict[str, Dict[str, List[structs.TxOut]]] = {}
     joined_txouts: List[structs.TxOut] = []
@@ -403,8 +404,9 @@ def _join_txouts(  # noqa: C901
 
             txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
             txout_args.extend(_get_txout_plutus_args(txout=recs[0]))
+            txouts_count += 1
 
-    return txout_args, joined_txouts
+    return txout_args, joined_txouts, txouts_count
 
 
 def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
@@ -443,10 +445,10 @@ def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> List[st
 
 def _process_txouts(
     txouts: List[structs.TxOut], join_txouts: bool
-) -> Tuple[List[str], List[structs.TxOut]]:
+) -> Tuple[List[str], List[structs.TxOut], int]:
     if join_txouts:
         return _join_txouts(txouts=txouts)
-    return _list_txouts(txouts=txouts), txouts
+    return _list_txouts(txouts=txouts), txouts, len(txouts)
 
 
 def _get_tx_ins_outs(
