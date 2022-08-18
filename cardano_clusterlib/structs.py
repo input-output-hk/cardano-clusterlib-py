@@ -198,6 +198,7 @@ class TxRawOutput(NamedTuple):
     return_collateral_txouts: OptionalTxOuts = ()
     total_collateral_amount: Optional[int] = None
     readonly_reference_txins: OptionalUTXOData = ()
+    script_valid: bool = True
 
 
 class PoolCreationOutput(NamedTuple):

@@ -1683,6 +1683,7 @@ class ClusterLib:
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
+            script_valid=script_valid,
         )
 
     def build_raw_tx(
@@ -2239,6 +2240,7 @@ class ClusterLib:
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
+            script_valid=script_valid,
         )
 
     def sign_tx(
