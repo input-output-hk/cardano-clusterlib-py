@@ -52,6 +52,9 @@ def _get_utxos_with_coins(
     seen_ids = set()
     for rec in address_utxos:
         utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
+        # don't select locked UTxOs
+        if rec.datum_hash or rec.inline_datum_hash:
+            continue
         if rec.coin in coins and utxo_id not in seen_ids:
             seen_ids.add(utxo_id)
             txins.extend(txins_by_id[utxo_id])
