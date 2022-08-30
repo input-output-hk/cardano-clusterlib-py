@@ -1,7 +1,10 @@
-"""Helper functions for `CLusterLib`."""
+"""Helper functions for `ClusterLib`."""
 import datetime
+import json
 import logging
 from pathlib import Path
+from typing import Any
+from typing import Dict
 
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types
@@ -63,3 +66,53 @@ def _write_cli_log(clusterlib_obj: "types.ClusterLib", command: str) -> None:
 
     with open(clusterlib_obj._cli_log, "a", encoding="utf-8") as logfile:
         logfile.write(f"{datetime.datetime.now()}: {command}\n")
+
+
+def _get_kes_period_info(kes_info: str) -> Dict[str, Any]:
+    """Process the output of the `kes-period-info` command.
+
+    Args:
+        kes_info: The output of the `kes-period-info` command.
+    """
+    messages_str = kes_info.split("{")[0]
+    messages_list = []
+
+    valid_counters = False
+    valid_kes_period = False
+
+    if messages_str:
+        message_entry: list = []
+
+        for line in messages_str.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if not message_entry or line[0].isalpha():
+                message_entry.append(line)
+            else:
+                messages_list.append(" ".join(message_entry))
+                message_entry = [line]
+
+        messages_list.append(" ".join(message_entry))
+
+        for out_message in messages_list:
+            if "counter agrees with" in out_message:
+                valid_counters = True
+            elif "correct KES period interval" in out_message:
+                valid_kes_period = True
+
+    # get output metrics
+    metrics_str = kes_info.split("{")[-1]
+    metrics_dict = {}
+
+    if metrics_str and metrics_str.strip().endswith("}"):
+        metrics_dict = json.loads(f"{{{metrics_str}")
+
+    output_dict = {
+        "messages": messages_list,
+        "metrics": metrics_dict,
+        "valid_counters": valid_counters,
+        "valid_kes_period": valid_kes_period,
+    }
+
+    return output_dict
