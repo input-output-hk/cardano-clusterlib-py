@@ -244,6 +244,7 @@ class ClusterLib:
         cli_args = ["utxo", "--out-file", "/dev/stdout"]
 
         address_single = ""
+        sort_results = False
         if address:
             if isinstance(address, str):
                 address_single = address
@@ -259,6 +260,7 @@ class ClusterLib:
             utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
         elif tx_raw_output:  # noqa: SIM106
+            sort_results = True
             change_txout_num = 1 if tx_raw_output.change_address else 0
             return_collateral_txout_num = 1 if tx_raw_output.script_txins else 0
             num_of_txouts = (
@@ -273,7 +275,10 @@ class ClusterLib:
             )
 
         utxo_dict = json.loads(self.query_cli(cli_args))
-        return txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
+        utxos = txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
+        if sort_results:
+            utxos = sorted(utxos, key=lambda u: u.utxo_ix)
+        return utxos
 
     def get_tip(self) -> Dict[str, Any]:
         """Return current tip - last block successfully applied to the ledger."""
