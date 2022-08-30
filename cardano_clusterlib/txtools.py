@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import Union
 
 from cardano_clusterlib import consts
+from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import types  # pylint: disable=unused-import
@@ -485,19 +486,24 @@ def _get_tx_ins_outs(
     outcoins_all = {consts.DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
     outcoins_passed = [consts.DEFAULT_COIN, *txouts_passed_db.keys()]
 
-    txins_all = list(txins) or _get_utxos_with_coins(
-        address_utxos=clusterlib_obj.get_utxo(address=src_address), coins=outcoins_all
-    )
-    txins_db_all: Dict[str, List[structs.UTXOData]] = _organize_tx_ins_outs_by_coin(txins_all)
-
-    tx_deposit = clusterlib_obj.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
+    txins_all = list(txins)
+    if not txins_all:
+        address_utxos = clusterlib_obj.get_utxo(address=src_address)
+        if not address_utxos:
+            raise exceptions.CLIError(f"No UTxO returned for '{src_address}'.")
+        txins_all = _get_utxos_with_coins(address_utxos=address_utxos, coins=outcoins_all)
 
     if not txins_all:
-        LOGGER.error("No input UTxO.")
+        raise exceptions.CLIError("No input UTxO.")
+
+    txins_db_all: Dict[str, List[structs.UTXOData]] = _organize_tx_ins_outs_by_coin(txins_all)
+
     # all output coins, except those minted by this transaction, need to be present in
     # transaction inputs
-    elif not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
-        LOGGER.error("Not all output coins are present in input UTxO.")
+    if not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
+        raise exceptions.CLIError("Not all output coins are present in input UTxOs.")
+
+    tx_deposit = clusterlib_obj.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
 
     if txins:
         # don't touch txins that were passed to the function
@@ -521,7 +527,7 @@ def _get_tx_ins_outs(
         txins_db_filtered = _organize_tx_ins_outs_by_coin(txins_filtered)
 
     if not txins_filtered:
-        LOGGER.error("Cannot build transaction, empty `txins`.")
+        raise exceptions.CLIError("Cannot build transaction, empty `txins`.")
 
     # balance the transaction
     txouts_balanced = _balance_txouts(
