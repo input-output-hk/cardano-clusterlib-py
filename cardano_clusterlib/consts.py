@@ -5,6 +5,7 @@ MAINNET_MAGIC = 764824073
 SLOTS_OFFSETS = {
     764824073: 85363200,  # mainnet
     1097911063: 30369600,  # testnet
+    1: 1641600,  # preprod
 }
 
 
