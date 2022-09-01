@@ -1784,6 +1784,7 @@ class ClusterLib:
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             mint=mint,
+            complex_certs=complex_certs,
             withdrawals=collected_data.withdrawals,
             script_withdrawals=collected_data.script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
