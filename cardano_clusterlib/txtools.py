@@ -1035,7 +1035,7 @@ def _get_script_args(  # noqa: C901
             if not for_build and crec.execution_units:
                 grouped_args.extend(
                     [
-                        "--certificate-reference-execution-units",
+                        "--certificate-reference-tx-in-execution-units",
                         f"({crec.execution_units[0]},{crec.execution_units[1]})",
                     ]
                 )
@@ -1107,7 +1107,7 @@ def _get_script_args(  # noqa: C901
             if not for_build and wrec.execution_units:
                 grouped_args.extend(
                     [
-                        "--withdrawal-reference-execution-units",
+                        "--withdrawal-reference-tx-in-execution-units",
                         f"({wrec.execution_units[0]},{wrec.execution_units[1]})",
                     ]
                 )
