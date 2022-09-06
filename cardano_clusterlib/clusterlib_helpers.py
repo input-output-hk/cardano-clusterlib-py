@@ -5,11 +5,18 @@ import logging
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import NamedTuple
 
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types
 
 LOGGER = logging.getLogger(__name__)
+
+
+class EpochInfo(NamedTuple):
+    epoch: int
+    first_slot: int
+    last_slot: int
 
 
 def _find_genesis_json(clusterlib_obj: "types.ClusterLib") -> Path:
@@ -116,3 +123,33 @@ def _get_kes_period_info(kes_info: str) -> Dict[str, Any]:
     }
 
     return output_dict
+
+
+def get_epoch_for_slot(cluster_obj: "types.ClusterLib", slot_no: int) -> EpochInfo:
+    """Given slot number, return corresponding epoch number and first and last slot of the epoch."""
+    genesis_byron = cluster_obj.state_dir / "byron" / "genesis.json"
+    if not genesis_byron.exists():
+        raise AssertionError(f"File '{genesis_byron}' does not exist.")
+
+    with open(genesis_byron, encoding="utf-8") as in_json:
+        byron_dict = json.load(in_json)
+
+    byron_k = int(byron_dict["protocolConsts"]["k"])
+    slots_in_byron_epoch = byron_k * 10
+    slots_per_epoch_diff = cluster_obj.epoch_length - slots_in_byron_epoch
+    num_byron_epochs = cluster_obj.slots_offset // slots_per_epoch_diff
+    slots_in_byron = num_byron_epochs * slots_in_byron_epoch
+
+    # slot is in Byron era
+    if slot_no < slots_in_byron:
+        epoch_no = slot_no // slots_in_byron_epoch
+        first_slot_in_epoch = epoch_no * slots_in_byron_epoch
+        last_slot_in_epoch = first_slot_in_epoch + slots_in_byron_epoch - 1
+    # slot is in Shelley-based era
+    else:
+        slot_no_shelley = slot_no + cluster_obj.slots_offset
+        epoch_no = slot_no_shelley // cluster_obj.epoch_length
+        first_slot_in_epoch = epoch_no * cluster_obj.epoch_length - cluster_obj.slots_offset
+        last_slot_in_epoch = first_slot_in_epoch + cluster_obj.epoch_length - 1
+
+    return EpochInfo(epoch=epoch_no, first_slot=first_slot_in_epoch, last_slot=last_slot_in_epoch)
