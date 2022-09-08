@@ -1542,7 +1542,7 @@ class ClusterLib:
 
         out_file = Path(out_file)
 
-        withdrawals, script_withdrawals, withdrawals_txouts = txtools._get_withdrawals(
+        withdrawals, script_withdrawals, __ = txtools._get_withdrawals(
             clusterlib_obj=self, withdrawals=withdrawals, script_withdrawals=script_withdrawals
         )
 
@@ -1645,7 +1645,7 @@ class ClusterLib:
             mint=mint,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
-            withdrawals=withdrawals_txouts,
+            withdrawals=withdrawals,
             return_collateral_txouts=return_collateral_txouts,
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
