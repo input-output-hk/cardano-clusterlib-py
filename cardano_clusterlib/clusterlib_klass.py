@@ -1951,17 +1951,13 @@ class ClusterLib:
         if not txouts:
             raise AssertionError("No txout was specified.")
 
-        addresses = {t.address for t in txouts}
-        if len(addresses) > 1:
-            raise AssertionError("Accepts `txouts` only for a single address.")
+        txout_args, __, txouts_count = txtools._join_txouts(txouts=txouts)
 
-        txout_records = [
-            f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
-        ]
-        # pylint: disable=consider-using-f-string
-        address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
-
-        txout_args = txtools._get_txout_plutus_args(txout=txouts[0])
+        if txouts_count > 1:
+            raise AssertionError(
+                "Accepts `TxOuts` only for a single transaction txout "
+                "(same address, datum, script)."
+            )
 
         era = self.get_era()
         era_arg = f"--{era.lower()}-era"
@@ -1974,8 +1970,6 @@ class ClusterLib:
                 "--protocol-params-file",
                 str(self.pparams_file),
                 era_arg,
-                "--tx-out",
-                address_value,
                 *txout_args,
             ]
         ).stdout

@@ -3,7 +3,6 @@ import base64
 import functools
 import itertools
 import logging
-from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -344,70 +343,71 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
     return txout_args
 
 
-def _join_txouts(  # noqa: C901
+def get_joined_txouts(
     txouts: List[structs.TxOut],
-) -> Tuple[List[str], List[structs.TxOut], int]:
-    txout_args: List[str] = []
-    txouts_count: int = 0
-    txouts_datum_order: List[str] = []
-    txouts_by_datum: Dict[str, Dict[str, List[structs.TxOut]]] = {}
-    joined_txouts: List[structs.TxOut] = []
+) -> List[List[structs.TxOut]]:
+    """Return list of joined `TxOut`s."""
+    txouts_by_eutxo_attrs: Dict[str, List[structs.TxOut]] = {}
+    joined_txouts: List[List[structs.TxOut]] = []
 
-    def _add_inline(datum_src: Any) -> str:
-        # we need to differentiate between datum hashes and inline datums
-        datum_src_str = str(datum_src)
-        if not datum_src_str:
-            return ""
-        return f"inline_{datum_src_str}"
-
-    # aggregate TX outputs by datum and address
+    # aggregate TX outputs by address, datum and reference script
     for rec in txouts:
         datum_src = str(
             rec.datum_hash
             or rec.datum_hash_file
             or rec.datum_hash_cbor_file
             or rec.datum_hash_value
-            or _add_inline(rec.inline_datum_file)
-            or _add_inline(rec.inline_datum_cbor_file)
-            or _add_inline(rec.inline_datum_value)
+            or rec.datum_embed_file
+            or rec.datum_embed_cbor_file
+            or rec.datum_embed_value
         )
-        if datum_src not in txouts_datum_order:
-            txouts_datum_order.append(datum_src)
-        if datum_src not in txouts_by_datum:
-            txouts_by_datum[datum_src] = {}
-        txouts_by_addr = txouts_by_datum[datum_src]
-        if rec.address not in txouts_by_addr:
-            txouts_by_addr[rec.address] = []
-        txouts_by_addr[rec.address].append(rec)
 
-    # join txouts with the same address and datum
-    for datum_src in txouts_datum_order:
-        for addr, recs in txouts_by_datum[datum_src].items():
-            # create single `TxOut` record with sum of amounts per coin
-            txouts_by_coin: Dict[str, Tuple[structs.TxOut, List[int]]] = {}
-            for ar in recs:
-                if ar.coin in txouts_by_coin:
-                    txouts_by_coin[ar.coin][1].append(ar.amount)
-                else:
-                    txouts_by_coin[ar.coin] = (ar, [ar.amount])
-            # The tuple for each coin is `("one of the original TxOuts", "list of amounts")`.
-            # All the `TxOut` values except of amount are the same in this loop, so we can
-            # take the original `TxOut` and replace `amount` with sum of all amounts.
-            sum_txouts = [r[0]._replace(amount=sum(r[1])) for r in txouts_by_coin.values()]
+        inline_datum_src = str(
+            rec.inline_datum_file or rec.inline_datum_cbor_file or rec.inline_datum_value
+        )
 
-            joined_txouts.extend(sum_txouts)
+        eutxo_attrs = f"{rec.address}::{datum_src}::{inline_datum_src}::{rec.reference_script_file}"
 
-            amounts = [
-                f"{r.amount} {r.coin if r.coin != consts.DEFAULT_COIN else ''}".rstrip()
-                for r in sum_txouts
-            ]
-            amounts_joined = "+".join(amounts)
+        if eutxo_attrs not in txouts_by_eutxo_attrs:
+            txouts_by_eutxo_attrs[eutxo_attrs] = []
+        txouts_by_eutxo_attrs[eutxo_attrs].append(rec)
 
-            txout_args.extend(["--tx-out", f"{addr}+{amounts_joined}"])
-            txout_args.extend(_get_txout_plutus_args(txout=recs[0]))
-            txouts_count += 1
+    # join txouts with the same address, datum and reference script
+    for txouts_list in txouts_by_eutxo_attrs.values():
+        # create single `TxOut` record with sum of amounts per coin
+        txouts_by_coin: Dict[str, Tuple[structs.TxOut, List[int]]] = {}
+        for ar in txouts_list:
+            if ar.coin in txouts_by_coin:
+                txouts_by_coin[ar.coin][1].append(ar.amount)
+            else:
+                txouts_by_coin[ar.coin] = (ar, [ar.amount])
+        # The tuple for each coin is `("one of the original TxOuts", "list of amounts")`.
+        # All the `TxOut` values except of amount are the same in this loop, so we can
+        # take the original `TxOut` and replace `amount` with sum of all amounts.
+        sum_txouts = [r[0]._replace(amount=sum(r[1])) for r in txouts_by_coin.values()]
 
-    return txout_args, joined_txouts, txouts_count
+        joined_txouts.append(sum_txouts)
+
+    return joined_txouts
+
+
+def _join_txouts(
+    txouts: List[structs.TxOut],
+) -> Tuple[List[str], List[structs.TxOut], int]:
+    txout_args: List[str] = []
+    joined_txouts = get_joined_txouts(txouts=txouts)
+    for joined_recs in joined_txouts:
+        amounts = [
+            f"{r.amount} {r.coin if r.coin != consts.DEFAULT_COIN else ''}".rstrip()
+            for r in joined_recs
+        ]
+        amounts_joined = "+".join(amounts)
+
+        txout_args.extend(["--tx-out", f"{joined_recs[0].address}+{amounts_joined}"])
+        txout_args.extend(_get_txout_plutus_args(txout=joined_recs[0]))
+
+    joined_txouts_flat = list(itertools.chain.from_iterable(joined_txouts))
+    return txout_args, joined_txouts_flat, len(joined_txouts)
 
 
 def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
