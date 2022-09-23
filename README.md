@@ -1,9 +1,9 @@
+README for cardano-clusterlib
+=============================
+
 [![Documentation Status](https://readthedocs.org/projects/cardano-clusterlib-py/badge/?version=latest)](https://cardano-clusterlib-py.readthedocs.io/en/latest/?badge=latest)
 [![PyPi Version](https://img.shields.io/pypi/v/cardano-clusterlib.svg)](https://pypi.org/project/cardano-clusterlib/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-
-README for cardano-clusterlib
-=============================
 
 Python wrapper for cardano-cli for working with cardano cluster.
 
