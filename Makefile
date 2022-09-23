@@ -10,7 +10,7 @@ install:
 	virtualenv --upgrade-embed-wheels
 
 .install_doc:
-	python3 -m pip install --upgrade -r docs/requirements.txt
+	python3 -m pip install --upgrade --upgrade-strategy eager -r docs/requirements.txt
 
 # run linters
 lint:
