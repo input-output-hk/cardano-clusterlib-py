@@ -601,6 +601,10 @@ def collect_data_for_build(
 
     script_txins_records = list(itertools.chain.from_iterable(r.txins for r in script_txins))
 
+    script_addresses = {r.address for r in script_txins_records}
+    if src_address in script_addresses:
+        raise AssertionError("Source address cannot be a script address.")
+
     # combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [
         *txins,
