@@ -42,22 +42,27 @@ def _organize_utxos_by_id(tx_list: List[structs.UTXOData]) -> Dict[str, List[str
     return db
 
 
-def _get_utxos_with_coins(
+def _get_usable_utxos(
     address_utxos: List[structs.UTXOData], coins: Set[str]
 ) -> List[structs.UTXOData]:
-    """Get all UTxOs that contain any of the required coins (`coins`)."""
+    """Get all UTxOs with no datum that contain any of the required coins (`coins`)."""
     txins_by_id = _organize_utxos_by_id(address_utxos)
 
     txins = []
     seen_ids = set()
+    matching_with_datum = False
     for rec in address_utxos:
         utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
-        # don't select locked UTxOs
-        if rec.datum_hash or rec.inline_datum_hash:
-            continue
         if rec.coin in coins and utxo_id not in seen_ids:
+            # don't select UTxOs with datum
+            if rec.datum_hash or rec.inline_datum_hash:
+                matching_with_datum = True
+                continue
             seen_ids.add(utxo_id)
             txins.extend(txins_by_id[utxo_id])
+
+    if not txins and matching_with_datum:
+        raise exceptions.CLIError("The only matching UTxOs have datum.")
 
     return txins
 
@@ -488,10 +493,11 @@ def _get_tx_ins_outs(
 
     txins_all = list(txins)
     if not txins_all:
+        # no txins were provided, so we'll select them from the source address
         address_utxos = clusterlib_obj.get_utxo(address=src_address)
         if not address_utxos:
             raise exceptions.CLIError(f"No UTxO returned for '{src_address}'.")
-        txins_all = _get_utxos_with_coins(address_utxos=address_utxos, coins=outcoins_all)
+        txins_all = _get_usable_utxos(address_utxos=address_utxos, coins=outcoins_all)
 
     if not txins_all:
         raise exceptions.CLIError("No input UTxO.")
@@ -600,6 +606,10 @@ def collect_data_for_build(
     )
 
     script_txins_records = list(itertools.chain.from_iterable(r.txins for r in script_txins))
+
+    script_addresses = {r.address for r in script_txins_records}
+    if src_address in script_addresses:
+        raise AssertionError("Source address cannot be a script address.")
 
     # combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [
