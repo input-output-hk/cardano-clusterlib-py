@@ -2417,6 +2417,13 @@ class ClusterLib:
     ) -> structs.TxRawOutput:
         """Build, Sign and Submit a transaction.
 
+        Not recommended for complex transactions that involve Plutus scripts!
+
+        This function uses `cardano-cli transaction build-raw` to build the transaction.
+        For more complex transactions that involve Plutus scripts, consider using `build_tx`.
+        The `build_tx` uses `cardano-cli transaction build` and handles execution units and
+        collateral return automatically.
+
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
