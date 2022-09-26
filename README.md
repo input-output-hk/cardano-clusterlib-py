@@ -1,5 +1,4 @@
-README for cardano-clusterlib
-=============================
+# README for cardano-clusterlib
 
 [![Documentation Status](https://readthedocs.org/projects/cardano-clusterlib-py/badge/?version=latest)](https://cardano-clusterlib-py.readthedocs.io/en/latest/?badge=latest)
 [![PyPi Version](https://img.shields.io/pypi/v/cardano-clusterlib.svg)](https://pypi.org/project/cardano-clusterlib/)
@@ -7,8 +6,7 @@ README for cardano-clusterlib
 
 Python wrapper for cardano-cli for working with cardano cluster.
 
-Installation
-------------
+## Installation
 
 ```sh
 # create and activate virtual env
@@ -20,10 +18,11 @@ $ pip install cardano-clusterlib
 $ make install
 ```
 
-Usage
------
+## Usage
 
 Needs working `cardano-cli` (the command is available on `PATH`, `cardano-node` is running, `CARDANO_NODE_SOCKET_PATH` is set). In `state_dir` it expects "shelley/genesis.json".
+
+### Transfer funds
 
 ```python
 from cardano_clusterlib import clusterlib
@@ -55,17 +54,112 @@ tx_raw_output = cluster.send_tx(
 cluster.get_utxo(dst_addr.address)
 ```
 
+### Lock and redeem funds with Plutus script
+
+```python
+from cardano_clusterlib import clusterlib
+
+# instantiate `ClusterLib`
+cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir", tx_era="babbage")
+
+# source address - for funding
+src_address = "addr_test1vpst87uzwafqkxumyf446zr2jsyn44cfpu9fe8yqanyuh6glj2hkl"
+src_skey_file = "/path/to/skey"
+
+# destination address - for redeeming
+dst_addr = cluster.gen_payment_addr_and_keys(name="destination_address")
+
+amount_fund = 10_000_000  # 10 ADA
+amount_redeem = 5_000_000  # 5 ADA
+
+# get address of the Plutus script
+script_address = cluster.gen_payment_addr(
+    addr_name="script_address", payment_script_file="path/to/script.plutus"
+)
+
+# create a Tx output with a datum hash at the script address
+
+# provide keys needed for signing the transaction
+tx_files_fund = clusterlib.TxFiles(signing_key_files=[src_skey_file])
+
+# get datum hash
+datum_hash = cluster.get_hash_script_data(script_data_file="path/to/file.datum")
+
+# specify Tx outputs for script address and collateral
+txouts_fund = [
+    clusterlib.TxOut(address=script_address, amount=amount_fund, datum_hash=datum_hash),
+    # for collateral
+    clusterlib.TxOut(address=dst_addr.address, amount=2_000_000),
+]
+
+# build and submit the Tx
+tx_output_fund = cluster.build_tx(
+    src_address=src_address,
+    tx_name="fund_script_address",
+    tx_files=tx_files_fund,
+    txouts=txouts_fund,
+    fee_buffer=2_000_000,
+)
+tx_signed_fund = cluster.sign_tx(
+    tx_body_file=tx_output_fund.out_file,
+    signing_key_files=tx_files_fund.signing_key_files,
+    tx_name="fund_script_address",
+)
+cluster.submit_tx(tx_file=tx_signed_fund, txins=tx_output_fund.txins)
+
+# get newly created UTxOs
+fund_utxos = cluster.get_utxo(tx_raw_output=tx_output_fund)
+script_utxos = clusterlib.filter_utxos(utxos=fund_utxos, address=script_address)
+collateral_utxos = clusterlib.filter_utxos(utxos=fund_utxos, address=dst_addr.address)
+
+# redeem the locked UTxO
+
+plutus_txins = [
+    clusterlib.ScriptTxIn(
+        txins=script_utxos,
+        script_file="path/to/script.plutus",
+        collaterals=collateral_utxos,
+        datum_file="path/to/file.datum",
+        redeemer_file="path/to/file.redeemer",
+    )
+]
+
+tx_files_redeem = clusterlib.TxFiles(signing_key_files=[dst_addr.skey_file])
+
+txouts_redeem = [
+    clusterlib.TxOut(address=dst_addr.address, amount=amount_redeem),
+]
+
+# The entire locked UTxO will be spent and fees will be covered from the locked UTxO.
+# One UTxO with "amount_redeem" amount will be created on "destination address".
+# Second UTxO with change will be created on "destination address".
+tx_output_redeem = cluster.build_tx(
+    src_address=src_address,  # this will not be used, because txins (`script_txins`) are specified explicitly
+    tx_name="redeem_funds",
+    tx_files=tx_files_redeem,
+    txouts=txouts_redeem,
+    script_txins=plutus_txins,
+    change_address=dst_addr.address,
+)
+tx_signed_redeem = cluster.sign_tx(
+    tx_body_file=tx_output_redeem.out_file,
+    signing_key_files=tx_files_redeem.signing_key_files,
+    tx_name="redeem_funds",
+)
+cluster.submit_tx(tx_file=tx_signed_redeem, txins=tx_output_fund.txins)
+```
+
+### More examples
+
 See [cardano-node-tests](https://github.com/input-output-hk/cardano-node-tests) for more examples, e.g. [minting new tokens](https://github.com/input-output-hk/cardano-node-tests/blob/90aa4a2e9fe4019a89e6f4cdec7cb092732e6f2a/cardano_node_tests/utils/clusterlib_utils.py#L567-L602) or [minting new tokens with Plutus](https://github.com/input-output-hk/cardano-node-tests/blob/d688a9bcf00a30f9881c52aab9311dd1a0cb3077/cardano_node_tests/tests/test_plutus_mint_build.py#L173-L217)
 
 
-Source Documentation
---------------------
+## Source Documentation
 
 <https://cardano-clusterlib-py.readthedocs.io/en/latest/cardano_clusterlib.html>
 
 
-Contributing
-------------
+## Contributing
 
 Install this package and its dependencies as described above.
 
