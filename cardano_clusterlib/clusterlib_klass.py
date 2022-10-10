@@ -1496,6 +1496,7 @@ class ClusterLib:
         invalid_before: Optional[int] = None,
         script_valid: bool = True,
         join_txouts: bool = True,
+        use_explicit_tx_era: bool = True,
     ) -> structs.TxRawOutput:
         """Build a raw transaction.
 
@@ -1529,6 +1530,7 @@ class ClusterLib:
             script_valid: A bool indicating that the script is valid (True by default).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
+            use_explicit_tx_era: A bool indicating whether to use the Tx era flag (True by default).
 
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
@@ -1627,7 +1629,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--withdrawal", withdrawal_strings),
                 *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
-                *self.tx_era_arg,
+                *(self.tx_era_arg if use_explicit_tx_era else []),
             ]
         )
 
@@ -1939,11 +1941,13 @@ class ClusterLib:
     def calculate_min_req_utxo(
         self,
         txouts: List[structs.TxOut],
+        use_explicit_tx_era: bool = True,
     ) -> structs.Value:
         """Calculate the minimum required UTxO for a single transaction output.
 
         Args:
             txouts: A list of `TxOut` records that correspond to a single transaction output (UTxO).
+            use_explicit_tx_era: A bool indicating whether to use the Tx era flag (True by default).
 
         Returns:
             structs.Value: A tuple describing the value.
@@ -1969,7 +1973,7 @@ class ClusterLib:
                 "calculate-min-required-utxo",
                 "--protocol-params-file",
                 str(self.pparams_file),
-                era_arg,
+                *([era_arg] if use_explicit_tx_era else []),
                 *txout_args,
             ]
         ).stdout
@@ -2003,6 +2007,7 @@ class ClusterLib:
         calc_script_cost_file: Optional[FileType] = None,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
+        use_explicit_tx_era: bool = True,
     ) -> structs.TxRawOutput:
         """Build a transaction.
 
@@ -2044,6 +2049,7 @@ class ClusterLib:
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
+            use_explicit_tx_era: A bool indicating whether to use the Tx era flag (True by default).
 
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
@@ -2171,7 +2177,7 @@ class ClusterLib:
                 *helpers._prepend_flag("--withdrawal", withdrawal_strings),
                 *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
                 *cli_args,
-                *self.tx_era_arg,
+                *(self.tx_era_arg if use_explicit_tx_era else []),
                 *self.magic_args,
             ]
         ).stdout
