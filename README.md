@@ -33,7 +33,7 @@ cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir")
 src_address = "addr_test1vpst87uzwafqkxumyf446zr2jsyn44cfpu9fe8yqanyuh6glj2hkl"
 src_skey_file = "/path/to/skey"
 
-dst_addr = cluster.gen_payment_addr_and_keys(name="destination_address")
+dst_addr = cluster.g_address.gen_payment_addr_and_keys(name="destination_address")
 amount_lovelace = 10_000_000  # 10 ADA
 
 # specify where to send funds and amounts to send
@@ -43,7 +43,7 @@ txouts = [clusterlib.TxOut(address=dst_addr.address, amount=amount_lovelace)]
 tx_files = clusterlib.TxFiles(signing_key_files=[src_skey_file])
 
 # build, sign and submit the transaction
-tx_raw_output = cluster.send_tx(
+tx_raw_output = cluster.g_transaction.send_tx(
     src_address=src_address,
     tx_name="send_funds",
     txouts=txouts,
@@ -51,7 +51,7 @@ tx_raw_output = cluster.send_tx(
 )
 
 # check that the funds were received
-cluster.get_utxo(dst_addr.address)
+cluster.g_query.get_utxo(dst_addr.address)
 ```
 
 ### Lock and redeem funds with Plutus script
@@ -67,13 +67,13 @@ src_address = "addr_test1vpst87uzwafqkxumyf446zr2jsyn44cfpu9fe8yqanyuh6glj2hkl"
 src_skey_file = "/path/to/skey"
 
 # destination address - for redeeming
-dst_addr = cluster.gen_payment_addr_and_keys(name="destination_address")
+dst_addr = cluster.g_address.gen_payment_addr_and_keys(name="destination_address")
 
 amount_fund = 10_000_000  # 10 ADA
 amount_redeem = 5_000_000  # 5 ADA
 
 # get address of the Plutus script
-script_address = cluster.gen_payment_addr(
+script_address = cluster.g_address.gen_payment_addr(
     addr_name="script_address", payment_script_file="path/to/script.plutus"
 )
 
@@ -83,7 +83,7 @@ script_address = cluster.gen_payment_addr(
 tx_files_fund = clusterlib.TxFiles(signing_key_files=[src_skey_file])
 
 # get datum hash
-datum_hash = cluster.get_hash_script_data(script_data_file="path/to/file.datum")
+datum_hash = cluster.g_transaction.get_hash_script_data(script_data_file="path/to/file.datum")
 
 # specify Tx outputs for script address and collateral
 txouts_fund = [
@@ -93,22 +93,22 @@ txouts_fund = [
 ]
 
 # build and submit the Tx
-tx_output_fund = cluster.build_tx(
+tx_output_fund = cluster.g_transaction.build_tx(
     src_address=src_address,
     tx_name="fund_script_address",
     tx_files=tx_files_fund,
     txouts=txouts_fund,
     fee_buffer=2_000_000,
 )
-tx_signed_fund = cluster.sign_tx(
+tx_signed_fund = cluster.g_transaction.sign_tx(
     tx_body_file=tx_output_fund.out_file,
     signing_key_files=tx_files_fund.signing_key_files,
     tx_name="fund_script_address",
 )
-cluster.submit_tx(tx_file=tx_signed_fund, txins=tx_output_fund.txins)
+cluster.g_transaction.submit_tx(tx_file=tx_signed_fund, txins=tx_output_fund.txins)
 
 # get newly created UTxOs
-fund_utxos = cluster.get_utxo(tx_raw_output=tx_output_fund)
+fund_utxos = cluster.g_query.get_utxo(tx_raw_output=tx_output_fund)
 script_utxos = clusterlib.filter_utxos(utxos=fund_utxos, address=script_address)
 collateral_utxos = clusterlib.filter_utxos(utxos=fund_utxos, address=dst_addr.address)
 
@@ -133,7 +133,7 @@ txouts_redeem = [
 # The entire locked UTxO will be spent and fees will be covered from the locked UTxO.
 # One UTxO with "amount_redeem" amount will be created on "destination address".
 # Second UTxO with change will be created on "destination address".
-tx_output_redeem = cluster.build_tx(
+tx_output_redeem = cluster.g_transaction.build_tx(
     src_address=src_address,  # this will not be used, because txins (`script_txins`) are specified explicitly
     tx_name="redeem_funds",
     tx_files=tx_files_redeem,
@@ -141,12 +141,12 @@ tx_output_redeem = cluster.build_tx(
     script_txins=plutus_txins,
     change_address=dst_addr.address,
 )
-tx_signed_redeem = cluster.sign_tx(
+tx_signed_redeem = cluster.g_transaction.sign_tx(
     tx_body_file=tx_output_redeem.out_file,
     signing_key_files=tx_files_redeem.signing_key_files,
     tx_name="redeem_funds",
 )
-cluster.submit_tx(tx_file=tx_signed_redeem, txins=tx_output_fund.txins)
+cluster.g_transaction.submit_tx(tx_file=tx_signed_redeem, txins=tx_output_fund.txins)
 ```
 
 ### More examples

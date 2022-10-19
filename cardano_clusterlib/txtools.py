@@ -233,7 +233,7 @@ def _resolve_withdrawals(
     for rec in withdrawals:
         # the amount with value "-1" means all available balance
         if rec.amount == -1:
-            balance = clusterlib_obj.get_stake_addr_info(rec.address).reward_account_balance
+            balance = clusterlib_obj.g_query.get_stake_addr_info(rec.address).reward_account_balance
             resolved_withdrawals.append(structs.TxOut(address=rec.address, amount=balance))
         else:
             resolved_withdrawals.append(rec)
@@ -494,7 +494,7 @@ def _get_tx_ins_outs(
     txins_all = list(txins)
     if not txins_all:
         # no txins were provided, so we'll select them from the source address
-        address_utxos = clusterlib_obj.get_utxo(address=src_address)
+        address_utxos = clusterlib_obj.g_query.get_utxo(address=src_address)
         if not address_utxos:
             raise exceptions.CLIError(f"No UTxO returned for '{src_address}'.")
         txins_all = _get_usable_utxos(address_utxos=address_utxos, coins=outcoins_all)
@@ -509,7 +509,11 @@ def _get_tx_ins_outs(
     if not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
         raise exceptions.CLIError("Not all output coins are present in input UTxOs.")
 
-    tx_deposit = clusterlib_obj.get_tx_deposit(tx_files=tx_files) if deposit is None else deposit
+    tx_deposit = (
+        clusterlib_obj.g_transaction.get_tx_deposit(tx_files=tx_files)
+        if deposit is None
+        else deposit
+    )
 
     if txins:
         # don't touch txins that were passed to the function
