@@ -25,6 +25,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class QueryGroup:
+    # pylint: disable=too-many-public-methods
+
     def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
@@ -395,6 +397,21 @@ class QueryGroup:
         """
         command_output = self.query_cli(["kes-period-info", "--op-cert-file", str(opcert_file)])
         return clusterlib_helpers._get_kes_period_info(kes_info=command_output)
+
+    def get_tx_mempool_info(self) -> dict:
+        """Return the 'query tx-mempool info' result."""
+        tx_mempool: dict = json.loads(self.query_cli(["tx-mempool", "info"]))
+        return tx_mempool
+
+    def get_tx_mempool_next(self) -> dict:
+        """Return the 'query tx-mempool next-tx' result."""
+        tx_mempool: dict = json.loads(self.query_cli(["tx-mempool", "next-tx"]))
+        return tx_mempool
+
+    def get_tx_mempool_exists(self, txid: str) -> dict:
+        """Return the 'query tx-mempool tx-exists <txId>' result."""
+        tx_mempool: dict = json.loads(self.query_cli(["tx-mempool", "tx-exists", txid]))
+        return tx_mempool
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
