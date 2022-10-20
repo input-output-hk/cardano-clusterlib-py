@@ -4,6 +4,14 @@ cardano\_clusterlib package
 Submodules
 ----------
 
+cardano\_clusterlib.address\_group module
+-----------------------------------------
+
+.. automodule:: cardano_clusterlib.address_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cardano\_clusterlib.clusterlib module
 -------------------------------------
 
@@ -52,6 +60,22 @@ cardano\_clusterlib.exceptions module
    :undoc-members:
    :show-inheritance:
 
+cardano\_clusterlib.genesis\_group module
+-----------------------------------------
+
+.. automodule:: cardano_clusterlib.genesis_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.governance\_group module
+--------------------------------------------
+
+.. automodule:: cardano_clusterlib.governance_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cardano\_clusterlib.helpers module
 ----------------------------------
 
@@ -60,10 +84,58 @@ cardano\_clusterlib.helpers module
    :undoc-members:
    :show-inheritance:
 
+cardano\_clusterlib.key\_group module
+-------------------------------------
+
+.. automodule:: cardano_clusterlib.key_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.node\_group module
+--------------------------------------
+
+.. automodule:: cardano_clusterlib.node_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.query\_group module
+---------------------------------------
+
+.. automodule:: cardano_clusterlib.query_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.stake\_address\_group module
+------------------------------------------------
+
+.. automodule:: cardano_clusterlib.stake_address_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.stake\_pool\_group module
+---------------------------------------------
+
+.. automodule:: cardano_clusterlib.stake_pool_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cardano\_clusterlib.structs module
 ----------------------------------
 
 .. automodule:: cardano_clusterlib.structs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.transaction\_group module
+---------------------------------------------
+
+.. automodule:: cardano_clusterlib.transaction_group
    :members:
    :undoc-members:
    :show-inheritance:
