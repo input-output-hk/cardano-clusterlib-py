@@ -49,11 +49,11 @@ class StakePoolGroup:
         """Generate a stake pool registration certificate.
 
         Args:
-            pool_data: A `structs.PoolData` tuple cointaining info about the stake pool.
+            pool_data: A `structs.PoolData` tuple containing info about the stake pool.
             vrf_vkey_file: A path to node VRF vkey file.
             cold_vkey_file: A path to pool cold vkey file.
             owner_stake_vkey_files: A list of paths to pool owner stake vkey files.
-            reward_account_vkey_file: A path to pool reward acount vkey file (optional).
+            reward_account_vkey_file: A path to pool reward account vkey file (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -174,7 +174,7 @@ class StakePoolGroup:
         """Create and register a stake pool.
 
         Args:
-            pool_data: A `structs.PoolData` tuple cointaining info about the stake pool.
+            pool_data: A `structs.PoolData` tuple containing info about the stake pool.
             pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
                 and keys.
             tx_name: A name of the transaction.
@@ -241,7 +241,7 @@ class StakePoolGroup:
         """Register a stake pool.
 
         Args:
-            pool_data: A `structs.PoolData` tuple cointaining info about the stake pool.
+            pool_data: A `structs.PoolData` tuple containing info about the stake pool.
             pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
                 and keys.
             vrf_vkey_file: A path to node VRF vkey file.

@@ -336,7 +336,7 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
             str(txout.inline_datum_value),
         ]
 
-    # add regerence spript arguments
+    # add reference script arguments
     if txout.reference_script_file:
         txout_args.extend(
             [
@@ -543,7 +543,7 @@ def _get_tx_ins_outs(
     txouts_balanced = _balance_txouts(
         # Return change to `src_address`.
         # When using `build_tx`, Lovelace change is returned to `change_address` (this is handled
-        # automatically by `transaction build`) and only tokens change is returned back to
+        # automatically by `transaction build`) and only tokens change is returned to
         # `src_address`. It is up to user to specify Lovelace output for `src_address` with high
         # enough Lovelace value when token change is needed and `change_address` differs from
         # `src_address`.
@@ -594,7 +594,7 @@ def collect_data_for_build(
         script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
             data (optional).
         deposit: A deposit amount needed by the transaction (optional).
-        lovelace_balanced: A bool indicating whether Lovelace ins/outs are ballanced
+        lovelace_balanced: A bool indicating whether Lovelace ins/outs are balanced
             (by `build` command; optional)
 
     Returns:
@@ -757,7 +757,7 @@ def filter_utxo_with_highest_amount(
     utxos: List[structs.UTXOData],
     coin: str = consts.DEFAULT_COIN,
 ) -> structs.UTXOData:
-    """Return data for UTxO with highest amount.
+    """Return data for UTxO with the highest amount.
 
     Args:
         utxos: A list of UTxO data.

@@ -115,7 +115,7 @@ class ComplexCert(NamedTuple):
     """Data structure for certificates with optional data for Plutus scripts.
 
     If used for one certificate, it needs to be used for all the other certificates in a given
-    transaction (instead of `TxFiles.certificate_files`). Otherwise order of certificates
+    transaction (instead of `TxFiles.certificate_files`). Otherwise, order of certificates
     cannot be guaranteed.
     """
 
