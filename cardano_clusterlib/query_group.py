@@ -390,7 +390,7 @@ class QueryGroup:
         """Get information about the current KES period and node's operational certificate.
 
         Args:
-            opcert_file: Operational certificate.
+            opcert_file: A path to operational certificate.
 
         Returns:
             dict: A dictionary containing KES period information.
@@ -398,19 +398,34 @@ class QueryGroup:
         command_output = self.query_cli(["kes-period-info", "--op-cert-file", str(opcert_file)])
         return clusterlib_helpers._get_kes_period_info(kes_info=command_output)
 
-    def get_tx_mempool_info(self) -> dict:
-        """Return the 'query tx-mempool info' result."""
-        tx_mempool: dict = json.loads(self.query_cli(["tx-mempool", "info"]))
+    def get_mempool_info(self) -> Dict[str, Any]:
+        """Return info about the current mempool's capacity and sizes.
+
+        Returns:
+            dict: A dictionary containing mempool information.
+        """
+        tx_mempool: Dict[str, Any] = json.loads(self.query_cli(["tx-mempool", "info"]))
         return tx_mempool
 
-    def get_tx_mempool_next(self) -> dict:
-        """Return the 'query tx-mempool next-tx' result."""
-        tx_mempool: dict = json.loads(self.query_cli(["tx-mempool", "next-tx"]))
+    def get_mempool_next_tx(self) -> Dict[str, Any]:
+        """Return info about the next transaction in the mempool's current list.
+
+        Returns:
+            dict: A dictionary containing mempool information.
+        """
+        tx_mempool: Dict[str, Any] = json.loads(self.query_cli(["tx-mempool", "next-tx"]))
         return tx_mempool
 
-    def get_tx_mempool_exists(self, txid: str) -> dict:
-        """Return the 'query tx-mempool tx-exists <txId>' result."""
-        tx_mempool: dict = json.loads(self.query_cli(["tx-mempool", "tx-exists", txid]))
+    def get_mempool_tx_exists(self, txid: str) -> Dict[str, Any]:
+        """Query if a particular transaction exists in the mempool.
+
+        Args:
+            txid: A transaction ID.
+
+        Returns:
+            dict: A dictionary containing mempool information.
+        """
+        tx_mempool: Dict[str, Any] = json.loads(self.query_cli(["tx-mempool", "tx-exists", txid]))
         return tx_mempool
 
     def __repr__(self) -> str:
