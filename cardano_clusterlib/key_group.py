@@ -52,7 +52,7 @@ class KeyGroup:
         extended_verification_key_file: FileType,
         destination_dir: FileType = ".",
     ) -> Path:
-        """Generate a non extended key from a verification key.
+        """Generate a non-extended key from a verification key.
 
         Args:
             key_name: A name of the key.
@@ -60,7 +60,7 @@ class KeyGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Path: A path to the generated non extented verification key file.
+            Path: A path to the generated non-extended verification key file.
         """
         destination_dir = Path(destination_dir).expanduser()
         out_file = destination_dir / f"{key_name}.vkey"

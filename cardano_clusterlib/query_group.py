@@ -320,7 +320,7 @@ class QueryGroup:
         schedule = []
         for rec in unparsed:
             slot_no, date_str, time_str, *__ = rec.split()
-            # add miliseconds component of a time string if it is missing
+            # add milliseconds component of a time string if it is missing
             time_str = time_str if "." in time_str else f"{time_str}.0"
             schedule.append(
                 structs.LeadershipSchedule(
@@ -367,7 +367,7 @@ class QueryGroup:
     def get_utxo_with_highest_amount(
         self, address: str, coin: str = consts.DEFAULT_COIN
     ) -> structs.UTXOData:
-        """Return data for UTxO with highest amount.
+        """Return data for UTxO with the highest amount.
 
         Args:
             address: A payment address string.

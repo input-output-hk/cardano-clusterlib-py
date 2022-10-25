@@ -1057,7 +1057,7 @@ class TransactionGroup:
 
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
-                # spent, but it was not the case. Reraising the exception.
+                # spent, but it was not the case. Re-raising the exception.
                 raise err
         else:
             raise exceptions.CLIError(
@@ -1139,7 +1139,7 @@ class TransactionGroup:
         tx_files = tx_files or structs.TxFiles()
 
         # resolve withdrawal amounts here (where -1 for total rewards amount is used) so the
-        # resolved values can be passed around and it is not needed to resolve them again
+        # resolved values can be passed around, and it is not needed to resolve them again
         # every time `_get_withdrawals` is called
         withdrawals, script_withdrawals, *__ = txtools._get_withdrawals(
             clusterlib_obj=self._clusterlib_obj,
