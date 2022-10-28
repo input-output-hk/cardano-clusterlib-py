@@ -4,6 +4,7 @@ import datetime
 import functools
 import json
 import logging
+import warnings
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -191,6 +192,10 @@ class QueryGroup:
         Returns:
             dict: A pool parameters.
         """
+        warnings.warn(
+            "`pool-params` deprecated by `pool-state` for node 1.35.4+", DeprecationWarning
+        )
+
         pool_params: dict = json.loads(
             self.query_cli(["pool-params", "--stake-pool-id", stake_pool_id])
         )
@@ -203,6 +208,34 @@ class QueryGroup:
         pparams_top = structs.PoolParamsTop(
             pool_params=pool_params.get("poolParams") or {},
             future_pool_params=pool_params.get("futurePoolParams") or {},
+            retiring=int(retiring) if retiring is not None else None,
+        )
+        return pparams_top
+
+    def get_pool_state(
+        self,
+        stake_pool_id: str,
+    ) -> structs.PoolParamsTop:
+        """Return a pool state.
+
+        Args:
+            stake_pool_id: An ID of the stake pool (Bech32-encoded or hex-encoded).
+
+        Returns:
+            dict: A pool parameters.
+        """
+        pool_state: dict = json.loads(
+            self.query_cli(["pool-state", "--stake-pool-id", stake_pool_id])
+        )
+
+        # the information is nested under hex encoded stake pool ID
+        if pool_state:
+            pool_state = next(iter(pool_state.values()))
+
+        retiring = pool_state.get("retiring")  # pool retiring epoch
+        pparams_top = structs.PoolParamsTop(
+            pool_params=pool_state.get("poolParams") or {},
+            future_pool_params=pool_state.get("futurePoolParams") or {},
             retiring=int(retiring) if retiring is not None else None,
         )
         return pparams_top
