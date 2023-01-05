@@ -42,7 +42,7 @@ class StakeAddressGroup:
 
         if stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
-        elif stake_script_file:  # noqa: SIM106
+        elif stake_script_file:
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
             raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
@@ -114,7 +114,7 @@ class StakeAddressGroup:
 
         if stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
-        elif stake_script_file:  # noqa: SIM106
+        elif stake_script_file:
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
             raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
@@ -156,7 +156,7 @@ class StakeAddressGroup:
 
         if stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
-        elif stake_script_file:  # noqa: SIM106
+        elif stake_script_file:
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
             raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
@@ -203,7 +203,7 @@ class StakeAddressGroup:
         cli_args = []
         if stake_vkey_file:
             cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
-        elif stake_script_file:  # noqa: SIM106
+        elif stake_script_file:
             cli_args.extend(["--stake-script-file", str(stake_script_file)])
         else:
             raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
@@ -215,7 +215,7 @@ class StakeAddressGroup:
                     str(cold_vkey_file),
                 ]
             )
-        elif stake_pool_id:  # noqa: SIM106
+        elif stake_pool_id:
             cli_args.extend(
                 [
                     "--stake-pool-id",

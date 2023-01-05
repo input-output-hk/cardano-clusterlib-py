@@ -1,5 +1,6 @@
 """Tools used by `ClusterLib` for constructing transactions."""
 import base64
+import contextlib
 import functools
 import itertools
 import logging
@@ -653,7 +654,7 @@ def collect_data_for_build(
     )
 
 
-def get_utxo(  # noqa: C901
+def get_utxo(
     utxo_dict: dict,
     address: str = "",
     coins: types.UnpackableSequence = (),
@@ -704,13 +705,11 @@ def get_utxo(  # noqa: C901
             for asset_name, amount in coin_iter:
                 decoded_coin = ""
                 if asset_name:
-                    try:
+                    with contextlib.suppress(Exception):
                         decoded_name = base64.b16decode(asset_name.encode(), casefold=True).decode(
                             "utf-8"
                         )
                         decoded_coin = f"{policyid}.{decoded_name}"
-                    except Exception:
-                        pass
                 else:
                     decoded_coin = policyid
 

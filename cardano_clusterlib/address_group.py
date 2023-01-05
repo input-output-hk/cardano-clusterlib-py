@@ -48,7 +48,7 @@ class AddressGroup:
 
         if payment_vkey_file:
             cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
-        elif payment_script_file:  # noqa: SIM106
+        elif payment_script_file:
             cli_args = ["--payment-script-file", str(payment_script_file)]
         else:
             raise AssertionError("Either `payment_vkey_file` or `payment_script_file` is needed.")
