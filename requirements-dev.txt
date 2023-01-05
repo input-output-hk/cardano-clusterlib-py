@@ -3,6 +3,6 @@
 # linting
 mypy
 pre-commit
-pylint
+pylint==2.15.5
 
 virtualenv
