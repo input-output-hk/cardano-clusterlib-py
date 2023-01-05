@@ -44,7 +44,7 @@ class TransactionGroup:
         """
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
-        elif tx_file:  # noqa: SIM106
+        elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
             raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
@@ -67,7 +67,7 @@ class TransactionGroup:
         """
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
-        elif tx_file:  # noqa: SIM106
+        elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
             raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
@@ -98,7 +98,7 @@ class TransactionGroup:
             cli_args = ["--script-data-file", str(script_data_file)]
         elif script_data_cbor_file:
             cli_args = ["--script-data-cbor-file", str(script_data_cbor_file)]
-        elif script_data_value:  # noqa: SIM106
+        elif script_data_value:
             cli_args = ["--script-data-value", str(script_data_value)]
         else:
             raise AssertionError(
@@ -142,7 +142,7 @@ class TransactionGroup:
 
         return deposit
 
-    def build_raw_tx_bare(  # noqa: C901
+    def build_raw_tx_bare(
         self,
         out_file: FileType,
         txouts: List[structs.TxOut],
@@ -905,7 +905,7 @@ class TransactionGroup:
 
         if tx_body_file:
             cli_args = ["--tx-body-file", str(tx_body_file)]
-        elif tx_file:  # noqa: SIM106
+        elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
             raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")

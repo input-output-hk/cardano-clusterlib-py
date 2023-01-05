@@ -81,7 +81,7 @@ class QueryGroup:
                 utxo = [utxo]
             utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
-        elif tx_raw_output:  # noqa: SIM106
+        elif tx_raw_output:
             sort_results = True
             change_txout_num = 1 if tx_raw_output.change_address else 0
             return_collateral_txout_num = 1 if tx_raw_output.script_txins else 0
@@ -293,7 +293,7 @@ class QueryGroup:
                     str(cold_vkey_file),
                 ]
             )
-        elif stake_pool_id:  # noqa: SIM106
+        elif stake_pool_id:
             args.extend(
                 [
                     "--stake-pool-id",

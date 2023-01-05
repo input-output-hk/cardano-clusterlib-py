@@ -182,11 +182,13 @@ class ClusterLib:
         # or
         # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"
         for __ in range(3):
+            retcode = None
             with subprocess.Popen(cli_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as p:
                 stdout, stderr = p.communicate()
+                retcode = p.returncode
 
-                if p.returncode == 0:
-                    break
+            if retcode == 0:
+                break
 
             stderr_dec = stderr.decode()
             err_msg = (
