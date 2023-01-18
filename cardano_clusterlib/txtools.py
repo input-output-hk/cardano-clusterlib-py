@@ -826,6 +826,7 @@ def _get_script_args(  # noqa: C901
 ) -> List[str]:
     # pylint: disable=too-many-statements,too-many-branches
     grouped_args: List[str] = []
+    collaterals_all = set()
 
     # spending
     for tin in script_txins:
@@ -838,11 +839,7 @@ def _get_script_args(  # noqa: C901
                 ]
             )
         tin_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in tin.collaterals}
-        grouped_args.extend(
-            [
-                *helpers._prepend_flag("--tx-in-collateral", tin_collaterals),
-            ]
-        )
+        collaterals_all.update(tin_collaterals)
 
         if tin.script_file:
             grouped_args.extend(
@@ -933,11 +930,7 @@ def _get_script_args(  # noqa: C901
     # minting
     for mrec in mint:
         mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
-        grouped_args.extend(
-            [
-                *helpers._prepend_flag("--tx-in-collateral", mrec_collaterals),
-            ]
-        )
+        collaterals_all.update(mrec_collaterals)
 
         if mrec.script_file:
             grouped_args.extend(
@@ -1011,9 +1004,9 @@ def _get_script_args(  # noqa: C901
     # certificates
     for crec in complex_certs:
         crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
+        collaterals_all.update(crec_collaterals)
         grouped_args.extend(
             [
-                *helpers._prepend_flag("--tx-in-collateral", crec_collaterals),
                 "--certificate-file",
                 str(crec.certificate_file),
             ]
@@ -1078,9 +1071,9 @@ def _get_script_args(  # noqa: C901
     # withdrawals
     for wrec in script_withdrawals:
         wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
+        collaterals_all.update(wrec_collaterals)
         grouped_args.extend(
             [
-                *helpers._prepend_flag("--tx-in-collateral", wrec_collaterals),
                 "--withdrawal",
                 f"{wrec.txout.address}+{wrec.txout.amount}",
             ]
@@ -1146,5 +1139,12 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(
                     ["--withdrawal-reference-tx-in-redeemer-value", str(wrec.redeemer_value)]
                 )
+
+    # add unique collaterals
+    grouped_args.extend(
+        [
+            *helpers._prepend_flag("--tx-in-collateral", collaterals_all),
+        ]
+    )
 
     return grouped_args
