@@ -163,20 +163,26 @@ class QueryGroup:
         return registered_pools_details
 
     def get_stake_snapshot(
-        self,
-        stake_pool_id: str,
-    ) -> Dict[str, int]:
-        """Return the three stake snapshots for a pool, plus the total active stake.
+        self, stake_pool_ids: Optional[List[str]] = None, all_stake_pools: bool = False
+    ) -> Dict[str, Any]:
+        """Return the three stake snapshots, plus the total active stake.
 
         Args:
-            stake_pool_id: An ID of the stake pool (Bech32-encoded or hex-encoded).
+            stake_pool_ids: A list of stake pool IDs (Bech32-encoded or hex-encoded)(optional).
+            all_stake_pools: A flag that returns information about all the existent pools.
 
         Returns:
             Dict: A stake snapshot data.
         """
-        stake_snapshot: Dict[str, int] = json.loads(
-            self.query_cli(["stake-snapshot", "--stake-pool-id", stake_pool_id])
-        )
+        query_args = ["stake-snapshot"]
+
+        if all_stake_pools:
+            query_args.extend(["--all-stake-pools"])
+        elif stake_pool_ids:
+            for pool_id in stake_pool_ids:
+                query_args.extend(helpers._prepend_flag("--stake-pool-id", [pool_id]))
+
+        stake_snapshot: Dict[str, Any] = json.loads(self.query_cli(query_args))
         return stake_snapshot
 
     def get_pool_params(
