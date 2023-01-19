@@ -168,8 +168,8 @@ class QueryGroup:
         """Return the three stake snapshots, plus the total active stake.
 
         Args:
-            stake_pool_ids: A list of stake pool IDs (Bech32-encoded or hex-encoded)(optional).
-            all_stake_pools: A flag that returns information about all the existent pools.
+            stake_pool_ids: A list of stake pool IDs, Bech32-encoded or hex-encoded (optional).
+            all_stake_pools: A bool indicating whether to query for all stake pools (optional).
 
         Returns:
             Dict: A stake snapshot data.
@@ -179,8 +179,7 @@ class QueryGroup:
         if all_stake_pools:
             query_args.extend(["--all-stake-pools"])
         elif stake_pool_ids:
-            for pool_id in stake_pool_ids:
-                query_args.extend(helpers._prepend_flag("--stake-pool-id", [pool_id]))
+            query_args.extend(helpers._prepend_flag("--stake-pool-id", stake_pool_ids))
 
         stake_snapshot: Dict[str, Any] = json.loads(self.query_cli(query_args))
         return stake_snapshot
