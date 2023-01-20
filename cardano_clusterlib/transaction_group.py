@@ -228,25 +228,25 @@ class TransactionGroup:
 
         mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
-        cli_args = []
+        misc_args = []
 
         if invalid_before is not None:
-            cli_args.extend(["--invalid-before", str(invalid_before)])
+            misc_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is not None:
-            cli_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
+            misc_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
         elif ttl is not None:
             # `--ttl` and `--invalid-hereafter` are the same
-            cli_args.extend(["--ttl", str(ttl)])
+            misc_args.extend(["--ttl", str(ttl)])
 
         if not script_valid:
-            cli_args.append("--script-invalid")
+            misc_args.append("--script-invalid")
 
         # only single `--mint` argument is allowed, let's aggregate all the outputs
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
-        cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
+        misc_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
         for txin in readonly_reference_txins:
-            cli_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
+            misc_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
 
         grouped_args = txtools._get_script_args(
             script_txins=script_txins,
@@ -272,34 +272,34 @@ class TransactionGroup:
             )
 
         if total_collateral_amount:
-            cli_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
+            misc_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
 
-        cli_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
+        misc_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
 
-        self._clusterlib_obj.cli(
-            [
-                "transaction",
-                "build-raw",
-                "--fee",
-                str(fee),
-                "--out-file",
-                str(out_file),
-                *grouped_args,
-                *helpers._prepend_flag("--tx-in", txin_strings),
-                *txout_args,
-                *helpers._prepend_flag("--required-signer", required_signers),
-                *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
-                *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
-                *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
-                *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
-                *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
-                *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *helpers._prepend_flag("--withdrawal", withdrawal_strings),
-                *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
-                *cli_args,
-                *self.tx_era_arg,
-            ]
-        )
+        cli_args = [
+            "transaction",
+            "build-raw",
+            "--fee",
+            str(fee),
+            "--out-file",
+            str(out_file),
+            *grouped_args,
+            *helpers._prepend_flag("--tx-in", txin_strings),
+            *txout_args,
+            *helpers._prepend_flag("--required-signer", required_signers),
+            *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
+            *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
+            *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+            *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
+            *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
+            *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
+            *helpers._prepend_flag("--withdrawal", withdrawal_strings),
+            *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
+            *misc_args,
+            *self.tx_era_arg,
+        ]
+
+        self._clusterlib_obj.cli(cli_args)
 
         return structs.TxRawOutput(
             txins=list(txins),
@@ -308,6 +308,7 @@ class TransactionGroup:
             tx_files=tx_files,
             out_file=out_file,
             fee=fee,
+            build_args=cli_args,
             era=self._clusterlib_obj.tx_era,
             script_txins=script_txins,
             script_withdrawals=script_withdrawals,
@@ -773,22 +774,22 @@ class TransactionGroup:
 
         mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
 
-        cli_args = []
+        misc_args = []
 
         if invalid_before is not None:
-            cli_args.extend(["--invalid-before", str(invalid_before)])
+            misc_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is not None:
-            cli_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
+            misc_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
 
         if not script_valid:
-            cli_args.append("--script-invalid")
+            misc_args.append("--script-invalid")
 
         # there's allowed just single `--mint` argument, let's aggregate all the outputs
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
-        cli_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
+        misc_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
         for txin in readonly_reference_txins:
-            cli_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
+            misc_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
 
         grouped_args = txtools._get_script_args(
             script_txins=script_txins,
@@ -812,43 +813,42 @@ class TransactionGroup:
                 ]
             )
 
-        cli_args.extend(["--change-address", change_address])
+        misc_args.extend(["--change-address", change_address])
 
         if witness_override is not None:
-            cli_args.extend(["--witness-override", str(witness_override)])
+            misc_args.extend(["--witness-override", str(witness_override)])
 
         if total_collateral_amount:
-            cli_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
+            misc_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
 
-        cli_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
+        misc_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
 
         if calc_script_cost_file:
-            cli_args.extend(["--calculate-plutus-script-cost", str(calc_script_cost_file)])
+            misc_args.extend(["--calculate-plutus-script-cost", str(calc_script_cost_file)])
             out_file = Path(calc_script_cost_file)
         else:
-            cli_args.extend(["--out-file", str(out_file)])
+            misc_args.extend(["--out-file", str(out_file)])
 
-        stdout = self._clusterlib_obj.cli(
-            [
-                "transaction",
-                "build",
-                *grouped_args,
-                *helpers._prepend_flag("--tx-in", txin_strings),
-                *txout_args,
-                *helpers._prepend_flag("--required-signer", required_signers),
-                *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
-                *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
-                *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
-                *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
-                *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
-                *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
-                *helpers._prepend_flag("--withdrawal", withdrawal_strings),
-                *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
-                *cli_args,
-                *self.tx_era_arg,
-                *self._clusterlib_obj.magic_args,
-            ]
-        ).stdout
+        cli_args = [
+            "transaction",
+            "build",
+            *grouped_args,
+            *helpers._prepend_flag("--tx-in", txin_strings),
+            *txout_args,
+            *helpers._prepend_flag("--required-signer", required_signers),
+            *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
+            *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
+            *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+            *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
+            *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
+            *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
+            *helpers._prepend_flag("--withdrawal", withdrawal_strings),
+            *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
+            *misc_args,
+            *self.tx_era_arg,
+            *self._clusterlib_obj.magic_args,
+        ]
+        stdout = self._clusterlib_obj.cli(cli_args).stdout
         stdout_dec = stdout.decode("utf-8") if stdout else ""
 
         # check for the presence of fee information so compatibility with older versions
@@ -864,6 +864,7 @@ class TransactionGroup:
             tx_files=tx_files,
             out_file=out_file,
             fee=estimated_fee,
+            build_args=cli_args,
             era=self._clusterlib_obj.tx_era,
             script_txins=script_txins,
             script_withdrawals=collected_data.script_withdrawals,
