@@ -187,6 +187,7 @@ class TxRawOutput(NamedTuple):
     tx_files: TxFiles
     out_file: Path
     fee: int
+    build_args: List[str]
     era: str = ""
     script_txins: OptionalScriptTxIn = ()
     script_withdrawals: OptionalScriptWithdrawals = ()
