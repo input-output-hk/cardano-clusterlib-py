@@ -21,7 +21,8 @@ lint:
 
 .PHONY: build
 build:
-	python setup.py -q sdist bdist_wheel
+	python3 -m pip install --upgrade build
+	python3 -m build
 
 .PHONY: release
 release: build
