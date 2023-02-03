@@ -201,6 +201,8 @@ class TxRawOutput(NamedTuple):
     total_collateral_amount: Optional[int] = None
     readonly_reference_txins: OptionalUTXOData = ()
     script_valid: bool = True
+    required_signers: OptionalFiles = ()
+    required_signer_hashes: Optional[List[str]] = None
 
 
 class PoolCreationOutput(NamedTuple):
