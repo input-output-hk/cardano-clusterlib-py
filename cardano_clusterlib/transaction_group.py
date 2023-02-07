@@ -1033,8 +1033,9 @@ class TransactionGroup:
             wait_blocks: A number of new blocks to wait for (default = 2).
         """
         txid = ""
-        err = None
-        for r in range(3):
+        for r in range(5):
+            err = None
+
             if r == 0:
                 self.submit_tx_bare(tx_file)
             else:
@@ -1051,20 +1052,20 @@ class TransactionGroup:
             # wait for new blocks even in case of error, so `query utxo` returns up-to-date data
             self._clusterlib_obj.wait_for_new_block(wait_blocks)
 
-            # Check that one of the input UTxOs was spent to verify the TX was
-            # successfully submitted to the chain.
+            # Check that one of the input UTxOs can no longer be queried in order to verify
+            # the TX was successfully submitted to the chain (that the TX is no longer in mempool).
             # An input is spent when its combination of hash and ix is not found in the list
             # of current UTxOs.
             # TODO: check that the transaction is 1-block deep (can't be done in CLI alone)
             utxo_data = self._clusterlib_obj.g_query.get_utxo(utxo=txins[0])
             if not utxo_data:
                 break
-
+        else:
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
                 # spent, but it was not the case. Re-raising the exception.
                 raise err
-        else:
+
             raise exceptions.CLIError(
                 f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
             )
