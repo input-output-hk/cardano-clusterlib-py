@@ -321,6 +321,8 @@ class TransactionGroup:
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
             script_valid=script_valid,
+            required_signers=required_signers,
+            required_signer_hashes=required_signer_hashes,
         )
 
     def build_raw_tx(
@@ -878,6 +880,8 @@ class TransactionGroup:
             total_collateral_amount=total_collateral_amount,
             readonly_reference_txins=readonly_reference_txins,
             script_valid=script_valid,
+            required_signers=required_signers,
+            required_signer_hashes=required_signer_hashes,
         )
 
     def sign_tx(
