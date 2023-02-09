@@ -164,18 +164,23 @@ class ClusterLib:
             self._governance_group = governance_group.GovernanceGroup(clusterlib_obj=self)
         return self._governance_group
 
-    def cli_base(self, cli_args: List[str]) -> structs.CLIOut:
-        """Run a command.
+    def cli(self, cli_args: List[str]) -> structs.CLIOut:
+        """Run the `cardano-cli` command.
 
         Args:
-            cli_args: A list consisting of command and it's arguments.
+            cli_args: A list of arguments for cardano-cli.
 
         Returns:
             structs.CLIOut: A tuple containing command stdout and stderr.
         """
-        cmd_str = " ".join(cli_args)
-        LOGGER.debug("Running `%s`", cmd_str)
+        cli_args_strs = [str(arg) for arg in cli_args]
+        cli_args_strs.insert(0, "cardano-cli")
+
+        cmd_str = clusterlib_helpers._format_cli_args(cli_args=cli_args_strs)
         clusterlib_helpers._write_cli_log(clusterlib_obj=self, command=cmd_str)
+        LOGGER.debug("Running `%s`", cmd_str)
+
+        coverage.record_cli_coverage(cli_args=cli_args_strs, coverage_dict=self.cli_coverage)
 
         # re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
@@ -183,7 +188,9 @@ class ClusterLib:
         # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"
         for __ in range(3):
             retcode = None
-            with subprocess.Popen(cli_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as p:
+            with subprocess.Popen(
+                cli_args_strs, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            ) as p:
                 stdout, stderr = p.communicate()
                 retcode = p.returncode
 
@@ -204,19 +211,6 @@ class ClusterLib:
             raise exceptions.CLIError(err_msg)
 
         return structs.CLIOut(stdout or b"", stderr or b"")
-
-    def cli(self, cli_args: List[str]) -> structs.CLIOut:
-        """Run the `cardano-cli` command.
-
-        Args:
-            cli_args: A list of arguments for cardano-cli.
-
-        Returns:
-            structs.CLIOut: A tuple containing command stdout and stderr.
-        """
-        cmd = ["cardano-cli", *cli_args]
-        coverage.record_cli_coverage(cli_args=cmd, coverage_dict=self.cli_coverage)
-        return self.cli_base(cmd)
 
     def refresh_pparams_file(self) -> None:
         """Refresh protocol parameters file."""
