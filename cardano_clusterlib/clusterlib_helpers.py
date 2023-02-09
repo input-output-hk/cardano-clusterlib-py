@@ -2,15 +2,19 @@
 import datetime
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import NamedTuple
 
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types
 
 LOGGER = logging.getLogger(__name__)
+
+SPECIAL_ARG_CHARS_RE = re.compile("[^A-Za-z0-9/._-]")
 
 
 class EpochInfo(NamedTuple):
@@ -65,6 +69,21 @@ def _check_files_exist(*out_files: types.FileType, clusterlib_obj: "types.Cluste
         out_file = Path(out_file).expanduser()
         if out_file.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` already exist.")
+
+
+def _format_cli_args(cli_args: List[str]) -> str:
+    """Format CLI arguments for logging.
+
+    Quote arguments with spaces and other "special" characters in them.
+
+    Args:
+        cli_args: List of CLI arguments.
+    """
+    processed_args = []
+    for arg in cli_args:
+        arg = f'"{arg}"' if SPECIAL_ARG_CHARS_RE.search(arg) else arg
+        processed_args.append(arg)
+    return " ".join(processed_args)
 
 
 def _write_cli_log(clusterlib_obj: "types.ClusterLib", command: str) -> None:
