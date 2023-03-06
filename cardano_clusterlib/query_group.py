@@ -385,6 +385,17 @@ class QueryGroup:
         """Return epoch of last block that was successfully applied to the ledger."""
         return int(self.get_tip()["epoch"])
 
+    def get_epoch_slot_no(self) -> int:
+        """Return slot number within a given epoch.
+
+        (of last block successfully applied to the ledger)
+        """
+        return int(self.get_tip()["slotInEpoch"])
+
+    def get_slots_to_epoch_end(self) -> int:
+        """Return the number of slots left until the epoch end."""
+        return int(self.get_tip()["slotsToEpochEnd"])
+
     def get_era(self) -> str:
         """Return network era."""
         era: str = self.get_tip()["era"]
