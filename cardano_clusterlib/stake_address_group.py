@@ -259,6 +259,26 @@ class StakeAddressGroup:
             address=addr, vkey_file=key_pair.vkey_file, skey_file=key_pair.skey_file
         )
 
+    def get_stake_vkey_hash(
+        self,
+        stake_vkey_file: FileType,
+    ) -> str:
+        """Return the hash of a stake address key.
+
+        Args:
+            stake_vkey_file: A path to stake vkey file.
+
+        Returns:
+            str: A generated hash.
+        """
+        return (
+            self._clusterlib_obj.cli(
+                ["stake-address", "key-hash", "--stake-verification-key-file", str(stake_vkey_file)]
+            )
+            .stdout.rstrip()
+            .decode("ascii")
+        )
+
     def withdraw_reward(
         self,
         stake_addr_record: structs.AddressRecord,
