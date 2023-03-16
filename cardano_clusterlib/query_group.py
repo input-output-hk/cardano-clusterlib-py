@@ -304,7 +304,7 @@ class QueryGroup:
         """Get the slots the node is expected to mint a block in.
 
         Args:
-            vrf_vkey_file: A path to node VRF vkey file.
+            vrf_skey_file: A path to node VRF skey file.
             stake_pool_vkey: A pool cold vkey (Bech32 or hex-encoded, optional)
             cold_vkey_file: A path to pool cold vkey file (optional).
             stake_pool_id: An ID of the stake pool (Bech32 or hex-encoded, optional).

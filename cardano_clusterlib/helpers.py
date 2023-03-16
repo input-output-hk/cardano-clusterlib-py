@@ -44,6 +44,6 @@ def _check_outfiles(*out_files: types.FileType) -> None:
         *out_files: Variable length list of expected output files.
     """
     for out_file in out_files:
-        out_file = Path(out_file).expanduser()
-        if not out_file.exists():
+        out_file_p = Path(out_file).expanduser()
+        if not out_file_p.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` doesn't exist.")
