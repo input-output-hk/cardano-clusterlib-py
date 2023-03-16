@@ -4,7 +4,9 @@
 [![PyPi Version](https://img.shields.io/pypi/v/cardano-clusterlib.svg)](https://pypi.org/project/cardano-clusterlib/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-Python wrapper for cardano-cli for working with cardano cluster.
+Python wrapper for cardano-cli for working with cardano cluster. It supports all cardano-cli commands (except parts of `genesis` and `governance`).
+
+The library is used for development of [cardano-node system tests](https://github.com/input-output-hk/cardano-node-tests).
 
 ## Installation
 
@@ -12,15 +14,35 @@ Python wrapper for cardano-cli for working with cardano cluster.
 # create and activate virtual env
 $ python3 -m venv .env
 $ . .env/bin/activate
-# install it from PyPI
+# install cardano-clusterlib from PyPI
 $ pip install cardano-clusterlib
-# - OR - install it in develop mode together with dev requirements
+# - OR - install cardano-clusterlib in development mode together with dev requirements
 $ make install
 ```
 
 ## Usage
 
-Needs working `cardano-cli` (the command is available on `PATH`, `cardano-node` is running, `CARDANO_NODE_SOCKET_PATH` is set). In `state_dir` it expects "shelley/genesis.json".
+The library needs working `cardano-cli` (the command is available on `PATH`, `cardano-node` is running, `CARDANO_NODE_SOCKET_PATH` is set). In `state_dir` it expects "shelley/genesis.json".
+
+```python
+# instantiate `ClusterLib`
+cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir")
+```
+
+On custom testnets that were started in Byron era, you might need to specify a slots offset between Byron epochs and Shelley epochs.
+The "slots_offset" is a difference between number of slots in Byron epochs and in the same number of Shelley epochs.
+
+E.g. for a testnet with parameters
+
+* 100 slots per epoch in Byron era
+* 1000 slots per epoch in Shelley era
+* two epochs in Byron era before forking to Shelley
+
+The offset will be `2 * (1000 - 100) = 1800`.
+
+```python
+cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir", slots_offset=1800)
+```
 
 ### Transfer funds
 
@@ -151,7 +173,7 @@ cluster.g_transaction.submit_tx(tx_file=tx_signed_redeem, txins=tx_output_fund.t
 
 ### More examples
 
-See [cardano-node-tests](https://github.com/input-output-hk/cardano-node-tests) for more examples, e.g. [minting new tokens](https://github.com/input-output-hk/cardano-node-tests/blob/90aa4a2e9fe4019a89e6f4cdec7cb092732e6f2a/cardano_node_tests/utils/clusterlib_utils.py#L567-L602) or [minting new tokens with Plutus](https://github.com/input-output-hk/cardano-node-tests/blob/d688a9bcf00a30f9881c52aab9311dd1a0cb3077/cardano_node_tests/tests/test_plutus_mint_build.py#L173-L217)
+See [cardano-node-tests](https://github.com/input-output-hk/cardano-node-tests) for more examples, e.g. [minting new tokens](https://github.com/input-output-hk/cardano-node-tests/blob/4b50e8069f5294aaba14140ef0509e2857bec35d/cardano_node_tests/utils/clusterlib_utils.py#L491) or [minting new tokens with Plutus](https://github.com/input-output-hk/cardano-node-tests/blob/4b50e8069f5294aaba14140ef0509e2857bec35d/cardano_node_tests/tests/tests_plutus/test_mint_build.py#L151-L195)
 
 
 ## Source Documentation
