@@ -286,7 +286,8 @@ class ClusterLib:
         Returns:
             int: A slot number of last block.
         """
-        min_sleep = 1.5
+        min_sleep = 1.5  # in sec
+        long_sleep = 15  # in sec
         no_block_time = 0  # in slots
         next_block_timeout = 300  # in slots
         last_slot = -1
@@ -309,7 +310,7 @@ class ClusterLib:
             _sleep_time = slots_diff * self.slot_length
             sleep_time = _sleep_time if _sleep_time > min_sleep else min_sleep
 
-            if not printed and sleep_time > 15:
+            if not printed and sleep_time > long_sleep:
                 LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}.")
                 printed = True
 

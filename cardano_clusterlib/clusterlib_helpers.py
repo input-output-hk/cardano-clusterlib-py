@@ -66,8 +66,8 @@ def _check_files_exist(*out_files: types.FileType, clusterlib_obj: "types.Cluste
         return
 
     for out_file in out_files:
-        out_file = Path(out_file).expanduser()
-        if out_file.exists():
+        out_file_p = Path(out_file).expanduser()
+        if out_file_p.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` already exist.")
 
 
@@ -81,8 +81,8 @@ def _format_cli_args(cli_args: List[str]) -> str:
     """
     processed_args = []
     for arg in cli_args:
-        arg = f'"{arg}"' if SPECIAL_ARG_CHARS_RE.search(arg) else arg
-        processed_args.append(arg)
+        arg_p = f'"{arg}"' if SPECIAL_ARG_CHARS_RE.search(arg) else arg
+        processed_args.append(arg_p)
     return " ".join(processed_args)
 
 
@@ -110,14 +110,14 @@ def _get_kes_period_info(kes_info: str) -> Dict[str, Any]:
         message_entry: list = []
 
         for line in messages_str.split("\n"):
-            line = line.strip()
-            if not line:
+            line_s = line.strip()
+            if not line_s:
                 continue
-            if not message_entry or line[0].isalpha():
-                message_entry.append(line)
+            if not message_entry or line_s[0].isalpha():
+                message_entry.append(line_s)
             else:
                 messages_list.append(" ".join(message_entry))
-                message_entry = [line]
+                message_entry = [line_s]
 
         messages_list.append(" ".join(message_entry))
 

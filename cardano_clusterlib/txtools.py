@@ -482,6 +482,8 @@ def _get_tx_ins_outs(
         deposit: A deposit amount needed by the transaction (optional).
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
         mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+        lovelace_balanced: A bool indicating whether Lovelace ins/outs are balanced
+            (by `build` command; optional)
 
     Returns:
         Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
