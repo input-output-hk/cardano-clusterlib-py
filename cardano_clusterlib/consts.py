@@ -9,6 +9,14 @@ SLOTS_OFFSETS = {
 }
 
 
+# The SUBCOMMAND_MARK is used to mark the beginning of a subcommand. It is used to differentiate
+# between options and subcommands. That is needed for CLI coverage recording.
+# For example, the command `cardano-cli query tx-mempool --cardano-mode info`
+# has the following arguments:
+#  ["query", "tx-mempool", "--cardano-mode", SUBCOMMAND_MARK, "info"]
+SUBCOMMAND_MARK = "SUBCOMMAND"
+
+
 class Protocols:
     CARDANO = "cardano"
     SHELLEY = "shelley"

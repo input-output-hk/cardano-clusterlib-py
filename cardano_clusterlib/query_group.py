@@ -31,7 +31,7 @@ class QueryGroup:
     def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-    def query_cli(self, cli_args: UnpackableSequence) -> str:
+    def query_cli(self, cli_args: UnpackableSequence, cli_sub_args: UnpackableSequence = ()) -> str:
         """Run the `cardano-cli query` command."""
         stdout = self._clusterlib_obj.cli(
             [
@@ -39,6 +39,7 @@ class QueryGroup:
                 *cli_args,
                 *self._clusterlib_obj.magic_args,
                 f"--{self._clusterlib_obj.protocol}-mode",
+                *cli_sub_args,
             ]
         ).stdout
         stdout_dec = stdout.decode("utf-8") if stdout else ""
@@ -453,7 +454,9 @@ class QueryGroup:
         Returns:
             dict: A dictionary containing mempool information.
         """
-        tx_mempool: Dict[str, Any] = json.loads(self.query_cli(["tx-mempool", "info"]))
+        tx_mempool: Dict[str, Any] = json.loads(
+            self.query_cli(["tx-mempool"], cli_sub_args=[consts.SUBCOMMAND_MARK, "info"])
+        )
         return tx_mempool
 
     def get_mempool_next_tx(self) -> Dict[str, Any]:
@@ -462,7 +465,9 @@ class QueryGroup:
         Returns:
             dict: A dictionary containing mempool information.
         """
-        tx_mempool: Dict[str, Any] = json.loads(self.query_cli(["tx-mempool", "next-tx"]))
+        tx_mempool: Dict[str, Any] = json.loads(
+            self.query_cli(["tx-mempool"], cli_sub_args=[consts.SUBCOMMAND_MARK, "next-tx"])
+        )
         return tx_mempool
 
     def get_mempool_tx_exists(self, txid: str) -> Dict[str, Any]:
@@ -474,7 +479,9 @@ class QueryGroup:
         Returns:
             dict: A dictionary containing mempool information.
         """
-        tx_mempool: Dict[str, Any] = json.loads(self.query_cli(["tx-mempool", "tx-exists", txid]))
+        tx_mempool: Dict[str, Any] = json.loads(
+            self.query_cli(["tx-mempool"], cli_sub_args=[consts.SUBCOMMAND_MARK, "tx-exists", txid])
+        )
         return tx_mempool
 
     def __repr__(self) -> str:

@@ -173,14 +173,15 @@ class ClusterLib:
         Returns:
             structs.CLIOut: A tuple containing command stdout and stderr.
         """
-        cli_args_strs = [str(arg) for arg in cli_args]
-        cli_args_strs.insert(0, "cardano-cli")
+        cli_args_strs_all = [str(arg) for arg in cli_args]
+        cli_args_strs_all.insert(0, "cardano-cli")
+        cli_args_strs = [arg for arg in cli_args_strs_all if arg != consts.SUBCOMMAND_MARK]
 
         cmd_str = clusterlib_helpers._format_cli_args(cli_args=cli_args_strs)
         clusterlib_helpers._write_cli_log(clusterlib_obj=self, command=cmd_str)
         LOGGER.debug("Running `%s`", cmd_str)
 
-        coverage.record_cli_coverage(cli_args=cli_args_strs, coverage_dict=self.cli_coverage)
+        coverage.record_cli_coverage(cli_args=cli_args_strs_all, coverage_dict=self.cli_coverage)
 
         # re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
