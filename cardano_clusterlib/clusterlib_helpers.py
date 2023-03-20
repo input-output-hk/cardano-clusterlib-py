@@ -122,7 +122,10 @@ def _get_kes_period_info(kes_info: str) -> Dict[str, Any]:
         messages_list.append(" ".join(message_entry))
 
         for out_message in messages_list:
-            if "counter agrees with" in out_message:
+            if (
+                "counter agrees with" in out_message
+                or "counter ahead of the node protocol state counter by 1" in out_message
+            ):
                 valid_counters = True
             elif "correct KES period interval" in out_message:
                 valid_kes_period = True
