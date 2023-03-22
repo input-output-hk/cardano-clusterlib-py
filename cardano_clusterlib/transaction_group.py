@@ -1245,7 +1245,12 @@ class TransactionGroup:
         out_file = destination_dir / f"{script_name}_multisig.script"
 
         scripts_l: List[dict] = [
-            {"keyHash": self._clusterlib_obj.g_address.get_payment_vkey_hash(f), "type": "sig"}
+            {
+                "keyHash": self._clusterlib_obj.g_address.get_payment_vkey_hash(
+                    payment_vkey_file=f
+                ),
+                "type": "sig",
+            }
             for f in payment_vkey_files
         ]
         if slot:
