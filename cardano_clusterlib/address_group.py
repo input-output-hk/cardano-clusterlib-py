@@ -110,20 +110,27 @@ class AddressGroup:
 
     def get_payment_vkey_hash(
         self,
-        payment_vkey_file: FileType,
+        payment_vkey_file: Optional[FileType] = None,
+        payment_vkey: Optional[str] = None,
     ) -> str:
         """Return the hash of an address key.
 
         Args:
-            payment_vkey_file: A path to payment vkey file.
+            payment_vkey_file: A path to payment vkey file (optional).
+            payment_vkey: A payment vkey, (Bech32, optional).
 
         Returns:
             str: A generated hash.
         """
+        if payment_vkey:
+            cli_args = ["--payment-verification-key", payment_vkey]
+        elif payment_vkey_file:
+            cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
+        else:
+            raise AssertionError("Either `payment_vkey` or `payment_vkey_file` is needed.")
+
         return (
-            self._clusterlib_obj.cli(
-                ["address", "key-hash", "--payment-verification-key-file", str(payment_vkey_file)]
-            )
+            self._clusterlib_obj.cli(["address", "key-hash", *cli_args])
             .stdout.rstrip()
             .decode("ascii")
         )
