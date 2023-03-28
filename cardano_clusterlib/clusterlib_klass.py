@@ -234,49 +234,26 @@ class ClusterLib:
         """
         initial_tip = self.g_query.get_tip()
         initial_block = int(initial_tip["block"])
-        initial_slot = int(initial_tip["slot"])
 
         if new_blocks < 1:
             return initial_block
 
-        next_block_timeout = 300  # in slots
-        max_tip_throttle = 5 * self.slot_length
+        return clusterlib_helpers.wait_for_block(
+            clusterlib_obj=self, tip=initial_tip, block_no=initial_block + new_blocks
+        )
 
-        LOGGER.debug(f"Waiting for {new_blocks} new block(s) to be created.")
-        LOGGER.debug(f"Initial block no: {initial_block}")
+    def wait_for_block(self, block: int) -> int:
+        """Wait for block number.
 
-        this_slot = initial_slot
-        this_block = initial_block
-        timeout_slot = initial_slot + next_block_timeout
-        expected_block = initial_block + new_blocks
-        blocks_to_go = new_blocks
-        # limit calls to `query tip`
-        tip_throttle = 0
+        Args:
+            block: A block number to wait for.
 
-        while this_slot < timeout_slot:
-            prev_block = this_block
-            time.sleep((self.slot_length * blocks_to_go) + tip_throttle)
-
-            this_tip = self.g_query.get_tip()
-            this_slot = int(this_tip["slot"])
-            this_block = int(this_tip["block"])
-
-            if this_block >= expected_block:
-                break
-            if this_block > prev_block:
-                # new block was created, reset timeout slot
-                timeout_slot = this_slot + next_block_timeout
-
-            blocks_to_go = expected_block - this_block
-            tip_throttle = min(max_tip_throttle, tip_throttle + self.slot_length)
-        else:
-            waited_sec = (this_slot - initial_slot) * self.slot_length
-            raise exceptions.CLIError(
-                f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s)."
-            )
-
-        LOGGER.debug(f"New block(s) were created; block number: {this_block}")
-        return this_block
+        Returns:
+            int: A block number of last added block.
+        """
+        return clusterlib_helpers.wait_for_block(
+            clusterlib_obj=self, tip=self.g_query.get_tip(), block_no=block
+        )
 
     def wait_for_slot(self, slot: int) -> int:
         """Wait for slot number.

@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import re
+import time
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -175,3 +176,61 @@ def get_epoch_for_slot(cluster_obj: "types.ClusterLib", slot_no: int) -> EpochIn
         last_slot_in_epoch = first_slot_in_epoch + cluster_obj.epoch_length - 1
 
     return EpochInfo(epoch=epoch_no, first_slot=first_slot_in_epoch, last_slot=last_slot_in_epoch)
+
+
+def wait_for_block(clusterlib_obj: "types.ClusterLib", tip: Dict[str, Any], block_no: int) -> int:
+    """Wait for block number.
+
+    Args:
+        clusterlib_obj: An instance of `ClusterLib`.
+        tip: Current tip - last block successfully applied to the ledger.
+        block_no: A block number to wait for.
+
+    Returns:
+        int: A block number of last added block.
+    """
+    initial_block = int(tip["block"])
+    initial_slot = int(tip["slot"])
+
+    if initial_block >= block_no:
+        return initial_block
+
+    next_block_timeout = 300  # in slots
+    max_tip_throttle = 5 * clusterlib_obj.slot_length
+
+    new_blocks = block_no - initial_block
+
+    LOGGER.debug(f"Waiting for {new_blocks} new block(s) to be created.")
+    LOGGER.debug(f"Initial block no: {initial_block}")
+
+    this_slot = initial_slot
+    this_block = initial_block
+    timeout_slot = initial_slot + next_block_timeout
+    blocks_to_go = new_blocks
+    # limit calls to `query tip`
+    tip_throttle = 0
+
+    while this_slot < timeout_slot:
+        prev_block = this_block
+        time.sleep((clusterlib_obj.slot_length * blocks_to_go) + tip_throttle)
+
+        this_tip = clusterlib_obj.g_query.get_tip()
+        this_slot = int(this_tip["slot"])
+        this_block = int(this_tip["block"])
+
+        if this_block >= block_no:
+            break
+        if this_block > prev_block:
+            # new block was created, reset timeout slot
+            timeout_slot = this_slot + next_block_timeout
+
+        blocks_to_go = block_no - this_block
+        tip_throttle = min(max_tip_throttle, tip_throttle + clusterlib_obj.slot_length)
+    else:
+        waited_sec = (this_slot - initial_slot) * clusterlib_obj.slot_length
+        raise exceptions.CLIError(
+            f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s)."
+        )
+
+    LOGGER.debug(f"New block(s) were created; block number: {this_block}")
+    return this_block
