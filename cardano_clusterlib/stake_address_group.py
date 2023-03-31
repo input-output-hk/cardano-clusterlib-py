@@ -261,20 +261,27 @@ class StakeAddressGroup:
 
     def get_stake_vkey_hash(
         self,
-        stake_vkey_file: FileType,
+        stake_vkey_file: Optional[FileType] = None,
+        stake_vkey: Optional[str] = None,
     ) -> str:
         """Return the hash of a stake address key.
 
         Args:
-            stake_vkey_file: A path to stake vkey file.
+            stake_vkey_file: A path to stake vkey file (optional).
+            stake_vkey: A stake vkey (Bech32, optional).
 
         Returns:
             str: A generated hash.
         """
+        if stake_vkey:
+            cli_args = ["--stake-verification-key", stake_vkey]
+        elif stake_vkey_file:
+            cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
+        else:
+            raise AssertionError("Either `stake_vkey` or `stake_vkey_file` is needed.")
+
         return (
-            self._clusterlib_obj.cli(
-                ["stake-address", "key-hash", "--stake-verification-key-file", str(stake_vkey_file)]
-            )
+            self._clusterlib_obj.cli(["stake-address", "key-hash", *cli_args])
             .stdout.rstrip()
             .decode("ascii")
         )
