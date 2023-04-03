@@ -151,6 +151,7 @@ def _balance_txouts(  # noqa: C901
     withdrawals: structs.OptionalTxOuts,
     deposit: int = 0,
     lovelace_balanced: bool = False,
+    skip_asset_balancing: bool = False,
 ) -> List[structs.TxOut]:
     """Balance the transaction by adding change output for each coin."""
     # records for burning tokens, i.e. records with negative amount, are not allowed in `txouts`
@@ -180,7 +181,7 @@ def _balance_txouts(  # noqa: C901
         total_input_amount = functools.reduce(lambda x, y: x + y.amount, coin_txins, 0)
         total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
 
-        if coin == consts.DEFAULT_COIN and lovelace_balanced:
+        if skip_asset_balancing or (coin == consts.DEFAULT_COIN and lovelace_balanced):
             # balancing is done elsewhere (by the `transaction build` command)
             pass
         elif coin == consts.DEFAULT_COIN:
@@ -469,6 +470,7 @@ def _get_tx_ins_outs(
     withdrawals: structs.OptionalTxOuts = (),
     mint_txouts: structs.OptionalTxOuts = (),
     lovelace_balanced: bool = False,
+    skip_asset_balancing: bool = False,
 ) -> Tuple[List[structs.UTXOData], List[structs.TxOut]]:
     """Return list of transaction's inputs and outputs.
 
@@ -483,12 +485,16 @@ def _get_tx_ins_outs(
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
         mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
         lovelace_balanced: A bool indicating whether Lovelace ins/outs are balanced
-            (by `build` command; optional)
+            (by `build` command).
+        skip_asset_balancing: A bool indicating if assets balancing should be skipped
+            (`build` command balance the assets automatically in newer versions).
 
     Returns:
         Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
             outputs.
     """
+    # pylint: disable=too-many-arguments
+
     txouts_passed_db: Dict[str, List[structs.TxOut]] = _organize_tx_ins_outs_by_coin(txouts)
     txouts_mint_db: Dict[str, List[structs.TxOut]] = _organize_tx_ins_outs_by_coin(mint_txouts)
     outcoins_all = {consts.DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
@@ -559,6 +565,7 @@ def _get_tx_ins_outs(
         withdrawals=withdrawals,
         deposit=tx_deposit,
         lovelace_balanced=lovelace_balanced,
+        skip_asset_balancing=skip_asset_balancing,
     )
 
     return txins_filtered, txouts_balanced
@@ -578,6 +585,7 @@ def collect_data_for_build(
     script_withdrawals: structs.OptionalScriptWithdrawals = (),
     deposit: Optional[int] = None,
     lovelace_balanced: bool = False,
+    skip_asset_balancing: bool = False,
 ) -> structs.DataForBuild:
     """Collect data (txins, txouts, withdrawals) needed for building a transaction.
 
@@ -598,7 +606,9 @@ def collect_data_for_build(
             data (optional).
         deposit: A deposit amount needed by the transaction (optional).
         lovelace_balanced: A bool indicating whether Lovelace ins/outs are balanced
-            (by `build` command; optional)
+            (by `build` command).
+        skip_asset_balancing: A bool indicating if assets balancing should be skipped
+            (`build` command balance the assets automatically in newer versions).
 
     Returns:
         structs.DataForBuild: A tuple with data for build(-raw) commands.
@@ -641,6 +651,7 @@ def collect_data_for_build(
         withdrawals=withdrawals_txouts,
         mint_txouts=mint_txouts,
         lovelace_balanced=lovelace_balanced,
+        skip_asset_balancing=skip_asset_balancing,
     )
 
     payment_txins = txins or txins_copy
