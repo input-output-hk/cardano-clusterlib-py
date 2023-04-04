@@ -680,6 +680,7 @@ class TransactionGroup:
         calc_script_cost_file: Optional[FileType] = None,
         join_txouts: bool = True,
         destination_dir: FileType = ".",
+        skip_asset_balancing: bool = False,
     ) -> structs.TxRawOutput:
         """Build a transaction.
 
@@ -721,6 +722,8 @@ class TransactionGroup:
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
+            skip_asset_balancing: A bool indicating if assets balancing should be skipped
+                (`build` command balance the assets automatically in newer versions).
 
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
@@ -760,6 +763,7 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
             deposit=deposit,
             lovelace_balanced=True,
+            skip_asset_balancing=skip_asset_balancing,
         )
 
         required_signer_hashes = required_signer_hashes or []
