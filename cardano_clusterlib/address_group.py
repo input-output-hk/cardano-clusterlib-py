@@ -23,20 +23,26 @@ class AddressGroup:
     def gen_payment_addr(
         self,
         addr_name: str,
+        payment_vkey: Optional[str] = None,
         payment_vkey_file: Optional[FileType] = None,
         payment_script_file: Optional[FileType] = None,
+        stake_vkey: Optional[str] = None,
         stake_vkey_file: Optional[FileType] = None,
         stake_script_file: Optional[FileType] = None,
+        stake_address: Optional[str] = None,
         destination_dir: FileType = ".",
     ) -> str:
         """Generate a payment address, with optional delegation to a stake address.
 
         Args:
             addr_name: A name of payment address.
+            payment_vkey: A vkey file (Bech32, optional).
             payment_vkey_file: A path to corresponding vkey file (optional).
             payment_script_file: A path to corresponding payment script file (optional).
+            stake_vkey: A stake vkey file (optional).
             stake_vkey_file: A path to corresponding stake vkey file (optional).
-            stake_script_file: A path to corresponding payment script file (optional).
+            stake_script_file: A path to corresponding stake script file (optional).
+            stake_address: A stake address (Bech32, optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -50,13 +56,21 @@ class AddressGroup:
             cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
         elif payment_script_file:
             cli_args = ["--payment-script-file", str(payment_script_file)]
+        elif payment_vkey:
+            cli_args = ["--payment-verification-key", str(payment_vkey)]
         else:
-            raise AssertionError("Either `payment_vkey_file` or `payment_script_file` is needed.")
+            raise AssertionError(
+                "Either `payment_vkey_file`, `payment_script_file` or `payment_vkey` is needed."
+            )
 
-        if stake_vkey_file:
+        if stake_vkey:
+            cli_args.extend(["--stake-verification-key", str(stake_vkey)])
+        elif stake_vkey_file:
             cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
         elif stake_script_file:
             cli_args.extend(["--stake-script-file", str(stake_script_file)])
+        elif stake_address:
+            cli_args.extend(["--stake-address", str(stake_address)])
 
         self._clusterlib_obj.cli(
             [
