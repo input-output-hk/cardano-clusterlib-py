@@ -95,6 +95,7 @@ class StakeAddressGroup:
         addr_name: str,
         stake_vkey_file: Optional[FileType] = None,
         stake_script_file: Optional[FileType] = None,
+        stake_address: Optional[str] = None,
         destination_dir: FileType = ".",
     ) -> Path:
         """Generate a stake address registration certificate.
@@ -102,7 +103,8 @@ class StakeAddressGroup:
         Args:
             addr_name: A name of stake address.
             stake_vkey_file: A path to corresponding stake vkey file (optional).
-            stake_script_file: A path to corresponding payment script file (optional).
+            stake_script_file: A path to corresponding stake script file (optional).
+            stake_address: Stake address key, bech32 or hex-encoded (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -116,8 +118,12 @@ class StakeAddressGroup:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
         elif stake_script_file:
             cli_args = ["--stake-script-file", str(stake_script_file)]
+        elif stake_address:
+            cli_args = ["--stake-address", stake_address]
         else:
-            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError(
+                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
+            )
 
         self._clusterlib_obj.cli(
             [
@@ -137,6 +143,7 @@ class StakeAddressGroup:
         addr_name: str,
         stake_vkey_file: Optional[FileType] = None,
         stake_script_file: Optional[FileType] = None,
+        stake_address: Optional[str] = None,
         destination_dir: FileType = ".",
     ) -> Path:
         """Generate a stake address deregistration certificate.
@@ -144,7 +151,8 @@ class StakeAddressGroup:
         Args:
             addr_name: A name of stake address.
             stake_vkey_file: A path to corresponding stake vkey file (optional).
-            stake_script_file: A path to corresponding payment script file (optional).
+            stake_script_file: A path to corresponding stake script file (optional).
+            stake_address: Stake address key, bech32 or hex-encoded (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -158,8 +166,12 @@ class StakeAddressGroup:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
         elif stake_script_file:
             cli_args = ["--stake-script-file", str(stake_script_file)]
+        elif stake_address:
+            cli_args = ["--stake-address", stake_address]
         else:
-            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError(
+                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
+            )
 
         self._clusterlib_obj.cli(
             [
@@ -179,6 +191,7 @@ class StakeAddressGroup:
         addr_name: str,
         stake_vkey_file: Optional[FileType] = None,
         stake_script_file: Optional[FileType] = None,
+        stake_address: Optional[str] = None,
         cold_vkey_file: Optional[FileType] = None,
         stake_pool_id: str = "",
         destination_dir: FileType = ".",
@@ -188,7 +201,8 @@ class StakeAddressGroup:
         Args:
             addr_name: A name of stake address.
             stake_vkey_file: A path to corresponding stake vkey file (optional).
-            stake_script_file: A path to corresponding payment script file (optional).
+            stake_script_file: A path to corresponding stake script file (optional).
+            stake_address: Stake address key, bech32 or hex-encoded (optional).
             cold_vkey_file: A path to pool cold vkey file (optional).
             stake_pool_id: An ID of the stake pool (optional).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -205,8 +219,12 @@ class StakeAddressGroup:
             cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
         elif stake_script_file:
             cli_args.extend(["--stake-script-file", str(stake_script_file)])
+        elif stake_address:
+            cli_args = ["--stake-address", stake_address]
         else:
-            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            raise AssertionError(
+                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
+            )
 
         if cold_vkey_file:
             cli_args.extend(
