@@ -19,15 +19,21 @@ lint:
 	pre-commit run -a
 	if type pytype >/dev/null 2>&1; then pytype cardano_clusterlib; fi
 
+# build package
 .PHONY: build
 build:
 	python3 -m pip install --upgrade build
 	python3 -m build
 
-.PHONY: release
-release: build
-	python3 -m pip install --upgrade twine
+# upload package to PyPI
+.PHONY: upload
+upload:
+	if ! type twine >/dev/null 2>&1; then python3 -m pip install --upgrade twine; fi
 	twine upload --skip-existing dist/*
+
+# release package to PyPI
+.PHONY: release
+release: build upload
 
 .PHONY: .docs_build_dir
 .docs_build_dir:
