@@ -199,7 +199,9 @@ class QueryGroup:
             dict: A pool parameters.
         """
         warnings.warn(
-            "`pool-params` deprecated by `pool-state` for node 1.35.4+", DeprecationWarning
+            "`pool-params` deprecated by `pool-state` for node 1.35.4+",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
         pool_params: dict = json.loads(
