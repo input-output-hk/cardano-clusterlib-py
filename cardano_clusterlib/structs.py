@@ -161,6 +161,7 @@ class TxFiles(NamedTuple):
     metadata_cbor_files: OptionalFiles = ()
     signing_key_files: OptionalFiles = ()
     auxiliary_script_files: OptionalFiles = ()
+    metadata_json_detailed_schema: bool = False
 
 
 class PoolUser(NamedTuple):
