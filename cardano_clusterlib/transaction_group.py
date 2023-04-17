@@ -276,6 +276,9 @@ class TransactionGroup:
 
         misc_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
 
+        if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
+            misc_args.append("--json-metadata-detailed-schema")
+
         cli_args = [
             "transaction",
             "build-raw",
@@ -838,6 +841,9 @@ class TransactionGroup:
             out_file = Path(calc_script_cost_file)
         else:
             misc_args.extend(["--out-file", str(out_file)])
+
+        if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
+            misc_args.append("--json-metadata-detailed-schema")
 
         cli_args = [
             "transaction",
