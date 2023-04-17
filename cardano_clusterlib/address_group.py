@@ -181,7 +181,9 @@ class AddressGroup:
         Returns:
             str: A generated script address.
         """
-        warnings.warn("`gen_script_addr` deprecated by `gen_payment_addr`", DeprecationWarning)
+        warnings.warn(
+            "`gen_script_addr` deprecated by `gen_payment_addr`", DeprecationWarning, stacklevel=2
+        )
         return self.gen_payment_addr(
             addr_name=addr_name, payment_script_file=script_file, destination_dir=destination_dir
         )
