@@ -342,6 +342,7 @@ class TransactionGroup:
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
         fee: int = 0,
+        required_signers: OptionalFiles = (),
         ttl: Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -371,6 +372,8 @@ class TransactionGroup:
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             fee: A fee amount (optional).
+            required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -427,6 +430,7 @@ class TransactionGroup:
             total_collateral_amount=total_collateral_amount,
             mint=mint,
             complex_certs=complex_certs,
+            required_signers=required_signers,
             withdrawals=collected_data.withdrawals,
             script_withdrawals=collected_data.script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
@@ -1098,6 +1102,7 @@ class TransactionGroup:
         tx_files: Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
         fee: Optional[int] = None,
+        required_signers: OptionalFiles = (),
         ttl: Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -1136,6 +1141,8 @@ class TransactionGroup:
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
             fee: A fee amount (optional).
+            required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -1205,6 +1212,7 @@ class TransactionGroup:
             tx_files=tx_files,
             complex_certs=complex_certs,
             fee=fee,
+            required_signers=required_signers,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             deposit=deposit,
