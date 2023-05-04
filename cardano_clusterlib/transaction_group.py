@@ -692,6 +692,7 @@ class TransactionGroup:
         join_txouts: bool = True,
         destination_dir: FileType = ".",
         skip_asset_balancing: bool = False,
+        socket_path: Optional[FileType] = None,
     ) -> structs.TxRawOutput:
         """Build a transaction.
 
@@ -735,6 +736,8 @@ class TransactionGroup:
             destination_dir: A path to directory for storing artifacts (optional).
             skip_asset_balancing: A bool indicating if assets balancing should be skipped
                 (`build` command balance the assets automatically in newer versions).
+            socket_path: A path to the node socket. This overrides the CARDANO_NODE_SOCKET_PATH
+                environment variable (optional).
 
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
@@ -848,6 +851,9 @@ class TransactionGroup:
 
         if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
             misc_args.append("--json-metadata-detailed-schema")
+
+        if socket_path:
+            misc_args.extend(["--socket-path", str(socket_path)])
 
         cli_args = [
             "transaction",
