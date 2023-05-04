@@ -37,6 +37,8 @@ class ClusterLib:
         tx_era: An era used for transactions, by default same as network Era.
         slots_offset: Difference in slots between cluster's start era and current era
             (e.g. Byron->Mary)
+        socket_path: A path to socket file for communication with the node. This overrides the
+            `CARDANO_NODE_SOCKET_PATH` environment variable.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -47,6 +49,7 @@ class ClusterLib:
         protocol: str = consts.Protocols.CARDANO,
         tx_era: str = "",
         slots_offset: int = 0,
+        socket_path: FileType = "",
     ):
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
@@ -57,6 +60,11 @@ class ClusterLib:
         self.state_dir = Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
             raise exceptions.CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
+
+        self._init_socket_path = socket_path
+        self.socket_path: Optional[Path] = None
+        self.socket_args: List[str] = []
+        self.set_socket_path(socket_path=socket_path)
 
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
 
@@ -100,6 +108,20 @@ class ClusterLib:
         self._governance_group: Optional[governance_group.GovernanceGroup] = None
 
         clusterlib_helpers._check_protocol(clusterlib_obj=self)
+
+    def set_socket_path(self, socket_path: Optional[FileType]) -> None:
+        """Set a path to socket file for communication with the node."""
+        if not socket_path:
+            self.socket_path = None
+            self.socket_args = []
+            return
+
+        socket_path = Path(socket_path).expanduser().resolve()
+        if not socket_path.exists():
+            raise exceptions.CLIError(f"The socket `{socket_path}` doesn't exist.")
+
+        self.socket_path = socket_path
+        self.socket_args = ["--socket-path", str(self.socket_path)]
 
     @property
     def g_transaction(self) -> transaction_group.TransactionGroup:
