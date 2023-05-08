@@ -879,6 +879,7 @@ class TransactionGroup:
             *misc_args,
             *self.tx_era_arg,
             *self._clusterlib_obj.magic_args,
+            *self._clusterlib_obj.socket_args,
         ]
         stdout = self._clusterlib_obj.cli(cli_args).stdout
         stdout_dec = stdout.decode("utf-8") if stdout else ""
@@ -1046,6 +1047,7 @@ class TransactionGroup:
                 "transaction",
                 "submit",
                 *self._clusterlib_obj.magic_args,
+                *self._clusterlib_obj.socket_args,
                 "--tx-file",
                 str(tx_file),
                 f"--{self._clusterlib_obj.protocol}-mode",
