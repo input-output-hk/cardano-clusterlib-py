@@ -186,11 +186,12 @@ class ClusterLib:
             self._governance_group = governance_group.GovernanceGroup(clusterlib_obj=self)
         return self._governance_group
 
-    def cli(self, cli_args: List[str]) -> structs.CLIOut:
+    def cli(self, cli_args: List[str], timeout: Optional[float] = None) -> structs.CLIOut:
         """Run the `cardano-cli` command.
 
         Args:
             cli_args: A list of arguments for cardano-cli.
+            timeout: A timeout for the command, in seconds (optional).
 
         Returns:
             structs.CLIOut: A tuple containing command stdout and stderr.
@@ -214,7 +215,7 @@ class ClusterLib:
             with subprocess.Popen(
                 cli_args_strs, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             ) as p:
-                stdout, stderr = p.communicate()
+                stdout, stderr = p.communicate(timeout=timeout)
                 retcode = p.returncode
 
             if retcode == 0:
