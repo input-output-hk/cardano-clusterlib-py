@@ -105,5 +105,25 @@ class GenesisGroup:
         helpers._check_outfiles(out_file)
         return helpers.read_address_from_file(out_file)
 
+    def get_genesis_vkey_hash(self, vkey_file: FileType) -> str:
+        """Return the hash of a genesis public key.
+
+        Args:
+            vkey_file: A path to corresponding vkey file.
+
+        Returns:
+            str: A generated key-hash.
+        """
+        cli_out = self._clusterlib_obj.cli(
+            [
+                "genesis",
+                "key-hash",
+                "--verification-key-file",
+                str(vkey_file),
+            ]
+        )
+
+        return cli_out.stdout.rstrip().decode("ascii")
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
