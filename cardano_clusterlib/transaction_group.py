@@ -1117,6 +1117,7 @@ class TransactionGroup:
         complex_certs: structs.OptionalScriptCerts = (),
         fee: Optional[int] = None,
         required_signers: OptionalFiles = (),
+        required_signer_hashes: Optional[List[str]] = None,
         ttl: Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -1156,6 +1157,8 @@ class TransactionGroup:
                 (optional).
             fee: A fee amount (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
+            required_signer_hashes: A list of hashes of the signing keys whose signatures
                 are required (optional).
             ttl: A last block when the transaction is still valid
                 (deprecated in favor of `invalid_hereafter`, optional).
@@ -1202,6 +1205,7 @@ class TransactionGroup:
                 tx_files=tx_files,
                 complex_certs=complex_certs,
                 required_signers=required_signers,
+                required_signer_hashes=required_signer_hashes,
                 withdrawals=withdrawals,
                 script_withdrawals=script_withdrawals,
                 invalid_hereafter=invalid_hereafter or ttl,
@@ -1228,6 +1232,7 @@ class TransactionGroup:
             complex_certs=complex_certs,
             fee=fee,
             required_signers=required_signers,
+            required_signer_hashes=required_signer_hashes,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             deposit=deposit,
