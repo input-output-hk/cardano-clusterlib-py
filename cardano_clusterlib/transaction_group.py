@@ -1065,7 +1065,7 @@ class TransactionGroup:
             wait_blocks: A number of new blocks to wait for (default = 2).
         """
         txid = ""
-        for r in range(5):
+        for r in range(20):
             err = None
 
             if r == 0:
@@ -1076,12 +1076,12 @@ class TransactionGroup:
                 try:
                     self.submit_tx_bare(tx_file)
                 except exceptions.CLIError as exc:
-                    # check if resubmitting failed because an input UTxO was already spent
+                    # Check if resubmitting failed because an input UTxO was already spent
                     if "(BadInputsUTxO" not in str(exc):
                         raise
                     err = exc
+                    # If here, the TX is likely still in mempool and we need to wait
 
-            # wait for new blocks even in case of error, so `query utxo` returns up-to-date data
             self._clusterlib_obj.wait_for_new_block(wait_blocks)
 
             # Check that one of the input UTxOs can no longer be queried in order to verify
@@ -1095,8 +1095,10 @@ class TransactionGroup:
         else:
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
-                # spent, but it was not the case. Re-raising the exception.
-                raise err
+                # spent, but it was either not the case, or the TX is still in mempool.
+                raise exceptions.CLIError(
+                    f"Failed to resubmit the transaction '{txid}' (from '{tx_file}')."
+                ) from err
 
             raise exceptions.CLIError(
                 f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
