@@ -182,28 +182,30 @@ class PoolData(NamedTuple):
 
 
 class TxRawOutput(NamedTuple):
-    txins: List[UTXOData]
-    txouts: List[TxOut]
-    txouts_count: int
-    tx_files: TxFiles
-    out_file: Path
-    fee: int
-    build_args: List[str]
-    era: str = ""
-    script_txins: OptionalScriptTxIn = ()
-    script_withdrawals: OptionalScriptWithdrawals = ()
-    complex_certs: OptionalScriptCerts = ()
-    mint: OptionalMint = ()
-    invalid_hereafter: Optional[int] = None
-    invalid_before: Optional[int] = None
-    withdrawals: OptionalTxOuts = ()
-    change_address: str = ""
-    return_collateral_txouts: OptionalTxOuts = ()
-    total_collateral_amount: Optional[int] = None
-    readonly_reference_txins: OptionalUTXOData = ()
-    script_valid: bool = True
-    required_signers: OptionalFiles = ()
-    required_signer_hashes: Optional[List[str]] = None
+    txins: List[UTXOData]  # UTXOs used as inputs
+    txouts: List[TxOut]  # Tx outputs
+    txouts_count: int  # Final number of tx outputs after adding change address and joining outputs
+    tx_files: TxFiles  # Files needed for transaction building (certificates, signing keys, etc.)
+    out_file: Path  # Output file path for the transaction body
+    fee: int  # Tx fee
+    build_args: List[str]  # Arguments that were passed to `cardano-cli transaction build*`
+    era: str = ""  # Era used for the transaction
+    script_txins: OptionalScriptTxIn = ()  # Tx inputs that are combined with scripts
+    script_withdrawals: OptionalScriptWithdrawals = ()  # Withdrawals that are combined with scripts
+    complex_certs: OptionalScriptCerts = ()  # Certificates that are combined with scripts
+    mint: OptionalMint = ()  # Minting data (Tx outputs, script, etc.)
+    invalid_hereafter: Optional[int] = None  # Validity interval upper bound
+    invalid_before: Optional[int] = None  # Validity interval lower bound
+    withdrawals: OptionalTxOuts = ()  # All withdrawals (including those combined with scripts)
+    change_address: str = ""  # Address for change
+    return_collateral_txouts: OptionalTxOuts = ()  # Tx outputs for returning collateral
+    total_collateral_amount: Optional[int] = None  # Total collateral amount
+    readonly_reference_txins: OptionalUTXOData = ()  # Tx inputs for plutus script context
+    script_valid: bool = True  # Whether the plutus script is valid
+    required_signers: OptionalFiles = ()  # Signing keys that are required for the transaction
+    # Hashes of signing keys that are required for the transaction
+    required_signer_hashes: Union[List[str], Tuple[()]] = ()
+    combined_reference_txins: OptionalUTXOData = ()  # All reference tx inputs
 
 
 class PoolCreationOutput(NamedTuple):
