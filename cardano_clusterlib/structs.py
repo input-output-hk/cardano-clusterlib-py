@@ -204,7 +204,7 @@ class TxRawOutput(NamedTuple):
     script_valid: bool = True  # Whether the plutus script is valid
     required_signers: OptionalFiles = ()  # Signing keys that are required for the transaction
     # Hashes of signing keys that are required for the transaction
-    required_signer_hashes: Optional[List[str]] = None
+    required_signer_hashes: Union[List[str], Tuple[()]] = ()
 
 
 class PoolCreationOutput(NamedTuple):
