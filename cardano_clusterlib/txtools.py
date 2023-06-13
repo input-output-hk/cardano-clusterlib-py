@@ -265,6 +265,28 @@ def _get_withdrawals(
     return withdrawals, script_withdrawals, withdrawals_txouts
 
 
+def _get_reference_txins(
+    readonly_reference_txins: structs.OptionalUTXOData,
+    script_txins: structs.OptionalScriptTxIn,
+    mint: structs.OptionalMint,
+    complex_certs: structs.OptionalScriptCerts,
+    script_withdrawals: structs.OptionalScriptWithdrawals,
+) -> List[structs.UTXOData]:
+    """Get list of reference txins."""
+    script_ref_txins = [
+        r.reference_txin
+        for r in (
+            *script_txins,
+            *mint,
+            *complex_certs,
+            *script_withdrawals,
+        )
+        if r.reference_txin
+    ]
+
+    return [*readonly_reference_txins, *script_ref_txins]
+
+
 def _get_txin_strings(
     txins: structs.OptionalUTXOData, script_txins: structs.OptionalScriptTxIn
 ) -> Set[str]:

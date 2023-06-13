@@ -205,6 +205,7 @@ class TxRawOutput(NamedTuple):
     required_signers: OptionalFiles = ()  # Signing keys that are required for the transaction
     # Hashes of signing keys that are required for the transaction
     required_signer_hashes: Union[List[str], Tuple[()]] = ()
+    combined_reference_txins: OptionalUTXOData = ()  # All reference tx inputs
 
 
 class PoolCreationOutput(NamedTuple):

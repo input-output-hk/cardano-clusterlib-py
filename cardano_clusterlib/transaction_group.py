@@ -326,6 +326,13 @@ class TransactionGroup:
             script_valid=script_valid,
             required_signers=required_signers,
             required_signer_hashes=required_signer_hashes,
+            combined_reference_txins=txtools._get_reference_txins(
+                readonly_reference_txins=readonly_reference_txins,
+                script_txins=script_txins,
+                mint=mint,
+                complex_certs=complex_certs,
+                script_withdrawals=script_withdrawals,
+            ),
         )
 
     def build_raw_tx(
@@ -913,6 +920,13 @@ class TransactionGroup:
             script_valid=script_valid,
             required_signers=required_signers,
             required_signer_hashes=required_signer_hashes,
+            combined_reference_txins=txtools._get_reference_txins(
+                readonly_reference_txins=readonly_reference_txins,
+                script_txins=script_txins,
+                mint=mint,
+                complex_certs=complex_certs,
+                script_withdrawals=script_withdrawals,
+            ),
         )
 
     def sign_tx(
