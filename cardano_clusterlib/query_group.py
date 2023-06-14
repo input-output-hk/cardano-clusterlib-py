@@ -487,5 +487,13 @@ class QueryGroup:
         )
         return tx_mempool
 
+    def get_slot_number(self, timestamp: datetime.datetime) -> int:
+        """Return slot number for UTC timestamp."""
+        timestamp_str = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        slot_number: int = json.loads(self.query_cli(["slot-number", timestamp_str]))
+
+        return slot_number
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
