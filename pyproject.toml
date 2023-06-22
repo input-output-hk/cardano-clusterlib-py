@@ -1,6 +1,33 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel"]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "cardano-clusterlib"
+authors = [
+    {name = "Martin Kourim", email = "martin.kourim@iohk.io"},
+]
+description = "Python wrapper for cardano-cli for working with cardano cluster"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["cardano", "cardano-node", "cardano-cli", "cardano-node-tests"]
+license = {text = "Apache License 2.0"}
+classifiers = [
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Intended Audience :: Developers",
+]
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+
+[project.urls]
+homepage = "https://github.com/input-output-hk/cardano-clusterlib-py"
+documentation = "https://cardano-clusterlib-py.readthedocs.io/"
+repository = "https://github.com/input-output-hk/cardano-clusterlib-py"
 
 [tool.black]
 line-length = 100
