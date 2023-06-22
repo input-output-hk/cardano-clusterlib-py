@@ -274,8 +274,6 @@ class TransactionGroup:
         if total_collateral_amount:
             misc_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
 
-        misc_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
-
         if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
             misc_args.append("--json-metadata-detailed-schema")
 
@@ -856,8 +854,6 @@ class TransactionGroup:
 
         if total_collateral_amount:
             misc_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
-
-        misc_args.extend(["--cddl-format"] if self._clusterlib_obj.use_cddl else [])
 
         if calc_script_cost_file:
             misc_args.extend(["--calculate-plutus-script-cost", str(calc_script_cost_file)])

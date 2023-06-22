@@ -91,9 +91,6 @@ class ClusterLib:
 
         self.tx_era = tx_era
 
-        # TODO: add temporary switch for CDDL format, until it is made default
-        self.use_cddl = False
-
         self.overwrite_outfiles = True
 
         # groups of commands
