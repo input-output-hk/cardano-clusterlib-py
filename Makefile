@@ -22,7 +22,7 @@ lint:
 # build package
 .PHONY: build
 build:
-	python3 -m pip install --upgrade build
+	python -c "import build" || python3 -m pip install build
 	python3 -m build
 
 # upload package to PyPI
