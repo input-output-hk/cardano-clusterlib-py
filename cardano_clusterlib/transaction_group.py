@@ -833,20 +833,6 @@ class TransactionGroup:
             for_build=True,
         )
 
-        grouped_args_str = " ".join(grouped_args)
-        pparams_for_txins = grouped_args and (
-            "-datum-" in grouped_args_str or "-redeemer-" in grouped_args_str
-        )
-        # TODO: see https://github.com/input-output-hk/cardano-node/issues/4058
-        pparams_for_txouts = "-embed-" in " ".join(txout_args)
-        if pparams_for_txins or pparams_for_txouts:
-            grouped_args.extend(
-                [
-                    "--protocol-params-file",
-                    str(self._clusterlib_obj.pparams_file),
-                ]
-            )
-
         misc_args.extend(["--change-address", change_address])
 
         if witness_override is not None:
