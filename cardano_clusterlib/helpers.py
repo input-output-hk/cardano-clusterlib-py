@@ -1,11 +1,11 @@
 import itertools
+import pathlib as pl
 import random
 import string
-from pathlib import Path
-from typing import List
+import typing as tp
 
 from cardano_clusterlib import exceptions
-from cardano_clusterlib import types
+from cardano_clusterlib import types as itp
 
 
 def get_rand_str(length: int = 8) -> str:
@@ -15,13 +15,13 @@ def get_rand_str(length: int = 8) -> str:
     return "".join(random.choice(string.ascii_lowercase) for i in range(length))
 
 
-def read_address_from_file(addr_file: types.FileType) -> str:
+def read_address_from_file(addr_file: itp.FileType) -> str:
     """Read address stored in file."""
-    with open(Path(addr_file).expanduser(), encoding="utf-8") as in_file:
+    with open(pl.Path(addr_file).expanduser(), encoding="utf-8") as in_file:
         return in_file.read().strip()
 
 
-def _prepend_flag(flag: str, contents: types.UnpackableSequence) -> List[str]:
+def _prepend_flag(flag: str, contents: itp.UnpackableSequence) -> tp.List[str]:
     """Prepend flag to every item of the sequence.
 
     Args:
@@ -37,13 +37,13 @@ def _prepend_flag(flag: str, contents: types.UnpackableSequence) -> List[str]:
     return list(itertools.chain.from_iterable([flag, str(x)] for x in contents))
 
 
-def _check_outfiles(*out_files: types.FileType) -> None:
+def _check_outfiles(*out_files: itp.FileType) -> None:
     """Check that the expected output files were created.
 
     Args:
         *out_files: Variable length list of expected output files.
     """
     for out_file in out_files:
-        out_file_p = Path(out_file).expanduser()
+        out_file_p = pl.Path(out_file).expanduser()
         if not out_file_p.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` doesn't exist.")

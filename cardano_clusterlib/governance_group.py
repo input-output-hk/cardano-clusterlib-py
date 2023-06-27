@@ -1,30 +1,28 @@
 """Group of methods for governance."""
 import logging
-from pathlib import Path
-from typing import Optional
+import pathlib as pl
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
-from cardano_clusterlib.types import UnpackableSequence
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class GovernanceGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
     def gen_update_proposal(
         self,
-        cli_args: UnpackableSequence,
+        cli_args: itp.UnpackableSequence,
         epoch: int,
         tx_name: str,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Create an update proposal.
 
         Args:
@@ -36,7 +34,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the update proposal file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_update.proposal"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -63,8 +61,8 @@ class GovernanceGroup:
         self,
         transfer: int,
         tx_name: str,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Create an MIR certificate to transfer from the reserves pot to the treasury pot.
 
         Args:
@@ -75,7 +73,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the MIR certificate file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_mir_to_treasury.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -98,8 +96,8 @@ class GovernanceGroup:
         self,
         transfer: int,
         tx_name: str,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Create an MIR certificate to transfer from the treasury pot to the reserves pot.
 
         Args:
@@ -110,7 +108,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the MIR certificate file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_mir_to_rewards.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -135,8 +133,8 @@ class GovernanceGroup:
         reward: int,
         tx_name: str,
         use_treasury: bool = False,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Create an MIR certificate to pay stake addresses.
 
         Args:
@@ -149,7 +147,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the MIR certificate file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         funds_src = "treasury" if use_treasury else "reserves"
         out_file = destination_dir / f"{tx_name}_{funds_src}_mir_stake.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -174,12 +172,12 @@ class GovernanceGroup:
 
     def submit_update_proposal(
         self,
-        cli_args: UnpackableSequence,
+        cli_args: itp.UnpackableSequence,
         src_address: str,
-        src_skey_file: FileType,
+        src_skey_file: itp.FileType,
         tx_name: str,
-        epoch: Optional[int] = None,
-        destination_dir: FileType = ".",
+        epoch: tp.Optional[int] = None,
+        destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
         """Submit an update proposal.
 
@@ -211,7 +209,7 @@ class GovernanceGroup:
                 proposal_files=[out_file],
                 signing_key_files=[
                     *self._clusterlib_obj.g_genesis.genesis_keys.delegate_skeys,
-                    Path(src_skey_file),
+                    pl.Path(src_skey_file),
                 ],
             ),
             destination_dir=destination_dir,

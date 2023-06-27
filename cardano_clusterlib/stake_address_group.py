@@ -1,29 +1,28 @@
 """Group of methods for working with stake addresses."""
 import logging
-from pathlib import Path
-from typing import Optional
+import pathlib as pl
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class StakeAddressGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
     def gen_stake_addr(
         self,
         addr_name: str,
-        stake_vkey_file: Optional[FileType] = None,
-        stake_script_file: Optional[FileType] = None,
-        destination_dir: FileType = ".",
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        destination_dir: itp.FileType = ".",
     ) -> str:
         """Generate a stake address.
 
@@ -36,7 +35,7 @@ class StakeAddressGroup:
         Returns:
             str: A generated stake address.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake.addr"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -61,7 +60,9 @@ class StakeAddressGroup:
         helpers._check_outfiles(out_file)
         return helpers.read_address_from_file(out_file)
 
-    def gen_stake_key_pair(self, key_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
+    def gen_stake_key_pair(
+        self, key_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
         """Generate a stake address key pair.
 
         Args:
@@ -71,7 +72,7 @@ class StakeAddressGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_stake.vkey"
         skey = destination_dir / f"{key_name}_stake.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
@@ -93,11 +94,11 @@ class StakeAddressGroup:
     def gen_stake_addr_registration_cert(
         self,
         addr_name: str,
-        stake_vkey_file: Optional[FileType] = None,
-        stake_script_file: Optional[FileType] = None,
-        stake_address: Optional[str] = None,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_address: tp.Optional[str] = None,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Generate a stake address registration certificate.
 
         Args:
@@ -110,7 +111,7 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -141,11 +142,11 @@ class StakeAddressGroup:
     def gen_stake_addr_deregistration_cert(
         self,
         addr_name: str,
-        stake_vkey_file: Optional[FileType] = None,
-        stake_script_file: Optional[FileType] = None,
-        stake_address: Optional[str] = None,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_address: tp.Optional[str] = None,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Generate a stake address deregistration certificate.
 
         Args:
@@ -158,7 +159,7 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -189,13 +190,13 @@ class StakeAddressGroup:
     def gen_stake_addr_delegation_cert(
         self,
         addr_name: str,
-        stake_vkey_file: Optional[FileType] = None,
-        stake_script_file: Optional[FileType] = None,
-        stake_address: Optional[str] = None,
-        cold_vkey_file: Optional[FileType] = None,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_address: tp.Optional[str] = None,
+        cold_vkey_file: tp.Optional[itp.FileType] = None,
         stake_pool_id: str = "",
-        destination_dir: FileType = ".",
-    ) -> Path:
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Generate a stake address delegation certificate.
 
         Args:
@@ -210,7 +211,7 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -257,7 +258,7 @@ class StakeAddressGroup:
         return out_file
 
     def gen_stake_addr_and_keys(
-        self, name: str, destination_dir: FileType = "."
+        self, name: str, destination_dir: itp.FileType = "."
     ) -> structs.AddressRecord:
         """Generate stake address and key pair.
 
@@ -279,8 +280,8 @@ class StakeAddressGroup:
 
     def get_stake_vkey_hash(
         self,
-        stake_vkey_file: Optional[FileType] = None,
-        stake_vkey: Optional[str] = None,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_vkey: tp.Optional[str] = None,
     ) -> str:
         """Return the hash of a stake address key.
 
@@ -310,7 +311,7 @@ class StakeAddressGroup:
         dst_addr_record: structs.AddressRecord,
         tx_name: str,
         verify: bool = True,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
         """Withdraw reward to payment address.
 

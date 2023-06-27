@@ -1,11 +1,10 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
 import json
 import logging
+import pathlib as pl
 import subprocess
 import time
-from pathlib import Path
-from typing import List
-from typing import Optional
+import typing as tp
 
 from cardano_clusterlib import address_group
 from cardano_clusterlib import clusterlib_helpers
@@ -22,7 +21,7 @@ from cardano_clusterlib import stake_address_group
 from cardano_clusterlib import stake_pool_group
 from cardano_clusterlib import structs
 from cardano_clusterlib import transaction_group
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
@@ -45,11 +44,11 @@ class ClusterLib:
 
     def __init__(
         self,
-        state_dir: FileType,
+        state_dir: itp.FileType,
         protocol: str = consts.Protocols.CARDANO,
         tx_era: str = "",
         slots_offset: int = 0,
-        socket_path: FileType = "",
+        socket_path: itp.FileType = "",
     ):
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
@@ -57,13 +56,13 @@ class ClusterLib:
         self._cli_log = ""
         self.protocol = protocol
 
-        self.state_dir = Path(state_dir).expanduser().resolve()
+        self.state_dir = pl.Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
             raise exceptions.CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
 
         self._init_socket_path = socket_path
-        self.socket_path: Optional[Path] = None
-        self.socket_args: List[str] = []
+        self.socket_path: tp.Optional[pl.Path] = None
+        self.socket_args: tp.List[str] = []
         self.set_socket_path(socket_path=socket_path)
 
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
@@ -94,26 +93,26 @@ class ClusterLib:
         self.overwrite_outfiles = True
 
         # groups of commands
-        self._transaction_group: Optional[transaction_group.TransactionGroup] = None
-        self._query_group: Optional[query_group.QueryGroup] = None
-        self._address_group: Optional[address_group.AddressGroup] = None
-        self._stake_address_group: Optional[stake_address_group.StakeAddressGroup] = None
-        self._stake_pool_group: Optional[stake_pool_group.StakePoolGroup] = None
-        self._node_group: Optional[node_group.NodeGroup] = None
-        self._key_group: Optional[key_group.KeyGroup] = None
-        self._genesis_group: Optional[genesis_group.GenesisGroup] = None
-        self._governance_group: Optional[governance_group.GovernanceGroup] = None
+        self._transaction_group: tp.Optional[transaction_group.TransactionGroup] = None
+        self._query_group: tp.Optional[query_group.QueryGroup] = None
+        self._address_group: tp.Optional[address_group.AddressGroup] = None
+        self._stake_address_group: tp.Optional[stake_address_group.StakeAddressGroup] = None
+        self._stake_pool_group: tp.Optional[stake_pool_group.StakePoolGroup] = None
+        self._node_group: tp.Optional[node_group.NodeGroup] = None
+        self._key_group: tp.Optional[key_group.KeyGroup] = None
+        self._genesis_group: tp.Optional[genesis_group.GenesisGroup] = None
+        self._governance_group: tp.Optional[governance_group.GovernanceGroup] = None
 
         clusterlib_helpers._check_protocol(clusterlib_obj=self)
 
-    def set_socket_path(self, socket_path: Optional[FileType]) -> None:
+    def set_socket_path(self, socket_path: tp.Optional[itp.FileType]) -> None:
         """Set a path to socket file for communication with the node."""
         if not socket_path:
             self.socket_path = None
             self.socket_args = []
             return
 
-        socket_path = Path(socket_path).expanduser().resolve()
+        socket_path = pl.Path(socket_path).expanduser().resolve()
         if not socket_path.exists():
             raise exceptions.CLIError(f"The socket `{socket_path}` doesn't exist.")
 
@@ -183,7 +182,7 @@ class ClusterLib:
             self._governance_group = governance_group.GovernanceGroup(clusterlib_obj=self)
         return self._governance_group
 
-    def cli(self, cli_args: List[str], timeout: Optional[float] = None) -> structs.CLIOut:
+    def cli(self, cli_args: tp.List[str], timeout: tp.Optional[float] = None) -> structs.CLIOut:
         """Run the `cardano-cli` command.
 
         Args:
@@ -221,7 +220,7 @@ class ClusterLib:
             stderr_dec = stderr.decode()
             err_msg = (
                 f"An error occurred running a CLI command `{cmd_str}` on path "
-                f"`{Path.cwd()}`: {stderr_dec}"
+                f"`{pl.Path.cwd()}`: {stderr_dec}"
             )
             if "resource exhausted" in stderr_dec or "resource vanished" in stderr_dec:
                 LOGGER.error(err_msg)
@@ -385,7 +384,7 @@ class ClusterLib:
         LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
         return this_epoch
 
-    def time_to_epoch_end(self, tip: Optional[dict] = None) -> float:
+    def time_to_epoch_end(self, tip: tp.Optional[dict] = None) -> float:
         """How many seconds to go to start of a new epoch."""
         tip = tip or self.g_query.get_tip()
         epoch = int(tip["epoch"])
@@ -393,7 +392,7 @@ class ClusterLib:
         slots_to_go = (epoch + 1) * self.epoch_length - (slot + self.slots_offset - 1)
         return float(slots_to_go * self.slot_length)
 
-    def time_from_epoch_start(self, tip: Optional[dict] = None) -> float:
+    def time_from_epoch_start(self, tip: tp.Optional[dict] = None) -> float:
         """How many seconds passed from start of the current epoch."""
         s_to_epoch_stop = self.time_to_epoch_end(tip=tip)
         return float(self.epoch_length_sec - s_to_epoch_stop)

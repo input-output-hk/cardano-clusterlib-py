@@ -1,23 +1,24 @@
 """Group of methods for node operation."""
 import logging
-from pathlib import Path
-from typing import Optional
+import pathlib as pl
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class NodeGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-    def gen_kes_key_pair(self, node_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
+    def gen_kes_key_pair(
+        self, node_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
         """Generate a key pair for a node KES operational key.
 
         Args:
@@ -27,7 +28,7 @@ class NodeGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_kes.vkey"
         skey = destination_dir / f"{node_name}_kes.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
@@ -46,7 +47,9 @@ class NodeGroup:
         helpers._check_outfiles(vkey, skey)
         return structs.KeyPair(vkey, skey)
 
-    def gen_vrf_key_pair(self, node_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
+    def gen_vrf_key_pair(
+        self, node_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
         """Generate a key pair for a node VRF operational key.
 
         Args:
@@ -56,7 +59,7 @@ class NodeGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_vrf.vkey"
         skey = destination_dir / f"{node_name}_vrf.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
@@ -76,7 +79,7 @@ class NodeGroup:
         return structs.KeyPair(vkey, skey)
 
     def gen_cold_key_pair_and_counter(
-        self, node_name: str, destination_dir: FileType = "."
+        self, node_name: str, destination_dir: itp.FileType = "."
     ) -> structs.ColdKeyPair:
         """Generate a key pair for operator's offline key and a new certificate issue counter.
 
@@ -87,7 +90,7 @@ class NodeGroup:
         Returns:
             structs.ColdKeyPair: A tuple containing the key pair and the counter.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_cold.vkey"
         skey = destination_dir / f"{node_name}_cold.skey"
         counter = destination_dir / f"{node_name}_cold.counter"
@@ -114,12 +117,12 @@ class NodeGroup:
     def gen_node_operational_cert(
         self,
         node_name: str,
-        kes_vkey_file: FileType,
-        cold_skey_file: FileType,
-        cold_counter_file: FileType,
-        kes_period: Optional[int] = None,
-        destination_dir: FileType = ".",
-    ) -> Path:
+        kes_vkey_file: itp.FileType,
+        cold_skey_file: itp.FileType,
+        cold_counter_file: itp.FileType,
+        kes_period: tp.Optional[int] = None,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
         """Generate a node operational certificate.
 
         This certificate is used when starting the node and not submitted through a transaction.
@@ -135,7 +138,7 @@ class NodeGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{node_name}.opcert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
