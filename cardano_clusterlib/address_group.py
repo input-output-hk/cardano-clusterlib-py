@@ -1,8 +1,8 @@
 """Group of methods for working with payment addresses."""
 import json
 import logging
+import pathlib as pl
 import warnings
-from pathlib import Path
 from typing import Dict
 from typing import Optional
 
@@ -48,7 +48,7 @@ class AddressGroup:
         Returns:
             str: A generated payment address.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}.addr"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -100,7 +100,7 @@ class AddressGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}.vkey"
         skey = destination_dir / f"{key_name}.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)

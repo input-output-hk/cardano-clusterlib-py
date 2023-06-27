@@ -4,8 +4,8 @@ import datetime
 import functools
 import json
 import logging
+import pathlib as pl
 import warnings
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -128,7 +128,7 @@ class QueryGroup:
         self,
         state_name: str,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Save ledger state to file.
 
         Args:
@@ -138,7 +138,7 @@ class QueryGroup:
         Returns:
             Path: A path to the generated state JSON file.
         """
-        json_file = Path(destination_dir) / f"{state_name}_ledger_state.json"
+        json_file = pl.Path(destination_dir) / f"{state_name}_ledger_state.json"
         # TODO: workaround for https://github.com/input-output-hk/cardano-node/issues/2461
         # self.query_cli(["ledger-state", "--out-file", str(json_file)])
         ledger_state = self.get_ledger_state()

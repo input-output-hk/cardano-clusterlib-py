@@ -1,5 +1,5 @@
 import datetime
-from pathlib import Path
+import pathlib as pl
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -17,20 +17,20 @@ class CLIOut(NamedTuple):
 
 
 class KeyPair(NamedTuple):
-    vkey_file: Path
-    skey_file: Path
+    vkey_file: pl.Path
+    skey_file: pl.Path
 
 
 class ColdKeyPair(NamedTuple):
-    vkey_file: Path
-    skey_file: Path
-    counter_file: Path
+    vkey_file: pl.Path
+    skey_file: pl.Path
+    counter_file: pl.Path
 
 
 class AddressRecord(NamedTuple):
     address: str
-    vkey_file: Path
-    skey_file: Path
+    vkey_file: pl.Path
+    skey_file: pl.Path
 
 
 class StakeAddrInfo(NamedTuple):
@@ -186,7 +186,7 @@ class TxRawOutput(NamedTuple):
     txouts: List[TxOut]  # Tx outputs
     txouts_count: int  # Final number of tx outputs after adding change address and joining outputs
     tx_files: TxFiles  # Files needed for transaction building (certificates, signing keys, etc.)
-    out_file: Path  # Output file path for the transaction body
+    out_file: pl.Path  # Output file path for the transaction body
     fee: int  # Tx fee
     build_args: List[str]  # Arguments that were passed to `cardano-cli transaction build*`
     era: str = ""  # Era used for the transaction
@@ -212,7 +212,7 @@ class PoolCreationOutput(NamedTuple):
     stake_pool_id: str
     vrf_key_pair: KeyPair
     cold_key_pair: ColdKeyPair
-    pool_reg_cert_file: Path
+    pool_reg_cert_file: pl.Path
     pool_data: PoolData
     pool_owners: List[PoolUser]
     tx_raw_output: TxRawOutput
@@ -220,10 +220,10 @@ class PoolCreationOutput(NamedTuple):
 
 
 class GenesisKeys(NamedTuple):
-    genesis_utxo_vkey: Path
-    genesis_utxo_skey: Path
-    genesis_vkeys: List[Path]
-    delegate_skeys: List[Path]
+    genesis_utxo_vkey: pl.Path
+    genesis_utxo_skey: pl.Path
+    genesis_vkeys: List[pl.Path]
+    delegate_skeys: List[pl.Path]
 
 
 class PoolParamsTop(NamedTuple):

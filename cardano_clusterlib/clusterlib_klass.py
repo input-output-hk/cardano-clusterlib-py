@@ -1,9 +1,9 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
 import json
 import logging
+import pathlib as pl
 import subprocess
 import time
-from pathlib import Path
 from typing import List
 from typing import Optional
 
@@ -57,12 +57,12 @@ class ClusterLib:
         self._cli_log = ""
         self.protocol = protocol
 
-        self.state_dir = Path(state_dir).expanduser().resolve()
+        self.state_dir = pl.Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
             raise exceptions.CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
 
         self._init_socket_path = socket_path
-        self.socket_path: Optional[Path] = None
+        self.socket_path: Optional[pl.Path] = None
         self.socket_args: List[str] = []
         self.set_socket_path(socket_path=socket_path)
 
@@ -113,7 +113,7 @@ class ClusterLib:
             self.socket_args = []
             return
 
-        socket_path = Path(socket_path).expanduser().resolve()
+        socket_path = pl.Path(socket_path).expanduser().resolve()
         if not socket_path.exists():
             raise exceptions.CLIError(f"The socket `{socket_path}` doesn't exist.")
 
@@ -221,7 +221,7 @@ class ClusterLib:
             stderr_dec = stderr.decode()
             err_msg = (
                 f"An error occurred running a CLI command `{cmd_str}` on path "
-                f"`{Path.cwd()}`: {stderr_dec}"
+                f"`{pl.Path.cwd()}`: {stderr_dec}"
             )
             if "resource exhausted" in stderr_dec or "resource vanished" in stderr_dec:
                 LOGGER.error(err_msg)

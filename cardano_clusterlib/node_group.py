@@ -1,6 +1,6 @@
 """Group of methods for node operation."""
 import logging
-from pathlib import Path
+import pathlib as pl
 from typing import Optional
 
 from cardano_clusterlib import clusterlib_helpers
@@ -27,7 +27,7 @@ class NodeGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_kes.vkey"
         skey = destination_dir / f"{node_name}_kes.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
@@ -56,7 +56,7 @@ class NodeGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_vrf.vkey"
         skey = destination_dir / f"{node_name}_vrf.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
@@ -87,7 +87,7 @@ class NodeGroup:
         Returns:
             structs.ColdKeyPair: A tuple containing the key pair and the counter.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_cold.vkey"
         skey = destination_dir / f"{node_name}_cold.skey"
         counter = destination_dir / f"{node_name}_cold.counter"
@@ -119,7 +119,7 @@ class NodeGroup:
         cold_counter_file: FileType,
         kes_period: Optional[int] = None,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a node operational certificate.
 
         This certificate is used when starting the node and not submitted through a transaction.
@@ -135,7 +135,7 @@ class NodeGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{node_name}.opcert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 

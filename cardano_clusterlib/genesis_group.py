@@ -1,6 +1,6 @@
 """Group of methods related to genesis block."""
 import logging
-from pathlib import Path
+import pathlib as pl
 from typing import Optional
 
 from cardano_clusterlib import clusterlib_helpers
@@ -86,7 +86,7 @@ class GenesisGroup:
         Returns:
             str: A generated genesis address.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_genesis.addr"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 

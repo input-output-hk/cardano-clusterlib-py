@@ -2,8 +2,8 @@
 import itertools
 import json
 import logging
+import pathlib as pl
 import warnings
-from pathlib import Path
 from typing import List
 from typing import Optional
 
@@ -208,7 +208,7 @@ class TransactionGroup:
                 "certs may come in unexpected order."
             )
 
-        out_file = Path(out_file)
+        out_file = pl.Path(out_file)
 
         withdrawals, script_withdrawals, __ = txtools._get_withdrawals(
             clusterlib_obj=self._clusterlib_obj,
@@ -398,7 +398,7 @@ class TransactionGroup:
             structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -772,7 +772,7 @@ class TransactionGroup:
                 "certs may come in unexpected order."
             )
 
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
 
         out_file = destination_dir / f"{tx_name}_tx.body"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -843,7 +843,7 @@ class TransactionGroup:
 
         if calc_script_cost_file:
             misc_args.extend(["--calculate-plutus-script-cost", str(calc_script_cost_file)])
-            out_file = Path(calc_script_cost_file)
+            out_file = pl.Path(calc_script_cost_file)
         else:
             misc_args.extend(["--out-file", str(out_file)])
 
@@ -918,7 +918,7 @@ class TransactionGroup:
         tx_body_file: Optional[FileType] = None,
         tx_file: Optional[FileType] = None,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Sign a transaction.
 
         Args:
@@ -931,7 +931,7 @@ class TransactionGroup:
         Returns:
             Path: A path to signed transaction file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.signed"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -963,7 +963,7 @@ class TransactionGroup:
         witness_name: str,
         signing_key_files: OptionalFiles = (),
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Create a transaction witness.
 
         Args:
@@ -975,7 +975,7 @@ class TransactionGroup:
         Returns:
             Path: A path to transaction witness file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{witness_name}_tx.witness"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -1001,7 +1001,7 @@ class TransactionGroup:
         witness_files: OptionalFiles,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Assemble a tx body and witness(es) to form a signed transaction.
 
         Args:
@@ -1013,7 +1013,7 @@ class TransactionGroup:
         Returns:
             Path: A path to signed transaction file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.witnessed"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -1265,7 +1265,7 @@ class TransactionGroup:
         slot: int = 0,
         slot_type_arg: str = "",
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Build a multi-signature script.
 
         Args:
@@ -1281,7 +1281,7 @@ class TransactionGroup:
         Returns:
             Path: A path to the script file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{script_name}_multisig.script"
 
         scripts_l: List[dict] = [
@@ -1407,7 +1407,7 @@ class TransactionGroup:
         # this would be a duplicate if already present
         kwargs.pop("calc_script_cost_file", None)
 
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_plutus.cost"
 
         self.build_tx(**kwargs, calc_script_cost_file=out_file)

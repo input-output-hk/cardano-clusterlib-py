@@ -1,6 +1,6 @@
 """Group of methods for working with stake pools."""
 import logging
-from pathlib import Path
+import pathlib as pl
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -45,7 +45,7 @@ class StakePoolGroup:
         owner_stake_vkey_files: FileTypeList,
         reward_account_vkey_file: Optional[FileType] = None,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a stake pool registration certificate.
 
         Args:
@@ -59,7 +59,7 @@ class StakePoolGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_data.pool_name}_pool_reg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -114,7 +114,7 @@ class StakePoolGroup:
 
     def gen_pool_deregistration_cert(
         self, pool_name: str, cold_vkey_file: FileType, epoch: int, destination_dir: FileType = "."
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a stake pool deregistration certificate.
 
         Args:
@@ -126,7 +126,7 @@ class StakePoolGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{pool_name}_pool_dereg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -237,7 +237,7 @@ class StakePoolGroup:
         reward_account_vkey_file: Optional[FileType] = None,
         deposit: Optional[int] = None,
         destination_dir: FileType = ".",
-    ) -> Tuple[Path, structs.TxRawOutput]:
+    ) -> Tuple[pl.Path, structs.TxRawOutput]:
         """Register a stake pool.
 
         Args:
@@ -252,7 +252,7 @@ class StakePoolGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
+            Tuple[pl.Path, structs.TxRawOutput]: A tuple with pool registration cert file and
                 transaction output details.
         """
         tx_name = f"{tx_name}_reg_pool"
@@ -293,7 +293,7 @@ class StakePoolGroup:
         pool_name: str,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Tuple[Path, structs.TxRawOutput]:
+    ) -> Tuple[pl.Path, structs.TxRawOutput]:
         """Deregister a stake pool.
 
         Args:
@@ -306,7 +306,7 @@ class StakePoolGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
+            Tuple[pl.Path, structs.TxRawOutput]: A tuple with pool registration cert file and
                 transaction output details.
         """
         tx_name = f"{tx_name}_dereg_pool"

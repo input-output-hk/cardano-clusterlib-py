@@ -1,7 +1,7 @@
 import itertools
+import pathlib as pl
 import random
 import string
-from pathlib import Path
 from typing import List
 
 from cardano_clusterlib import exceptions
@@ -17,7 +17,7 @@ def get_rand_str(length: int = 8) -> str:
 
 def read_address_from_file(addr_file: types.FileType) -> str:
     """Read address stored in file."""
-    with open(Path(addr_file).expanduser(), encoding="utf-8") as in_file:
+    with open(pl.Path(addr_file).expanduser(), encoding="utf-8") as in_file:
         return in_file.read().strip()
 
 
@@ -44,6 +44,6 @@ def _check_outfiles(*out_files: types.FileType) -> None:
         *out_files: Variable length list of expected output files.
     """
     for out_file in out_files:
-        out_file_p = Path(out_file).expanduser()
+        out_file_p = pl.Path(out_file).expanduser()
         if not out_file_p.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` doesn't exist.")

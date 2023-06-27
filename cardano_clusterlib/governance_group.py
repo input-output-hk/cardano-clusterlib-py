@@ -1,6 +1,6 @@
 """Group of methods for governance."""
 import logging
-from pathlib import Path
+import pathlib as pl
 from typing import Optional
 
 from cardano_clusterlib import clusterlib_helpers
@@ -24,7 +24,7 @@ class GovernanceGroup:
         epoch: int,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Create an update proposal.
 
         Args:
@@ -36,7 +36,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the update proposal file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_update.proposal"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -64,7 +64,7 @@ class GovernanceGroup:
         transfer: int,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Create an MIR certificate to transfer from the reserves pot to the treasury pot.
 
         Args:
@@ -75,7 +75,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the MIR certificate file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_mir_to_treasury.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -99,7 +99,7 @@ class GovernanceGroup:
         transfer: int,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Create an MIR certificate to transfer from the treasury pot to the reserves pot.
 
         Args:
@@ -110,7 +110,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the MIR certificate file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_mir_to_rewards.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -136,7 +136,7 @@ class GovernanceGroup:
         tx_name: str,
         use_treasury: bool = False,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Create an MIR certificate to pay stake addresses.
 
         Args:
@@ -149,7 +149,7 @@ class GovernanceGroup:
         Returns:
             Path: A path to the MIR certificate file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         funds_src = "treasury" if use_treasury else "reserves"
         out_file = destination_dir / f"{tx_name}_{funds_src}_mir_stake.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -211,7 +211,7 @@ class GovernanceGroup:
                 proposal_files=[out_file],
                 signing_key_files=[
                     *self._clusterlib_obj.g_genesis.genesis_keys.delegate_skeys,
-                    Path(src_skey_file),
+                    pl.Path(src_skey_file),
                 ],
             ),
             destination_dir=destination_dir,

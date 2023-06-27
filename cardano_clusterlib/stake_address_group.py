@@ -1,6 +1,6 @@
 """Group of methods for working with stake addresses."""
 import logging
-from pathlib import Path
+import pathlib as pl
 from typing import Optional
 
 from cardano_clusterlib import clusterlib_helpers
@@ -36,7 +36,7 @@ class StakeAddressGroup:
         Returns:
             str: A generated stake address.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake.addr"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -71,7 +71,7 @@ class StakeAddressGroup:
         Returns:
             structs.KeyPair: A tuple containing the key pair.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_stake.vkey"
         skey = destination_dir / f"{key_name}_stake.skey"
         clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
@@ -97,7 +97,7 @@ class StakeAddressGroup:
         stake_script_file: Optional[FileType] = None,
         stake_address: Optional[str] = None,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a stake address registration certificate.
 
         Args:
@@ -110,7 +110,7 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -145,7 +145,7 @@ class StakeAddressGroup:
         stake_script_file: Optional[FileType] = None,
         stake_address: Optional[str] = None,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a stake address deregistration certificate.
 
         Args:
@@ -158,7 +158,7 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -195,7 +195,7 @@ class StakeAddressGroup:
         cold_vkey_file: Optional[FileType] = None,
         stake_pool_id: str = "",
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a stake address delegation certificate.
 
         Args:
@@ -210,7 +210,7 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 

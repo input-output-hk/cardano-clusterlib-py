@@ -2,9 +2,9 @@
 import datetime
 import json
 import logging
+import pathlib as pl
 import re
 import time
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -24,7 +24,7 @@ class EpochInfo(NamedTuple):
     last_slot: int
 
 
-def _find_genesis_json(clusterlib_obj: "types.ClusterLib") -> Path:
+def _find_genesis_json(clusterlib_obj: "types.ClusterLib") -> pl.Path:
     """Find shelley genesis JSON file in state dir."""
     default = clusterlib_obj.state_dir / "shelley" / "genesis.json"
     if default.exists():
@@ -67,7 +67,7 @@ def _check_files_exist(*out_files: types.FileType, clusterlib_obj: "types.Cluste
         return
 
     for out_file in out_files:
-        out_file_p = Path(out_file).expanduser()
+        out_file_p = pl.Path(out_file).expanduser()
         if out_file_p.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` already exist.")
 

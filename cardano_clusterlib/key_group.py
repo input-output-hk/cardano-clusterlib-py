@@ -1,6 +1,6 @@
 """Group of methods for working with key commands."""
 import logging
-from pathlib import Path
+import pathlib as pl
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -17,7 +17,7 @@ class KeyGroup:
 
     def gen_verification_key(
         self, key_name: str, signing_key_file: FileType, destination_dir: FileType = "."
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a verification file from a signing key.
 
         Args:
@@ -28,7 +28,7 @@ class KeyGroup:
         Returns:
             Path: A path to the generated verification key file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{key_name}.vkey"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
@@ -51,7 +51,7 @@ class KeyGroup:
         key_name: str,
         extended_verification_key_file: FileType,
         destination_dir: FileType = ".",
-    ) -> Path:
+    ) -> pl.Path:
         """Generate a non-extended key from a verification key.
 
         Args:
@@ -62,7 +62,7 @@ class KeyGroup:
         Returns:
             Path: A path to the generated non-extended verification key file.
         """
-        destination_dir = Path(destination_dir).expanduser()
+        destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{key_name}.vkey"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
