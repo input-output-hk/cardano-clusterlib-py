@@ -6,18 +6,19 @@ import typing as tp
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class NodeGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-    def gen_kes_key_pair(self, node_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
+    def gen_kes_key_pair(
+        self, node_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
         """Generate a key pair for a node KES operational key.
 
         Args:
@@ -46,7 +47,9 @@ class NodeGroup:
         helpers._check_outfiles(vkey, skey)
         return structs.KeyPair(vkey, skey)
 
-    def gen_vrf_key_pair(self, node_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
+    def gen_vrf_key_pair(
+        self, node_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
         """Generate a key pair for a node VRF operational key.
 
         Args:
@@ -76,7 +79,7 @@ class NodeGroup:
         return structs.KeyPair(vkey, skey)
 
     def gen_cold_key_pair_and_counter(
-        self, node_name: str, destination_dir: FileType = "."
+        self, node_name: str, destination_dir: itp.FileType = "."
     ) -> structs.ColdKeyPair:
         """Generate a key pair for operator's offline key and a new certificate issue counter.
 
@@ -114,11 +117,11 @@ class NodeGroup:
     def gen_node_operational_cert(
         self,
         node_name: str,
-        kes_vkey_file: FileType,
-        cold_skey_file: FileType,
-        cold_counter_file: FileType,
+        kes_vkey_file: itp.FileType,
+        cold_skey_file: itp.FileType,
+        cold_counter_file: itp.FileType,
         kes_period: tp.Optional[int] = None,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a node operational certificate.
 

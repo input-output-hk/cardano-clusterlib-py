@@ -6,24 +6,22 @@ import typing as tp
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
-from cardano_clusterlib.types import UnpackableSequence
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class GovernanceGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
     def gen_update_proposal(
         self,
-        cli_args: UnpackableSequence,
+        cli_args: itp.UnpackableSequence,
         epoch: int,
         tx_name: str,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an update proposal.
 
@@ -63,7 +61,7 @@ class GovernanceGroup:
         self,
         transfer: int,
         tx_name: str,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an MIR certificate to transfer from the reserves pot to the treasury pot.
 
@@ -98,7 +96,7 @@ class GovernanceGroup:
         self,
         transfer: int,
         tx_name: str,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an MIR certificate to transfer from the treasury pot to the reserves pot.
 
@@ -135,7 +133,7 @@ class GovernanceGroup:
         reward: int,
         tx_name: str,
         use_treasury: bool = False,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an MIR certificate to pay stake addresses.
 
@@ -174,12 +172,12 @@ class GovernanceGroup:
 
     def submit_update_proposal(
         self,
-        cli_args: UnpackableSequence,
+        cli_args: itp.UnpackableSequence,
         src_address: str,
-        src_skey_file: FileType,
+        src_skey_file: itp.FileType,
         tx_name: str,
         epoch: tp.Optional[int] = None,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
         """Submit an update proposal.
 

@@ -4,19 +4,21 @@ import pathlib as pl
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class KeyGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
     def gen_verification_key(
-        self, key_name: str, signing_key_file: FileType, destination_dir: FileType = "."
+        self,
+        key_name: str,
+        signing_key_file: itp.FileType,
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a verification file from a signing key.
 
@@ -49,8 +51,8 @@ class KeyGroup:
     def gen_non_extended_verification_key(
         self,
         key_name: str,
-        extended_verification_key_file: FileType,
-        destination_dir: FileType = ".",
+        extended_verification_key_file: itp.FileType,
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a non-extended key from a verification key.
 

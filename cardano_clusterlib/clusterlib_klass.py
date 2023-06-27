@@ -21,7 +21,7 @@ from cardano_clusterlib import stake_address_group
 from cardano_clusterlib import stake_pool_group
 from cardano_clusterlib import structs
 from cardano_clusterlib import transaction_group
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
@@ -44,11 +44,11 @@ class ClusterLib:
 
     def __init__(
         self,
-        state_dir: FileType,
+        state_dir: itp.FileType,
         protocol: str = consts.Protocols.CARDANO,
         tx_era: str = "",
         slots_offset: int = 0,
-        socket_path: FileType = "",
+        socket_path: itp.FileType = "",
     ):
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
@@ -105,7 +105,7 @@ class ClusterLib:
 
         clusterlib_helpers._check_protocol(clusterlib_obj=self)
 
-    def set_socket_path(self, socket_path: tp.Optional[FileType]) -> None:
+    def set_socket_path(self, socket_path: tp.Optional[itp.FileType]) -> None:
         """Set a path to socket file for communication with the node."""
         if not socket_path:
             self.socket_path = None

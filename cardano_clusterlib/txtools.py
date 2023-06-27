@@ -10,7 +10,7 @@ from cardano_clusterlib import consts
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
+from cardano_clusterlib import types as itp
 
 LOGGER = logging.getLogger(__name__)
 
@@ -215,7 +215,7 @@ def _balance_txouts(  # noqa: C901
 
 
 def _resolve_withdrawals(
-    clusterlib_obj: "types.ClusterLib", withdrawals: tp.List[structs.TxOut]
+    clusterlib_obj: "itp.ClusterLib", withdrawals: tp.List[structs.TxOut]
 ) -> tp.List[structs.TxOut]:
     """Return list of resolved reward withdrawals.
 
@@ -241,7 +241,7 @@ def _resolve_withdrawals(
 
 
 def _get_withdrawals(
-    clusterlib_obj: "types.ClusterLib",
+    clusterlib_obj: "itp.ClusterLib",
     withdrawals: structs.OptionalTxOuts,
     script_withdrawals: structs.OptionalScriptWithdrawals,
 ) -> tp.Tuple[structs.OptionalTxOuts, structs.OptionalScriptWithdrawals, structs.OptionalTxOuts]:
@@ -479,7 +479,7 @@ def _process_txouts(
 
 
 def _get_tx_ins_outs(
-    clusterlib_obj: "types.ClusterLib",
+    clusterlib_obj: "itp.ClusterLib",
     src_address: str,
     tx_files: structs.TxFiles,
     txins: structs.OptionalUTXOData = (),
@@ -593,7 +593,7 @@ def _get_tx_ins_outs(
 
 
 def collect_data_for_build(
-    clusterlib_obj: "types.ClusterLib",
+    clusterlib_obj: "itp.ClusterLib",
     src_address: str,
     txins: structs.OptionalUTXOData = (),
     txouts: structs.OptionalTxOuts = (),
@@ -691,7 +691,7 @@ def collect_data_for_build(
 def get_utxo(
     utxo_dict: dict,
     address: str = "",
-    coins: types.UnpackableSequence = (),
+    coins: itp.UnpackableSequence = (),
 ) -> tp.List[structs.UTXOData]:
     """Return UTxO info for payment address.
 

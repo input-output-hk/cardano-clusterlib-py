@@ -3,8 +3,7 @@ import pathlib as pl
 import typing as tp
 
 from cardano_clusterlib import consts
-from cardano_clusterlib.types import FileType
-from cardano_clusterlib.types import OptionalFiles
+from cardano_clusterlib import types as itp
 
 
 class CLIOut(tp.NamedTuple):
@@ -56,16 +55,16 @@ class TxOut(tp.NamedTuple):
     amount: int
     coin: str = consts.DEFAULT_COIN
     datum_hash: str = ""
-    datum_hash_file: FileType = ""
-    datum_hash_cbor_file: FileType = ""
+    datum_hash_file: itp.FileType = ""
+    datum_hash_cbor_file: itp.FileType = ""
     datum_hash_value: str = ""
-    datum_embed_file: FileType = ""
-    datum_embed_cbor_file: FileType = ""
+    datum_embed_file: itp.FileType = ""
+    datum_embed_cbor_file: itp.FileType = ""
     datum_embed_value: str = ""
-    inline_datum_file: FileType = ""
-    inline_datum_cbor_file: FileType = ""
+    inline_datum_file: itp.FileType = ""
+    inline_datum_cbor_file: itp.FileType = ""
     inline_datum_value: str = ""
-    reference_script_file: FileType = ""
+    reference_script_file: itp.FileType = ""
 
 
 # list of `TxOut`s, empty list, or empty tuple
@@ -78,18 +77,18 @@ class ScriptTxIn(tp.NamedTuple):
     """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
 
     txins: tp.List[UTXOData]
-    script_file: FileType = ""
+    script_file: itp.FileType = ""
     reference_txin: tp.Optional[UTXOData] = None
     reference_type: str = ""
     # values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
-    datum_file: FileType = ""
-    datum_cbor_file: FileType = ""
+    datum_file: itp.FileType = ""
+    datum_cbor_file: itp.FileType = ""
     datum_value: str = ""
     inline_datum_present: bool = False
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
 
 
@@ -97,13 +96,13 @@ class ScriptWithdrawal(tp.NamedTuple):
     """Data structure for withdrawals that are combined with Plutus scripts."""
 
     txout: TxOut
-    script_file: FileType = ""
+    script_file: itp.FileType = ""
     reference_txin: tp.Optional[UTXOData] = None
     reference_type: str = ""
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
 
 
@@ -115,28 +114,28 @@ class ComplexCert(tp.NamedTuple):
     cannot be guaranteed.
     """
 
-    certificate_file: FileType
-    script_file: FileType = ""
+    certificate_file: itp.FileType
+    script_file: itp.FileType = ""
     reference_txin: tp.Optional[UTXOData] = None
     reference_type: str = ""
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
 
 
 class Mint(tp.NamedTuple):
     txouts: tp.List[TxOut]
-    script_file: FileType = ""
+    script_file: itp.FileType = ""
     reference_txin: tp.Optional[UTXOData] = None
     reference_type: str = ""
     policyid: str = ""
     # values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
-    redeemer_file: FileType = ""
-    redeemer_cbor_file: FileType = ""
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
 
 
@@ -151,12 +150,12 @@ OptionalMint = tp.Union[tp.List[Mint], tp.Tuple[()]]
 
 
 class TxFiles(tp.NamedTuple):
-    certificate_files: OptionalFiles = ()
-    proposal_files: OptionalFiles = ()
-    metadata_json_files: OptionalFiles = ()
-    metadata_cbor_files: OptionalFiles = ()
-    signing_key_files: OptionalFiles = ()
-    auxiliary_script_files: OptionalFiles = ()
+    certificate_files: itp.OptionalFiles = ()
+    proposal_files: itp.OptionalFiles = ()
+    metadata_json_files: itp.OptionalFiles = ()
+    metadata_cbor_files: itp.OptionalFiles = ()
+    signing_key_files: itp.OptionalFiles = ()
+    auxiliary_script_files: itp.OptionalFiles = ()
     metadata_json_detailed_schema: bool = False
 
 
@@ -198,7 +197,7 @@ class TxRawOutput(tp.NamedTuple):
     total_collateral_amount: tp.Optional[int] = None  # Total collateral amount
     readonly_reference_txins: OptionalUTXOData = ()  # Tx inputs for plutus script context
     script_valid: bool = True  # Whether the plutus script is valid
-    required_signers: OptionalFiles = ()  # Signing keys that are required for the transaction
+    required_signers: itp.OptionalFiles = ()  # Signing keys required for the transaction
     # Hashes of signing keys that are required for the transaction
     required_signer_hashes: tp.Union[tp.List[str], tp.Tuple[()]] = ()
     combined_reference_txins: OptionalUTXOData = ()  # All reference tx inputs

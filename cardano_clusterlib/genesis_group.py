@@ -7,15 +7,14 @@ from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class GenesisGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
         self._genesis_keys: tp.Optional[structs.GenesisKeys] = None
@@ -74,7 +73,7 @@ class GenesisGroup:
         return self._genesis_utxo_addr
 
     def gen_genesis_addr(
-        self, addr_name: str, vkey_file: FileType, destination_dir: FileType = "."
+        self, addr_name: str, vkey_file: itp.FileType, destination_dir: itp.FileType = "."
     ) -> str:
         """Generate the address for an initial UTxO based on the verification key.
 
@@ -105,7 +104,7 @@ class GenesisGroup:
         helpers._check_outfiles(out_file)
         return helpers.read_address_from_file(out_file)
 
-    def get_genesis_vkey_hash(self, vkey_file: FileType) -> str:
+    def get_genesis_vkey_hash(self, vkey_file: itp.FileType) -> str:
         """Return the hash of a genesis public key.
 
         Args:

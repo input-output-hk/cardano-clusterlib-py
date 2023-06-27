@@ -7,23 +7,22 @@ from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class StakeAddressGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
     def gen_stake_addr(
         self,
         addr_name: str,
-        stake_vkey_file: tp.Optional[FileType] = None,
-        stake_script_file: tp.Optional[FileType] = None,
-        destination_dir: FileType = ".",
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        destination_dir: itp.FileType = ".",
     ) -> str:
         """Generate a stake address.
 
@@ -61,7 +60,9 @@ class StakeAddressGroup:
         helpers._check_outfiles(out_file)
         return helpers.read_address_from_file(out_file)
 
-    def gen_stake_key_pair(self, key_name: str, destination_dir: FileType = ".") -> structs.KeyPair:
+    def gen_stake_key_pair(
+        self, key_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
         """Generate a stake address key pair.
 
         Args:
@@ -93,10 +94,10 @@ class StakeAddressGroup:
     def gen_stake_addr_registration_cert(
         self,
         addr_name: str,
-        stake_vkey_file: tp.Optional[FileType] = None,
-        stake_script_file: tp.Optional[FileType] = None,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address registration certificate.
 
@@ -141,10 +142,10 @@ class StakeAddressGroup:
     def gen_stake_addr_deregistration_cert(
         self,
         addr_name: str,
-        stake_vkey_file: tp.Optional[FileType] = None,
-        stake_script_file: tp.Optional[FileType] = None,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address deregistration certificate.
 
@@ -189,12 +190,12 @@ class StakeAddressGroup:
     def gen_stake_addr_delegation_cert(
         self,
         addr_name: str,
-        stake_vkey_file: tp.Optional[FileType] = None,
-        stake_script_file: tp.Optional[FileType] = None,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
-        cold_vkey_file: tp.Optional[FileType] = None,
+        cold_vkey_file: tp.Optional[itp.FileType] = None,
         stake_pool_id: str = "",
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address delegation certificate.
 
@@ -257,7 +258,7 @@ class StakeAddressGroup:
         return out_file
 
     def gen_stake_addr_and_keys(
-        self, name: str, destination_dir: FileType = "."
+        self, name: str, destination_dir: itp.FileType = "."
     ) -> structs.AddressRecord:
         """Generate stake address and key pair.
 
@@ -279,7 +280,7 @@ class StakeAddressGroup:
 
     def get_stake_vkey_hash(
         self,
-        stake_vkey_file: tp.Optional[FileType] = None,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
         stake_vkey: tp.Optional[str] = None,
     ) -> str:
         """Return the hash of a stake address key.
@@ -310,7 +311,7 @@ class StakeAddressGroup:
         dst_addr_record: structs.AddressRecord,
         tx_name: str,
         verify: bool = True,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
         """Withdraw reward to payment address.
 

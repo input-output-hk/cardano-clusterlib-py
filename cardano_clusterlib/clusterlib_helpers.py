@@ -8,7 +8,7 @@ import time
 import typing as tp
 
 from cardano_clusterlib import exceptions
-from cardano_clusterlib import types
+from cardano_clusterlib import types as itp
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class EpochInfo(tp.NamedTuple):
     last_slot: int
 
 
-def _find_genesis_json(clusterlib_obj: "types.ClusterLib") -> pl.Path:
+def _find_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
     """Find shelley genesis JSON file in state dir."""
     default = clusterlib_obj.state_dir / "shelley" / "genesis.json"
     if default.exists():
@@ -41,7 +41,7 @@ def _find_genesis_json(clusterlib_obj: "types.ClusterLib") -> pl.Path:
     return genesis_json
 
 
-def _check_protocol(clusterlib_obj: "types.ClusterLib") -> None:
+def _check_protocol(clusterlib_obj: "itp.ClusterLib") -> None:
     """Check that the cluster is running with the expected protocol."""
     try:
         clusterlib_obj.create_pparams_file()
@@ -53,7 +53,7 @@ def _check_protocol(clusterlib_obj: "types.ClusterLib") -> None:
         ) from exc
 
 
-def _check_files_exist(*out_files: types.FileType, clusterlib_obj: "types.ClusterLib") -> None:
+def _check_files_exist(*out_files: itp.FileType, clusterlib_obj: "itp.ClusterLib") -> None:
     """Check that the output files don't already exist.
 
     Args:
@@ -84,7 +84,7 @@ def _format_cli_args(cli_args: tp.List[str]) -> str:
     return " ".join(processed_args)
 
 
-def _write_cli_log(clusterlib_obj: "types.ClusterLib", command: str) -> None:
+def _write_cli_log(clusterlib_obj: "itp.ClusterLib", command: str) -> None:
     if not clusterlib_obj._cli_log:
         return
 
@@ -145,7 +145,7 @@ def _get_kes_period_info(kes_info: str) -> tp.Dict[str, tp.Any]:
     return output_dict
 
 
-def get_epoch_for_slot(cluster_obj: "types.ClusterLib", slot_no: int) -> EpochInfo:
+def get_epoch_for_slot(cluster_obj: "itp.ClusterLib", slot_no: int) -> EpochInfo:
     """Given slot number, return corresponding epoch number and first and last slot of the epoch."""
     genesis_byron = cluster_obj.state_dir / "byron" / "genesis.json"
     if not genesis_byron.exists():
@@ -176,7 +176,7 @@ def get_epoch_for_slot(cluster_obj: "types.ClusterLib", slot_no: int) -> EpochIn
 
 
 def wait_for_block(
-    clusterlib_obj: "types.ClusterLib", tip: tp.Dict[str, tp.Any], block_no: int
+    clusterlib_obj: "itp.ClusterLib", tip: tp.Dict[str, tp.Any], block_no: int
 ) -> int:
     """Wait for block number.
 

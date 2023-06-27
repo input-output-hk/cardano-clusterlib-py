@@ -6,19 +6,17 @@ import typing as tp
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
-from cardano_clusterlib.types import FileTypeList
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 class StakePoolGroup:
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-    def gen_pool_metadata_hash(self, pool_metadata_file: FileType) -> str:
+    def gen_pool_metadata_hash(self, pool_metadata_file: itp.FileType) -> str:
         """Generate the hash of pool metadata.
 
         Args:
@@ -38,11 +36,11 @@ class StakePoolGroup:
     def gen_pool_registration_cert(
         self,
         pool_data: structs.PoolData,
-        vrf_vkey_file: FileType,
-        cold_vkey_file: FileType,
-        owner_stake_vkey_files: FileTypeList,
-        reward_account_vkey_file: tp.Optional[FileType] = None,
-        destination_dir: FileType = ".",
+        vrf_vkey_file: itp.FileType,
+        cold_vkey_file: itp.FileType,
+        owner_stake_vkey_files: itp.FileTypeList,
+        reward_account_vkey_file: tp.Optional[itp.FileType] = None,
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool registration certificate.
 
@@ -111,7 +109,11 @@ class StakePoolGroup:
         return out_file
 
     def gen_pool_deregistration_cert(
-        self, pool_name: str, cold_vkey_file: FileType, epoch: int, destination_dir: FileType = "."
+        self,
+        pool_name: str,
+        cold_vkey_file: itp.FileType,
+        epoch: int,
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool deregistration certificate.
 
@@ -144,7 +146,7 @@ class StakePoolGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
-    def get_stake_pool_id(self, cold_vkey_file: FileType) -> str:
+    def get_stake_pool_id(self, cold_vkey_file: itp.FileType) -> str:
         """Return pool ID from the offline key.
 
         Args:
@@ -167,7 +169,7 @@ class StakePoolGroup:
         pool_data: structs.PoolData,
         pool_owners: tp.List[structs.PoolUser],
         tx_name: str,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> structs.PoolCreationOutput:
         """Create and register a stake pool.
 
@@ -229,12 +231,12 @@ class StakePoolGroup:
         self,
         pool_data: structs.PoolData,
         pool_owners: tp.List[structs.PoolUser],
-        vrf_vkey_file: FileType,
+        vrf_vkey_file: itp.FileType,
         cold_key_pair: structs.ColdKeyPair,
         tx_name: str,
-        reward_account_vkey_file: tp.Optional[FileType] = None,
+        reward_account_vkey_file: tp.Optional[itp.FileType] = None,
         deposit: tp.Optional[int] = None,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> tp.Tuple[pl.Path, structs.TxRawOutput]:
         """Register a stake pool.
 
@@ -290,7 +292,7 @@ class StakePoolGroup:
         epoch: int,
         pool_name: str,
         tx_name: str,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> tp.Tuple[pl.Path, structs.TxRawOutput]:
         """Deregister a stake pool.
 

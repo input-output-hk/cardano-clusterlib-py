@@ -13,9 +13,7 @@ from cardano_clusterlib import consts
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import txtools
-from cardano_clusterlib import types  # pylint: disable=unused-import
-from cardano_clusterlib.types import FileType
-from cardano_clusterlib.types import UnpackableSequence
+from cardano_clusterlib import types as itp
 
 
 LOGGER = logging.getLogger(__name__)
@@ -24,10 +22,12 @@ LOGGER = logging.getLogger(__name__)
 class QueryGroup:
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-    def query_cli(self, cli_args: UnpackableSequence, cli_sub_args: UnpackableSequence = ()) -> str:
+    def query_cli(
+        self, cli_args: itp.UnpackableSequence, cli_sub_args: itp.UnpackableSequence = ()
+    ) -> str:
         """Run the `cardano-cli query` command."""
         stdout = self._clusterlib_obj.cli(
             [
@@ -48,7 +48,7 @@ class QueryGroup:
         txin: tp.Union[str, tp.List[str]] = "",
         utxo: tp.Union[structs.UTXOData, structs.OptionalUTXOData] = (),
         tx_raw_output: tp.Optional[structs.TxRawOutput] = None,
-        coins: UnpackableSequence = (),
+        coins: itp.UnpackableSequence = (),
     ) -> tp.List[structs.UTXOData]:
         """Return UTxO info for payment address.
 
@@ -123,7 +123,7 @@ class QueryGroup:
     def save_ledger_state(
         self,
         state_name: str,
-        destination_dir: FileType = ".",
+        destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Save ledger state to file.
 
@@ -171,7 +171,7 @@ class QueryGroup:
             all_stake_pools: A bool indicating whether to query for all stake pools (optional).
 
         Returns:
-            Dict: A stake snapshot data.
+            dict: A stake snapshot data.
         """
         query_args = ["stake-snapshot"]
 
@@ -295,9 +295,9 @@ class QueryGroup:
 
     def get_leadership_schedule(
         self,
-        vrf_skey_file: FileType,
+        vrf_skey_file: itp.FileType,
         stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[FileType] = None,
+        cold_vkey_file: tp.Optional[itp.FileType] = None,
         stake_pool_id: str = "",
         for_next: bool = False,
     ) -> tp.List[structs.LeadershipSchedule]:
@@ -435,7 +435,7 @@ class QueryGroup:
         """Return last block KES period."""
         return int(self.get_slot_no() // self._clusterlib_obj.slots_per_kes_period)
 
-    def get_kes_period_info(self, opcert_file: FileType) -> tp.Dict[str, tp.Any]:
+    def get_kes_period_info(self, opcert_file: itp.FileType) -> tp.Dict[str, tp.Any]:
         """Get information about the current KES period and node's operational certificate.
 
         Args:
