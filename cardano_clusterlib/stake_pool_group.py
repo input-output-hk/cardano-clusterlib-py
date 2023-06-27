@@ -1,9 +1,7 @@
 """Group of methods for working with stake pools."""
 import logging
 import pathlib as pl
-from typing import List
-from typing import Optional
-from typing import Tuple
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -43,7 +41,7 @@ class StakePoolGroup:
         vrf_vkey_file: FileType,
         cold_vkey_file: FileType,
         owner_stake_vkey_files: FileTypeList,
-        reward_account_vkey_file: Optional[FileType] = None,
+        reward_account_vkey_file: tp.Optional[FileType] = None,
         destination_dir: FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool registration certificate.
@@ -167,7 +165,7 @@ class StakePoolGroup:
     def create_stake_pool(
         self,
         pool_data: structs.PoolData,
-        pool_owners: List[structs.PoolUser],
+        pool_owners: tp.List[structs.PoolUser],
         tx_name: str,
         destination_dir: FileType = ".",
     ) -> structs.PoolCreationOutput:
@@ -230,14 +228,14 @@ class StakePoolGroup:
     def register_stake_pool(
         self,
         pool_data: structs.PoolData,
-        pool_owners: List[structs.PoolUser],
+        pool_owners: tp.List[structs.PoolUser],
         vrf_vkey_file: FileType,
         cold_key_pair: structs.ColdKeyPair,
         tx_name: str,
-        reward_account_vkey_file: Optional[FileType] = None,
-        deposit: Optional[int] = None,
+        reward_account_vkey_file: tp.Optional[FileType] = None,
+        deposit: tp.Optional[int] = None,
         destination_dir: FileType = ".",
-    ) -> Tuple[pl.Path, structs.TxRawOutput]:
+    ) -> tp.Tuple[pl.Path, structs.TxRawOutput]:
         """Register a stake pool.
 
         Args:
@@ -287,13 +285,13 @@ class StakePoolGroup:
 
     def deregister_stake_pool(
         self,
-        pool_owners: List[structs.PoolUser],
+        pool_owners: tp.List[structs.PoolUser],
         cold_key_pair: structs.ColdKeyPair,
         epoch: int,
         pool_name: str,
         tx_name: str,
         destination_dir: FileType = ".",
-    ) -> Tuple[pl.Path, structs.TxRawOutput]:
+    ) -> tp.Tuple[pl.Path, structs.TxRawOutput]:
         """Deregister a stake pool.
 
         Args:

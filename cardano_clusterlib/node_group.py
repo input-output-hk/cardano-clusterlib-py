@@ -1,7 +1,7 @@
 """Group of methods for node operation."""
 import logging
 import pathlib as pl
-from typing import Optional
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -117,7 +117,7 @@ class NodeGroup:
         kes_vkey_file: FileType,
         cold_skey_file: FileType,
         cold_counter_file: FileType,
-        kes_period: Optional[int] = None,
+        kes_period: tp.Optional[int] = None,
         destination_dir: FileType = ".",
     ) -> pl.Path:
         """Generate a node operational certificate.

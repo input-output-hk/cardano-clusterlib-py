@@ -1,7 +1,7 @@
 """Group of methods related to genesis block."""
 import logging
 import pathlib as pl
-from typing import Optional
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import exceptions
@@ -18,7 +18,7 @@ class GenesisGroup:
     def __init__(self, clusterlib_obj: "types.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-        self._genesis_keys: Optional[structs.GenesisKeys] = None
+        self._genesis_keys: tp.Optional[structs.GenesisKeys] = None
         self._genesis_utxo_addr: str = ""
 
     @property

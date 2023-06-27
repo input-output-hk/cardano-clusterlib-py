@@ -4,12 +4,7 @@ import contextlib
 import functools
 import itertools
 import logging
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-from typing import Union
+import typing as tp
 
 from cardano_clusterlib import consts
 from cardano_clusterlib import exceptions
@@ -21,10 +16,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _organize_tx_ins_outs_by_coin(
-    tx_list: Union[List[structs.UTXOData], List[structs.TxOut], Tuple[()]]
-) -> Dict[str, list]:
+    tx_list: tp.Union[tp.List[structs.UTXOData], tp.List[structs.TxOut], tp.Tuple[()]]
+) -> tp.Dict[str, list]:
     """Organize transaction inputs or outputs by coin type."""
-    db: Dict[str, list] = {}
+    db: tp.Dict[str, list] = {}
     for rec in tx_list:
         if rec.coin not in db:
             db[rec.coin] = []
@@ -32,9 +27,11 @@ def _organize_tx_ins_outs_by_coin(
     return db
 
 
-def _organize_utxos_by_id(tx_list: List[structs.UTXOData]) -> Dict[str, List[structs.UTXOData]]:
+def _organize_utxos_by_id(
+    tx_list: tp.List[structs.UTXOData],
+) -> tp.Dict[str, tp.List[structs.UTXOData]]:
     """Organize UTxOs by ID (hash#ix)."""
-    db: Dict[str, List[structs.UTXOData]] = {}
+    db: tp.Dict[str, tp.List[structs.UTXOData]] = {}
     for rec in tx_list:
         utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
         if utxo_id not in db:
@@ -44,8 +41,8 @@ def _organize_utxos_by_id(tx_list: List[structs.UTXOData]) -> Dict[str, List[str
 
 
 def _get_usable_utxos(
-    address_utxos: List[structs.UTXOData], coins: Set[str]
-) -> List[structs.UTXOData]:
+    address_utxos: tp.List[structs.UTXOData], coins: tp.Set[str]
+) -> tp.List[structs.UTXOData]:
     """Get all UTxOs with no datum that contain any of the required coins (`coins`)."""
     txins_by_id = _organize_utxos_by_id(address_utxos)
 
@@ -69,10 +66,10 @@ def _get_usable_utxos(
 
 
 def _collect_utxos_amount(
-    utxos: List[structs.UTXOData], amount: int, min_change_value: int
-) -> List[structs.UTXOData]:
+    utxos: tp.List[structs.UTXOData], amount: int, min_change_value: int
+) -> tp.List[structs.UTXOData]:
     """Collect UTxOs so their total combined amount >= `amount`."""
-    collected_utxos: List[structs.UTXOData] = []
+    collected_utxos: tp.List[structs.UTXOData] = []
     collected_amount = 0
     # `_min_change_value` applies only to ADA
     amount_plus_change = (
@@ -92,19 +89,19 @@ def _collect_utxos_amount(
 
 
 def _select_utxos(
-    txins_db: Dict[str, List[structs.UTXOData]],
-    txouts_passed_db: Dict[str, List[structs.TxOut]],
-    txouts_mint_db: Dict[str, List[structs.TxOut]],
+    txins_db: tp.Dict[str, tp.List[structs.UTXOData]],
+    txouts_passed_db: tp.Dict[str, tp.List[structs.TxOut]],
+    txouts_mint_db: tp.Dict[str, tp.List[structs.TxOut]],
     fee: int,
     withdrawals: structs.OptionalTxOuts,
     min_change_value: int,
     deposit: int = 0,
-) -> Set[str]:
+) -> tp.Set[str]:
     """Select UTxOs that can satisfy all outputs, deposits and fee.
 
     Return IDs of selected UTxOs.
     """
-    utxo_ids: Set[str] = set()
+    utxo_ids: tp.Set[str] = set()
 
     # iterate over coins both in txins and txouts
     for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
@@ -144,22 +141,22 @@ def _select_utxos(
 def _balance_txouts(  # noqa: C901
     change_address: str,
     txouts: structs.OptionalTxOuts,
-    txins_db: Dict[str, List[structs.UTXOData]],
-    txouts_passed_db: Dict[str, List[structs.TxOut]],
-    txouts_mint_db: Dict[str, List[structs.TxOut]],
+    txins_db: tp.Dict[str, tp.List[structs.UTXOData]],
+    txouts_passed_db: tp.Dict[str, tp.List[structs.TxOut]],
+    txouts_mint_db: tp.Dict[str, tp.List[structs.TxOut]],
     fee: int,
     withdrawals: structs.OptionalTxOuts,
     deposit: int = 0,
     lovelace_balanced: bool = False,
     skip_asset_balancing: bool = False,
-) -> List[structs.TxOut]:
+) -> tp.List[structs.TxOut]:
     """Balance the transaction by adding change output for each coin."""
     # records for burning tokens, i.e. records with negative amount, are not allowed in `txouts`
     burning_txouts = [r for r in txouts if r.amount < 0 and r.coin != consts.DEFAULT_COIN]
     if burning_txouts:
         raise AssertionError(f"Token burning is not allowed in txouts: {burning_txouts}")
 
-    txouts_result: List[structs.TxOut] = list(txouts)
+    txouts_result: tp.List[structs.TxOut] = list(txouts)
 
     # iterate over coins both in txins and txouts
     for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
@@ -218,8 +215,8 @@ def _balance_txouts(  # noqa: C901
 
 
 def _resolve_withdrawals(
-    clusterlib_obj: "types.ClusterLib", withdrawals: List[structs.TxOut]
-) -> List[structs.TxOut]:
+    clusterlib_obj: "types.ClusterLib", withdrawals: tp.List[structs.TxOut]
+) -> tp.List[structs.TxOut]:
     """Return list of resolved reward withdrawals.
 
     The `structs.TxOut.amount` can be '-1', meaning all available funds.
@@ -247,7 +244,7 @@ def _get_withdrawals(
     clusterlib_obj: "types.ClusterLib",
     withdrawals: structs.OptionalTxOuts,
     script_withdrawals: structs.OptionalScriptWithdrawals,
-) -> Tuple[structs.OptionalTxOuts, structs.OptionalScriptWithdrawals, structs.OptionalTxOuts]:
+) -> tp.Tuple[structs.OptionalTxOuts, structs.OptionalScriptWithdrawals, structs.OptionalTxOuts]:
     """Return tuple of resolved withdrawals.
 
     Return simple withdrawals, script withdrawals, combination of all withdrawals Tx outputs.
@@ -271,7 +268,7 @@ def _get_reference_txins(
     mint: structs.OptionalMint,
     complex_certs: structs.OptionalScriptCerts,
     script_withdrawals: structs.OptionalScriptWithdrawals,
-) -> List[structs.UTXOData]:
+) -> tp.List[structs.UTXOData]:
     """Get list of reference txins."""
     script_ref_txins = [
         r.reference_txin
@@ -289,7 +286,7 @@ def _get_reference_txins(
 
 def _get_txin_strings(
     txins: structs.OptionalUTXOData, script_txins: structs.OptionalScriptTxIn
-) -> Set[str]:
+) -> tp.Set[str]:
     """Get list of txin strings for normal (non-script) inputs."""
     # filter out duplicate txins
     txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
@@ -305,7 +302,7 @@ def _get_txin_strings(
     return txins_combined
 
 
-def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
+def _get_txout_plutus_args(txout: structs.TxOut) -> tp.List[str]:  # noqa: C901
     txout_args = []
 
     # add datum arguments
@@ -373,11 +370,11 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> List[str]:  # noqa: C901
 
 
 def get_joined_txouts(
-    txouts: List[structs.TxOut],
-) -> List[List[structs.TxOut]]:
+    txouts: tp.List[structs.TxOut],
+) -> tp.List[tp.List[structs.TxOut]]:
     """Return list of joined `TxOut`s."""
-    txouts_by_eutxo_attrs: Dict[str, List[structs.TxOut]] = {}
-    joined_txouts: List[List[structs.TxOut]] = []
+    txouts_by_eutxo_attrs: tp.Dict[str, tp.List[structs.TxOut]] = {}
+    joined_txouts: tp.List[tp.List[structs.TxOut]] = []
 
     # aggregate TX outputs by address, datum and reference script
     for rec in txouts:
@@ -404,7 +401,7 @@ def get_joined_txouts(
     # join txouts with the same address, datum and reference script
     for txouts_list in txouts_by_eutxo_attrs.values():
         # create single `TxOut` record with sum of amounts per coin
-        txouts_by_coin: Dict[str, Tuple[structs.TxOut, List[int]]] = {}
+        txouts_by_coin: tp.Dict[str, tp.Tuple[structs.TxOut, tp.List[int]]] = {}
         for ar in txouts_list:
             if ar.coin in txouts_by_coin:
                 txouts_by_coin[ar.coin][1].append(ar.amount)
@@ -421,9 +418,9 @@ def get_joined_txouts(
 
 
 def _join_txouts(
-    txouts: List[structs.TxOut],
-) -> Tuple[List[str], List[structs.TxOut], int]:
-    txout_args: List[str] = []
+    txouts: tp.List[structs.TxOut],
+) -> tp.Tuple[tp.List[str], tp.List[structs.TxOut], int]:
+    txout_args: tp.List[str] = []
     joined_txouts = get_joined_txouts(txouts=txouts)
     for joined_recs in joined_txouts:
         amounts = [
@@ -439,8 +436,8 @@ def _join_txouts(
     return txout_args, joined_txouts_flat, len(joined_txouts)
 
 
-def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
-    txout_args: List[str] = []
+def _list_txouts(txouts: tp.List[structs.TxOut]) -> tp.List[str]:
+    txout_args: tp.List[str] = []
 
     for rec in txouts:
         txout_args.extend(
@@ -455,7 +452,7 @@ def _list_txouts(txouts: List[structs.TxOut]) -> List[str]:
     return txout_args
 
 
-def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> List[str]:
+def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> tp.List[str]:
     if not txouts:
         return []
 
@@ -474,8 +471,8 @@ def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> List[st
 
 
 def _process_txouts(
-    txouts: List[structs.TxOut], join_txouts: bool
-) -> Tuple[List[str], List[structs.TxOut], int]:
+    txouts: tp.List[structs.TxOut], join_txouts: bool
+) -> tp.Tuple[tp.List[str], tp.List[structs.TxOut], int]:
     if join_txouts:
         return _join_txouts(txouts=txouts)
     return _list_txouts(txouts=txouts), txouts, len(txouts)
@@ -488,12 +485,12 @@ def _get_tx_ins_outs(
     txins: structs.OptionalUTXOData = (),
     txouts: structs.OptionalTxOuts = (),
     fee: int = 0,
-    deposit: Optional[int] = None,
+    deposit: tp.Optional[int] = None,
     withdrawals: structs.OptionalTxOuts = (),
     mint_txouts: structs.OptionalTxOuts = (),
     lovelace_balanced: bool = False,
     skip_asset_balancing: bool = False,
-) -> Tuple[List[structs.UTXOData], List[structs.TxOut]]:
+) -> tp.Tuple[tp.List[structs.UTXOData], tp.List[structs.TxOut]]:
     """Return list of transaction's inputs and outputs.
 
     Args:
@@ -517,8 +514,10 @@ def _get_tx_ins_outs(
     """
     # pylint: disable=too-many-arguments
 
-    txouts_passed_db: Dict[str, List[structs.TxOut]] = _organize_tx_ins_outs_by_coin(txouts)
-    txouts_mint_db: Dict[str, List[structs.TxOut]] = _organize_tx_ins_outs_by_coin(mint_txouts)
+    txouts_passed_db: tp.Dict[str, tp.List[structs.TxOut]] = _organize_tx_ins_outs_by_coin(txouts)
+    txouts_mint_db: tp.Dict[str, tp.List[structs.TxOut]] = _organize_tx_ins_outs_by_coin(
+        mint_txouts
+    )
     outcoins_all = {consts.DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
     outcoins_passed = [consts.DEFAULT_COIN, *txouts_passed_db.keys()]
 
@@ -533,7 +532,7 @@ def _get_tx_ins_outs(
     if not txins_all:
         raise exceptions.CLIError("No input UTxO.")
 
-    txins_db_all: Dict[str, List[structs.UTXOData]] = _organize_tx_ins_outs_by_coin(txins_all)
+    txins_db_all: tp.Dict[str, tp.List[structs.UTXOData]] = _organize_tx_ins_outs_by_coin(txins_all)
 
     # all output coins, except those minted by this transaction, need to be present in
     # transaction inputs
@@ -561,7 +560,7 @@ def _get_tx_ins_outs(
             min_change_value=clusterlib_obj._min_change_value,
             deposit=tx_deposit,
         )
-        txins_by_id: Dict[str, List[structs.UTXOData]] = _organize_utxos_by_id(txins_all)
+        txins_by_id: tp.Dict[str, tp.List[structs.UTXOData]] = _organize_utxos_by_id(txins_all)
         _txins_filtered = [utxo for uid, utxo in txins_by_id.items() if uid in selected_utxo_ids]
 
         txins_filtered = list(itertools.chain.from_iterable(_txins_filtered))
@@ -600,12 +599,12 @@ def collect_data_for_build(
     txouts: structs.OptionalTxOuts = (),
     script_txins: structs.OptionalScriptTxIn = (),
     mint: structs.OptionalMint = (),
-    tx_files: Optional[structs.TxFiles] = None,
+    tx_files: tp.Optional[structs.TxFiles] = None,
     complex_certs: structs.OptionalScriptCerts = (),
     fee: int = 0,
     withdrawals: structs.OptionalTxOuts = (),
     script_withdrawals: structs.OptionalScriptWithdrawals = (),
-    deposit: Optional[int] = None,
+    deposit: tp.Optional[int] = None,
     lovelace_balanced: bool = False,
     skip_asset_balancing: bool = False,
 ) -> structs.DataForBuild:
@@ -693,7 +692,7 @@ def get_utxo(
     utxo_dict: dict,
     address: str = "",
     coins: types.UnpackableSequence = (),
-) -> List[structs.UTXOData]:
+) -> tp.List[structs.UTXOData]:
     """Return UTxO info for payment address.
 
     Args:
@@ -771,7 +770,8 @@ def get_utxo(
 
 
 def calculate_utxos_balance(
-    utxos: Union[List[structs.UTXOData], List[structs.TxOut]], coin: str = consts.DEFAULT_COIN
+    utxos: tp.Union[tp.List[structs.UTXOData], tp.List[structs.TxOut]],
+    coin: str = consts.DEFAULT_COIN,
 ) -> int:
     """Calculate sum of UTxO balances.
 
@@ -788,7 +788,7 @@ def calculate_utxos_balance(
 
 
 def filter_utxo_with_highest_amount(
-    utxos: List[structs.UTXOData],
+    utxos: tp.List[structs.UTXOData],
     coin: str = consts.DEFAULT_COIN,
 ) -> structs.UTXOData:
     """Return data for UTxO with the highest amount.
@@ -806,15 +806,15 @@ def filter_utxo_with_highest_amount(
 
 
 def filter_utxos(
-    utxos: List[structs.UTXOData],
+    utxos: tp.List[structs.UTXOData],
     utxo_hash: str = "",
-    utxo_ix: Optional[int] = None,
-    amount: Optional[int] = None,
+    utxo_ix: tp.Optional[int] = None,
+    amount: tp.Optional[int] = None,
     address: str = "",
     coin: str = "",
     datum_hash: str = "",
     inline_datum_hash: str = "",
-) -> List[structs.UTXOData]:
+) -> tp.List[structs.UTXOData]:
     """Get UTxO records that match given filtering criteria.
 
     Args:
@@ -858,9 +858,9 @@ def _get_script_args(  # noqa: C901
     complex_certs: structs.OptionalScriptCerts,
     script_withdrawals: structs.OptionalScriptWithdrawals,
     for_build: bool = True,
-) -> List[str]:
+) -> tp.List[str]:
     # pylint: disable=too-many-statements,too-many-branches
-    grouped_args: List[str] = []
+    grouped_args: tp.List[str] = []
     collaterals_all = set()
 
     # spending

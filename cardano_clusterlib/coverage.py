@@ -1,9 +1,9 @@
-from typing import List
+import typing as tp
 
 from cardano_clusterlib import consts
 
 
-def record_cli_coverage(cli_args: List[str], coverage_dict: dict) -> None:
+def record_cli_coverage(cli_args: tp.List[str], coverage_dict: dict) -> None:
     """Record coverage info for CLI commands.
 
     Args:

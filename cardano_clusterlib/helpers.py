@@ -2,7 +2,7 @@ import itertools
 import pathlib as pl
 import random
 import string
-from typing import List
+import typing as tp
 
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types
@@ -21,7 +21,7 @@ def read_address_from_file(addr_file: types.FileType) -> str:
         return in_file.read().strip()
 
 
-def _prepend_flag(flag: str, contents: types.UnpackableSequence) -> List[str]:
+def _prepend_flag(flag: str, contents: types.UnpackableSequence) -> tp.List[str]:
     """Prepend flag to every item of the sequence.
 
     Args:

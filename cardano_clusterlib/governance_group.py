@@ -1,7 +1,7 @@
 """Group of methods for governance."""
 import logging
 import pathlib as pl
-from typing import Optional
+import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -178,7 +178,7 @@ class GovernanceGroup:
         src_address: str,
         src_skey_file: FileType,
         tx_name: str,
-        epoch: Optional[int] = None,
+        epoch: tp.Optional[int] = None,
         destination_dir: FileType = ".",
     ) -> structs.TxRawOutput:
         """Submit an update proposal.

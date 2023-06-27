@@ -5,10 +5,7 @@ import logging
 import pathlib as pl
 import re
 import time
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import NamedTuple
+import typing as tp
 
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types
@@ -18,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 SPECIAL_ARG_CHARS_RE = re.compile("[^A-Za-z0-9/._-]")
 
 
-class EpochInfo(NamedTuple):
+class EpochInfo(tp.NamedTuple):
     epoch: int
     first_slot: int
     last_slot: int
@@ -72,7 +69,7 @@ def _check_files_exist(*out_files: types.FileType, clusterlib_obj: "types.Cluste
             raise exceptions.CLIError(f"The expected file `{out_file}` already exist.")
 
 
-def _format_cli_args(cli_args: List[str]) -> str:
+def _format_cli_args(cli_args: tp.List[str]) -> str:
     """Format CLI arguments for logging.
 
     Quote arguments with spaces and other "special" characters in them.
@@ -95,7 +92,7 @@ def _write_cli_log(clusterlib_obj: "types.ClusterLib", command: str) -> None:
         logfile.write(f"{datetime.datetime.now()}: {command}\n")
 
 
-def _get_kes_period_info(kes_info: str) -> Dict[str, Any]:
+def _get_kes_period_info(kes_info: str) -> tp.Dict[str, tp.Any]:
     """Process the output of the `kes-period-info` command.
 
     Args:
@@ -178,7 +175,9 @@ def get_epoch_for_slot(cluster_obj: "types.ClusterLib", slot_no: int) -> EpochIn
     return EpochInfo(epoch=epoch_no, first_slot=first_slot_in_epoch, last_slot=last_slot_in_epoch)
 
 
-def wait_for_block(clusterlib_obj: "types.ClusterLib", tip: Dict[str, Any], block_no: int) -> int:
+def wait_for_block(
+    clusterlib_obj: "types.ClusterLib", tip: tp.Dict[str, tp.Any], block_no: int
+) -> int:
     """Wait for block number.
 
     Args:
