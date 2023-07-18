@@ -29,6 +29,8 @@ class Eras:
     ALLEGRA: tp.Final[str] = "allegra"
     MARY: tp.Final[str] = "mary"
     ALONZO: tp.Final[str] = "alonzo"
+    BABBAGE: tp.Final[str] = "babbage"
+    CONWAY: tp.Final[str] = "conway"
 
 
 class MultiSigTypeArgs:
