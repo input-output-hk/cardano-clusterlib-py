@@ -103,6 +103,8 @@ class ClusterLib:
         self._genesis_group: tp.Optional[genesis_group.GenesisGroup] = None
         self._governance_group: tp.Optional[governance_group.GovernanceGroup] = None
 
+        self._cert_era_arg: tp.Optional[tp.List[str]] = None
+
         clusterlib_helpers._check_protocol(clusterlib_obj=self)
 
     def set_socket_path(self, socket_path: tp.Optional[itp.FileType]) -> None:
@@ -231,6 +233,33 @@ class ClusterLib:
             raise exceptions.CLIError(err_msg)
 
         return structs.CLIOut(stdout or b"", stderr or b"")
+
+    def get_cert_era_arg(self) -> tp.List[str]:
+        """Get certificate era argument for current era."""
+        if self._cert_era_arg:
+            return self._cert_era_arg
+
+        era_needed = True
+
+        try:
+            self.cli(["stake-address", "registration-certificate", "--babbage-era"])
+        except exceptions.CLIError as exc:
+            str_exc = str(exc)
+            if "Invalid option `--babbage-era'" in str_exc:
+                era_needed = False
+            elif "Missing:" in str_exc:
+                pass
+            else:
+                raise
+
+        if era_needed:
+            era = self.g_query.get_era().lower()
+            era_arg = f"--{era}-era"
+            self._cert_era_arg = [era_arg]
+        else:
+            self._cert_era_arg = []
+
+        return self._cert_era_arg
 
     def refresh_pparams_file(self) -> None:
         """Refresh protocol parameters file."""

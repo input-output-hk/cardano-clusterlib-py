@@ -61,6 +61,7 @@ class GovernanceGroup:
         self,
         transfer: int,
         tx_name: str,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an MIR certificate to transfer from the reserves pot to the treasury pot.
@@ -68,6 +69,7 @@ class GovernanceGroup:
         Args:
             transfer: An amount of Lovelace to transfer.
             tx_name: A name of the transaction.
+            era: An era for which to create the MIR certificate (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -77,11 +79,14 @@ class GovernanceGroup:
         out_file = destination_dir / f"{tx_name}_mir_to_treasury.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "governance",
                 "create-mir-certificate",
                 "transfer-to-treasury",
+                *era_arg,
                 "--transfer",
                 str(transfer),
                 "--out-file",
@@ -96,6 +101,7 @@ class GovernanceGroup:
         self,
         transfer: int,
         tx_name: str,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an MIR certificate to transfer from the treasury pot to the reserves pot.
@@ -103,6 +109,7 @@ class GovernanceGroup:
         Args:
             transfer: An amount of Lovelace to transfer.
             tx_name: A name of the transaction.
+            era: An era for which to create the MIR certificate (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -112,11 +119,14 @@ class GovernanceGroup:
         out_file = destination_dir / f"{tx_name}_mir_to_rewards.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "governance",
                 "create-mir-certificate",
                 "transfer-to-rewards",
+                *era_arg,
                 "--transfer",
                 str(transfer),
                 "--out-file",
@@ -133,6 +143,7 @@ class GovernanceGroup:
         reward: int,
         tx_name: str,
         use_treasury: bool = False,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create an MIR certificate to pay stake addresses.
@@ -142,6 +153,7 @@ class GovernanceGroup:
             reward: An amount of Lovelace to transfer.
             tx_name: A name of the transaction.
             use_treasury: A bool indicating whether to use treasury or reserves (default).
+            era: An era for which to create the MIR certificate (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -152,11 +164,14 @@ class GovernanceGroup:
         out_file = destination_dir / f"{tx_name}_{funds_src}_mir_stake.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "governance",
                 "create-mir-certificate",
                 "stake-addresses",
+                *era_arg,
                 f"--{funds_src}",
                 "--stake-address",
                 str(stake_addr),

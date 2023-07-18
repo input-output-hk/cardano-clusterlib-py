@@ -40,6 +40,7 @@ class StakePoolGroup:
         cold_vkey_file: itp.FileType,
         owner_stake_vkey_files: itp.FileTypeList,
         reward_account_vkey_file: tp.Optional[itp.FileType] = None,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool registration certificate.
@@ -50,6 +51,7 @@ class StakePoolGroup:
             cold_vkey_file: A path to pool cold vkey file.
             owner_stake_vkey_files: A list of paths to pool owner stake vkey files.
             reward_account_vkey_file: A path to pool reward account vkey file (optional).
+            era: An era for which to create the registration certificate (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -76,10 +78,13 @@ class StakePoolGroup:
         if pool_data.pool_relay_port:
             relay_cmd.extend(["--pool-relay-port", str(pool_data.pool_relay_port)])
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "stake-pool",
                 "registration-certificate",
+                *era_arg,
                 "--pool-pledge",
                 str(pool_data.pool_pledge),
                 "--pool-cost",
@@ -113,6 +118,7 @@ class StakePoolGroup:
         pool_name: str,
         cold_vkey_file: itp.FileType,
         epoch: int,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool deregistration certificate.
@@ -121,6 +127,7 @@ class StakePoolGroup:
             pool_name: A name of the stake pool.
             cold_vkey_file: A path to pool cold vkey file.
             epoch: An epoch where the pool will be deregistered.
+            era: An era in which the pool was registered (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -130,10 +137,13 @@ class StakePoolGroup:
         out_file = destination_dir / f"{pool_name}_pool_dereg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "stake-pool",
                 "deregistration-certificate",
+                *era_arg,
                 "--cold-verification-key-file",
                 str(cold_vkey_file),
                 "--epoch",

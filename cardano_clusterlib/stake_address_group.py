@@ -97,6 +97,7 @@ class StakeAddressGroup:
         stake_vkey_file: tp.Optional[itp.FileType] = None,
         stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address registration certificate.
@@ -106,6 +107,7 @@ class StakeAddressGroup:
             stake_vkey_file: A path to corresponding stake vkey file (optional).
             stake_script_file: A path to corresponding stake script file (optional).
             stake_address: Stake address key, bech32 or hex-encoded (optional).
+            era: An era for which to create the registration certificate (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -126,10 +128,13 @@ class StakeAddressGroup:
                 "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
             )
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "stake-address",
                 "registration-certificate",
+                *era_arg,
                 *cli_args,
                 "--out-file",
                 str(out_file),
@@ -145,6 +150,7 @@ class StakeAddressGroup:
         stake_vkey_file: tp.Optional[itp.FileType] = None,
         stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address deregistration certificate.
@@ -154,6 +160,7 @@ class StakeAddressGroup:
             stake_vkey_file: A path to corresponding stake vkey file (optional).
             stake_script_file: A path to corresponding stake script file (optional).
             stake_address: Stake address key, bech32 or hex-encoded (optional).
+            era: An era in which the address was registered (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -174,10 +181,13 @@ class StakeAddressGroup:
                 "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
             )
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "stake-address",
                 "deregistration-certificate",
+                *era_arg,
                 *cli_args,
                 "--out-file",
                 str(out_file),
@@ -195,6 +205,7 @@ class StakeAddressGroup:
         stake_address: tp.Optional[str] = None,
         cold_vkey_file: tp.Optional[itp.FileType] = None,
         stake_pool_id: str = "",
+        era: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address delegation certificate.
@@ -206,6 +217,7 @@ class StakeAddressGroup:
             stake_address: Stake address key, bech32 or hex-encoded (optional).
             cold_vkey_file: A path to pool cold vkey file (optional).
             stake_pool_id: An ID of the stake pool (optional).
+            era: An era for which to create the delegation certificate (default: current era).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -244,10 +256,13 @@ class StakeAddressGroup:
         else:
             raise AssertionError("Either `cold_vkey_file` or `stake_pool_id` is needed.")
 
+        era_arg = [f"--{era}-era"] if era else self._clusterlib_obj.get_cert_era_arg()
+
         self._clusterlib_obj.cli(
             [
                 "stake-address",
                 "delegation-certificate",
+                *era_arg,
                 *cli_args,
                 "--out-file",
                 str(out_file),
