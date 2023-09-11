@@ -1326,30 +1326,30 @@ class TransactionGroup:
 
     def calculate_plutus_script_cost(
         self,
-        src_address: str,  # noqa: ARG002
+        src_address: str,
         tx_name: str,
-        txins: structs.OptionalUTXOData = (),  # noqa: ARG002
-        txouts: structs.OptionalTxOuts = (),  # noqa: ARG002
-        readonly_reference_txins: structs.OptionalUTXOData = (),  # noqa: ARG002
-        script_txins: structs.OptionalScriptTxIn = (),  # noqa: ARG002
-        return_collateral_txouts: structs.OptionalTxOuts = (),  # noqa: ARG002
-        total_collateral_amount: tp.Optional[int] = None,  # noqa: ARG002
-        mint: structs.OptionalMint = (),  # noqa: ARG002
-        tx_files: tp.Optional[structs.TxFiles] = None,  # noqa: ARG002
-        complex_certs: structs.OptionalScriptCerts = (),  # noqa: ARG002
-        change_address: str = "",  # noqa: ARG002
-        fee_buffer: tp.Optional[int] = None,  # noqa: ARG002
-        required_signers: itp.OptionalFiles = (),  # noqa: ARG002
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,  # noqa: ARG002
-        withdrawals: structs.OptionalTxOuts = (),  # noqa: ARG002
-        script_withdrawals: structs.OptionalScriptWithdrawals = (),  # noqa: ARG002
-        deposit: tp.Optional[int] = None,  # noqa: ARG002
-        invalid_hereafter: tp.Optional[int] = None,  # noqa: ARG002
-        invalid_before: tp.Optional[int] = None,  # noqa: ARG002
-        witness_override: tp.Optional[int] = None,  # noqa: ARG002
-        script_valid: bool = True,  # noqa: ARG002
-        calc_script_cost_file: tp.Optional[itp.FileType] = None,  # noqa: ARG002
-        join_txouts: bool = True,  # noqa: ARG002
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: tp.Optional[int] = None,
+        mint: structs.OptionalMint = (),
+        tx_files: tp.Optional[structs.TxFiles] = None,
+        complex_certs: structs.OptionalScriptCerts = (),
+        change_address: str = "",
+        fee_buffer: tp.Optional[int] = None,
+        required_signers: itp.OptionalFiles = (),
+        required_signer_hashes: tp.Optional[tp.List[str]] = None,
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        deposit: tp.Optional[int] = None,
+        invalid_hereafter: tp.Optional[int] = None,
+        invalid_before: tp.Optional[int] = None,
+        witness_override: tp.Optional[int] = None,
+        script_valid: bool = True,
+        calc_script_cost_file: tp.Optional[itp.FileType] = None,
+        join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
     ) -> tp.List[dict]:
         """Calculate cost of Plutus scripts. Accepts the same arguments as `build_tx`.

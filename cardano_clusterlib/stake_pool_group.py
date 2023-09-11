@@ -93,7 +93,7 @@ class StakePoolGroup:
                 "--pool-reward-account-verification-key-file",
                 str(reward_account_vkey_file)
                 if reward_account_vkey_file
-                else str(list(owner_stake_vkey_files)[0]),
+                else str(next(iter(owner_stake_vkey_files))),
                 *helpers._prepend_flag(
                     "--pool-owner-stake-verification-key-file", owner_stake_vkey_files
                 ),
