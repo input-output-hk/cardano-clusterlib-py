@@ -70,7 +70,7 @@ class TxOut(tp.NamedTuple):
 # list of `TxOut`s, empty list, or empty tuple
 OptionalTxOuts = tp.Union[tp.List[TxOut], tp.Tuple[()]]
 # list of `UTXOData`s, empty list, or empty tuple
-OptionalUTXOData = tp.Union[tp.List[UTXOData], tp.Tuple[()]]
+OptionalUTXOData = tp.Union[tp.List[UTXOData], tp.Tuple[()]]  # pylint: disable=invalid-name
 
 
 class ScriptTxIn(tp.NamedTuple):

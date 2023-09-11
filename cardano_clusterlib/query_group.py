@@ -258,7 +258,7 @@ class QueryGroup:
         if not output_json:
             return structs.StakeAddrInfo(address="", delegation="", reward_account_balance=0)
 
-        address_rec = list(output_json)[0]
+        address_rec = next(iter(output_json))
         address = address_rec.get("address") or ""
         delegation = address_rec.get("delegation") or ""
         reward_account_balance = address_rec.get("rewardAccountBalance") or 0
