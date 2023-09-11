@@ -1065,7 +1065,7 @@ class TransactionGroup:
                 self.submit_tx_bare(tx_file)
             else:
                 txid = txid or self.get_txid(tx_file=tx_file)
-                LOGGER.info(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
+                LOGGER.warning(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
                 try:
                     self.submit_tx_bare(tx_file)
                 except exceptions.CLIError as exc:
