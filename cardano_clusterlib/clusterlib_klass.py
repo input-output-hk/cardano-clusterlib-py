@@ -9,6 +9,7 @@ import typing as tp
 from cardano_clusterlib import address_group
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
+from cardano_clusterlib import conway_gov_group
 from cardano_clusterlib import coverage
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import genesis_group
@@ -53,6 +54,7 @@ class ClusterLib:
         command_era: str = "",
         tx_era: str = "",  # deprecated - use `command_era` instead
     ):
+        # pylint: disable=too-many-statements
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
         self._rand_str = helpers.get_rand_str(4)
@@ -95,6 +97,19 @@ class ClusterLib:
         # Ignore the `tx_era` if `command_era` is set
         self.tx_era = "" if self.command_era else tx_era.lower()
 
+        # Conway+ era
+        self.conway_genesis_json: tp.Optional[pl.Path] = None
+        self.conway_genesis: dict = {}
+        if consts.Eras[(self.command_era or "DEFAULT").upper()].value >= consts.Eras.CONWAY.value:
+            # Ignore the `tx_era`
+            self.tx_era = ""
+            # Conway genesis
+            self.conway_genesis_json = clusterlib_helpers._find_conway_genesis_json(
+                clusterlib_obj=self
+            )
+            with open(self.conway_genesis_json, encoding="utf-8") as in_json:
+                self.conway_genesis = json.load(in_json)
+
         self.overwrite_outfiles = True
 
         # Groups of commands
@@ -107,6 +122,7 @@ class ClusterLib:
         self._key_group: tp.Optional[key_group.KeyGroup] = None
         self._genesis_group: tp.Optional[genesis_group.GenesisGroup] = None
         self._governance_group: tp.Optional[governance_group.GovernanceGroup] = None
+        self._conway_gov_group: tp.Optional[conway_gov_group.ConwayGovGroup] = None
 
         clusterlib_helpers._check_protocol(clusterlib_obj=self)
 
@@ -186,6 +202,20 @@ class ClusterLib:
         if not self._governance_group:
             self._governance_group = governance_group.GovernanceGroup(clusterlib_obj=self)
         return self._governance_group
+
+    @property
+    def g_conway_governance(self) -> conway_gov_group.ConwayGovGroup:
+        """Conway governance group."""
+        if self._conway_gov_group:
+            return self._conway_gov_group
+
+        if not self.conway_genesis:
+            raise exceptions.CLIError(
+                "Conway governance group can be used only with Command era >= Conway."
+            )
+
+        self._conway_gov_group = conway_gov_group.ConwayGovGroup(clusterlib_obj=self)
+        return self._conway_gov_group
 
     def cli(
         self,

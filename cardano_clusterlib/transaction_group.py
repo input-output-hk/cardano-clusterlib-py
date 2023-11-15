@@ -274,6 +274,10 @@ class TransactionGroup:
         if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
             misc_args.append("--json-metadata-detailed-schema")
 
+        proposal_file_argname = txtools.get_proposal_file_argname(
+            command_era=self._clusterlib_obj.command_era
+        )
+
         cli_args = [
             "transaction",
             "build-raw",
@@ -287,7 +291,8 @@ class TransactionGroup:
             *helpers._prepend_flag("--required-signer", required_signers),
             *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
             *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
-            *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+            *helpers._prepend_flag(proposal_file_argname, tx_files.proposal_files),
+            *helpers._prepend_flag("--vote-file", tx_files.vote_files),
             *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
             *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
             *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
@@ -850,6 +855,10 @@ class TransactionGroup:
         if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
             misc_args.append("--json-metadata-detailed-schema")
 
+        proposal_file_argname = txtools.get_proposal_file_argname(
+            command_era=self._clusterlib_obj.command_era
+        )
+
         cli_args = [
             "transaction",
             "build",
@@ -859,7 +868,8 @@ class TransactionGroup:
             *helpers._prepend_flag("--required-signer", required_signers),
             *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
             *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
-            *helpers._prepend_flag("--update-proposal-file", tx_files.proposal_files),
+            *helpers._prepend_flag(proposal_file_argname, tx_files.proposal_files),
+            *helpers._prepend_flag("--vote-file", tx_files.vote_files),
             *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
             *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
             *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
