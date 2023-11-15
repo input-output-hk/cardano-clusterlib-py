@@ -22,7 +22,7 @@ class TransactionGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
         self.tx_era_arg = (
-            [f"--{self._clusterlib_obj.tx_era.lower()}-era"] if self._clusterlib_obj.tx_era else []
+            [f"--{self._clusterlib_obj.tx_era}-era"] if self._clusterlib_obj.tx_era else []
         )
 
     def calculate_tx_ttl(self) -> int:
@@ -307,7 +307,7 @@ class TransactionGroup:
             out_file=out_file,
             fee=fee,
             build_args=cli_args,
-            era=self._clusterlib_obj.tx_era,
+            era=self._clusterlib_obj.command_era or self._clusterlib_obj.tx_era,
             script_txins=script_txins,
             script_withdrawals=script_withdrawals,
             complex_certs=complex_certs,
@@ -419,7 +419,10 @@ class TransactionGroup:
         if (
             ttl is None
             and invalid_hereafter is None
-            and self._clusterlib_obj.tx_era == consts.Eras.SHELLEY
+            and (
+                consts.Eras.SHELLEY.name.lower()
+                in (self._clusterlib_obj.tx_era, self._clusterlib_obj.command_era)
+            )
         ):
             invalid_hereafter = self.calculate_tx_ttl()
 
@@ -884,7 +887,7 @@ class TransactionGroup:
             out_file=out_file,
             fee=estimated_fee,
             build_args=cli_args,
-            era=self._clusterlib_obj.tx_era,
+            era=self._clusterlib_obj.command_era or self._clusterlib_obj.tx_era,
             script_txins=script_txins,
             script_withdrawals=collected_data.script_withdrawals,
             complex_certs=complex_certs,

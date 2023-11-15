@@ -33,11 +33,13 @@ class ClusterLib:
     Attributes:
         state_dir: A directory with cluster state files (keys, config files, logs, ...).
         protocol: A cluster protocol - full cardano mode by default.
-        tx_era: An era used for transactions, by default same as network Era.
         slots_offset: Difference in slots between cluster's start era and current era
             (e.g. Byron->Mary)
         socket_path: A path to socket file for communication with the node. This overrides the
             `CARDANO_NODE_SOCKET_PATH` environment variable.
+        command_era: An era used for CLI commands, by default same as the latest network Era.
+        tx_era: An era used for transactions, by default same as network Era. Deprecated - use
+            `command_era` instead.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -46,15 +48,17 @@ class ClusterLib:
         self,
         state_dir: itp.FileType,
         protocol: str = consts.Protocols.CARDANO,
-        tx_era: str = "",
         slots_offset: int = 0,
         socket_path: itp.FileType = "",
+        command_era: str = "",
+        tx_era: str = "",  # deprecated - use `command_era` instead
     ):
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
         self.protocol = protocol
+        self.command_era = command_era.lower()
 
         self.state_dir = pl.Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
@@ -88,11 +92,12 @@ class ClusterLib:
         # TODO: proper calculation based on `utxoCostPerWord` needed
         self._min_change_value = 1800_000
 
-        self.tx_era = tx_era
+        # Ignore the `tx_era` if `command_era` is set
+        self.tx_era = "" if self.command_era else tx_era.lower()
 
         self.overwrite_outfiles = True
 
-        # groups of commands
+        # Groups of commands
         self._transaction_group: tp.Optional[transaction_group.TransactionGroup] = None
         self._query_group: tp.Optional[query_group.QueryGroup] = None
         self._address_group: tp.Optional[address_group.AddressGroup] = None
@@ -182,18 +187,29 @@ class ClusterLib:
             self._governance_group = governance_group.GovernanceGroup(clusterlib_obj=self)
         return self._governance_group
 
-    def cli(self, cli_args: tp.List[str], timeout: tp.Optional[float] = None) -> structs.CLIOut:
+    def cli(
+        self,
+        cli_args: tp.List[str],
+        timeout: tp.Optional[float] = None,
+        add_default_args: bool = True,
+    ) -> structs.CLIOut:
         """Run the `cardano-cli` command.
 
         Args:
             cli_args: A list of arguments for cardano-cli.
             timeout: A timeout for the command, in seconds (optional).
+            add_default_args: Whether to add default arguments to the command (optional).
 
         Returns:
             structs.CLIOut: A tuple containing command stdout and stderr.
         """
         cli_args_strs_all = [str(arg) for arg in cli_args]
-        cli_args_strs_all.insert(0, "cardano-cli")
+
+        if add_default_args:
+            cli_args_strs_all.insert(0, "cardano-cli")
+            if self.command_era:
+                cli_args_strs_all.insert(1, self.command_era)
+
         cli_args_strs = [arg for arg in cli_args_strs_all if arg != consts.SUBCOMMAND_MARK]
 
         cmd_str = clusterlib_helpers._format_cli_args(cli_args=cli_args_strs)
@@ -398,4 +414,6 @@ class ClusterLib:
         return float(self.epoch_length_sec - s_to_epoch_stop)
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: protocol={self.protocol}, tx_era={self.tx_era}>"
+        return (
+            f"<{self.__class__.__name__}: protocol={self.protocol}, command_era={self.command_era}>"
+        )

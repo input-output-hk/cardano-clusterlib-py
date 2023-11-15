@@ -1,3 +1,4 @@
+import enum
 import typing as tp
 
 DEFAULT_COIN: tp.Final[str] = "lovelace"
@@ -24,11 +25,16 @@ class Protocols:
     SHELLEY: tp.Final[str] = "shelley"
 
 
-class Eras:
-    SHELLEY: tp.Final[str] = "shelley"
-    ALLEGRA: tp.Final[str] = "allegra"
-    MARY: tp.Final[str] = "mary"
-    ALONZO: tp.Final[str] = "alonzo"
+class Eras(enum.Enum):
+    BYRON: int = 1
+    SHELLEY: int = 2
+    ALLEGRA: int = 3
+    MARY: int = 4
+    ALONZO: int = 6
+    BABBAGE: int = 8
+    CONWAY: int = 9
+    DEFAULT: int = BABBAGE
+    LATEST: int = BABBAGE
 
 
 class MultiSigTypeArgs:
