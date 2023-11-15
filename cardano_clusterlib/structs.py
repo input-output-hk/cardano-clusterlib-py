@@ -156,6 +156,7 @@ class TxFiles(tp.NamedTuple):
     metadata_cbor_files: itp.OptionalFiles = ()
     signing_key_files: itp.OptionalFiles = ()
     auxiliary_script_files: itp.OptionalFiles = ()
+    vote_files: itp.OptionalFiles = ()
     metadata_json_detailed_schema: bool = False
 
 

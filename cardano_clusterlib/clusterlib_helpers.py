@@ -22,7 +22,7 @@ class EpochInfo(tp.NamedTuple):
 
 
 def _find_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
-    """Find shelley genesis JSON file in state dir."""
+    """Find Shelley genesis JSON file in state dir."""
     default = clusterlib_obj.state_dir / "shelley" / "genesis.json"
     if default.exists():
         return default
@@ -38,6 +38,26 @@ def _find_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
 
     genesis_json = potential[0]
     LOGGER.debug(f"Using shelley genesis JSON file `{genesis_json}")
+    return genesis_json
+
+
+def _find_conway_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
+    """Find Conway genesis JSON file in state dir."""
+    default = clusterlib_obj.state_dir / "shelley" / "genesis.conway.json"
+    if default.exists():
+        return default
+
+    potential = [
+        *clusterlib_obj.state_dir.glob("*conway*genesis.json"),
+        *clusterlib_obj.state_dir.glob("*genesis*conway.json"),
+    ]
+    if not potential:
+        raise exceptions.CLIError(
+            f"Conway genesis JSON file not found in `{clusterlib_obj.state_dir}`."
+        )
+
+    genesis_json = potential[0]
+    LOGGER.debug(f"Using Conway genesis JSON file `{genesis_json}")
     return genesis_json
 
 
