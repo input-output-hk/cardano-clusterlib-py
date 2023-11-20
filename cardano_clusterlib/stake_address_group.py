@@ -17,6 +17,26 @@ class StakeAddressGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
+    def _get_stake_vkey_args(
+        self,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_address: tp.Optional[str] = None,
+    ) -> tp.List[str]:
+        """Return CLI args for stake vkey."""
+        if stake_vkey_file:
+            stake_args = ["--stake-verification-key-file", str(stake_vkey_file)]
+        elif stake_script_file:
+            stake_args = ["--stake-script-file", str(stake_script_file)]
+        elif stake_address:
+            stake_args = ["--stake-address", stake_address]
+        else:
+            raise AssertionError(
+                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
+            )
+
+        return stake_args
+
     def gen_stake_addr(
         self,
         addr_name: str,
@@ -94,6 +114,7 @@ class StakeAddressGroup:
     def gen_stake_addr_registration_cert(
         self,
         addr_name: str,
+        deposit_amt: int = -1,
         stake_vkey_file: tp.Optional[itp.FileType] = None,
         stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
@@ -103,6 +124,7 @@ class StakeAddressGroup:
 
         Args:
             addr_name: A name of stake address.
+            deposit_amt: A stake address registration deposit amount (required in Conway+).
             stake_vkey_file: A path to corresponding stake vkey file (optional).
             stake_script_file: A path to corresponding stake script file (optional).
             stake_address: Stake address key, bech32 or hex-encoded (optional).
@@ -115,22 +137,20 @@ class StakeAddressGroup:
         out_file = destination_dir / f"{addr_name}_stake_reg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
-        if stake_vkey_file:
-            cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
-        elif stake_script_file:
-            cli_args = ["--stake-script-file", str(stake_script_file)]
-        elif stake_address:
-            cli_args = ["--stake-address", stake_address]
-        else:
-            raise AssertionError(
-                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
-            )
+        stake_args = self._get_stake_vkey_args(
+            stake_vkey_file=stake_vkey_file,
+            stake_script_file=stake_script_file,
+            stake_address=stake_address,
+        )
+
+        deposit_args = [] if deposit_amt == -1 else ["--key-reg-deposit-amt", str(deposit_amt)]
 
         self._clusterlib_obj.cli(
             [
                 "stake-address",
                 "registration-certificate",
-                *cli_args,
+                *deposit_args,
+                *stake_args,
                 "--out-file",
                 str(out_file),
             ]
@@ -142,6 +162,7 @@ class StakeAddressGroup:
     def gen_stake_addr_deregistration_cert(
         self,
         addr_name: str,
+        deposit_amt: int = -1,
         stake_vkey_file: tp.Optional[itp.FileType] = None,
         stake_script_file: tp.Optional[itp.FileType] = None,
         stake_address: tp.Optional[str] = None,
@@ -151,6 +172,7 @@ class StakeAddressGroup:
 
         Args:
             addr_name: A name of stake address.
+            deposit_amt: A stake address registration deposit amount (required in Conway+).
             stake_vkey_file: A path to corresponding stake vkey file (optional).
             stake_script_file: A path to corresponding stake script file (optional).
             stake_address: Stake address key, bech32 or hex-encoded (optional).
@@ -163,22 +185,20 @@ class StakeAddressGroup:
         out_file = destination_dir / f"{addr_name}_stake_dereg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
-        if stake_vkey_file:
-            cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
-        elif stake_script_file:
-            cli_args = ["--stake-script-file", str(stake_script_file)]
-        elif stake_address:
-            cli_args = ["--stake-address", stake_address]
-        else:
-            raise AssertionError(
-                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
-            )
+        stake_args = self._get_stake_vkey_args(
+            stake_vkey_file=stake_vkey_file,
+            stake_script_file=stake_script_file,
+            stake_address=stake_address,
+        )
+
+        deposit_args = [] if deposit_amt == -1 else ["--key-reg-deposit-amt", str(deposit_amt)]
 
         self._clusterlib_obj.cli(
             [
                 "stake-address",
                 "deregistration-certificate",
-                *cli_args,
+                *deposit_args,
+                *stake_args,
                 "--out-file",
                 str(out_file),
             ]
@@ -215,17 +235,11 @@ class StakeAddressGroup:
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
-        cli_args = []
-        if stake_vkey_file:
-            cli_args.extend(["--stake-verification-key-file", str(stake_vkey_file)])
-        elif stake_script_file:
-            cli_args.extend(["--stake-script-file", str(stake_script_file)])
-        elif stake_address:
-            cli_args = ["--stake-address", stake_address]
-        else:
-            raise AssertionError(
-                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
-            )
+        cli_args = self._get_stake_vkey_args(
+            stake_vkey_file=stake_vkey_file,
+            stake_script_file=stake_script_file,
+            stake_address=stake_address,
+        )
 
         if cold_vkey_file:
             cli_args.extend(
@@ -249,6 +263,85 @@ class StakeAddressGroup:
                 "stake-address",
                 "delegation-certificate",
                 *cli_args,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        helpers._check_outfiles(out_file)
+        return out_file
+
+    def gen_vote_delegation_cert(
+        self,
+        addr_name: str,
+        stake_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_address: tp.Optional[str] = None,
+        drep_script_hash: str = "",
+        drep_vkey: str = "",
+        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_key_hash: str = "",
+        always_abstain: bool = False,
+        always_no_confidence: bool = False,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Generate a stake address vote delegation certificate.
+
+        Args:
+            addr_name: A name of stake address.
+            stake_vkey_file: A path to corresponding stake vkey file (optional).
+            stake_script_file: A path to corresponding stake script file (optional).
+            stake_address: Stake address key, bech32 or hex-encoded (optional).
+            drep_script_hash: DRep script hash (hex-encoded, optional).
+            drep_vkey: DRep verification key (Bech32 or hex-encoded, optional).
+            drep_vkey_file: Filepath of the DRep verification key (optional).
+            drep_key_hash: DRep verification key hash
+                (either Bech32-encoded or hex-encoded, optional).
+            always_abstain: A bool indicating whether to delegate to always-abstain DRep (optional).
+            always_no_confidence: A bool indicating whether to delegate to
+                always-vote-no-confidence DRep (optional).
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            Path: A path to the generated certificate.
+        """
+        # pylint: disable=too-many-arguments
+        if not self._clusterlib_obj.conway_genesis:
+            raise exceptions.CLIError(
+                "Conway governance can be used only with Command era >= Conway."
+            )
+
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{addr_name}_vote_deleg.cert"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        stake_args = self._get_stake_vkey_args(
+            stake_vkey_file=stake_vkey_file,
+            stake_script_file=stake_script_file,
+            stake_address=stake_address,
+        )
+
+        if always_abstain:
+            drep_args = ["--always-abstain"]
+        elif always_no_confidence:
+            drep_args = ["--always-no-confidence"]
+        elif drep_script_hash:
+            drep_args = ["--drep-script-hash", str(drep_script_hash)]
+        elif drep_vkey:
+            drep_args = ["--drep-verification-key", str(drep_vkey)]
+        elif drep_vkey_file:
+            drep_args = ["--drep-verification-key-file", str(drep_vkey_file)]
+        elif drep_key_hash:
+            drep_args = ["--drep-key-hash", str(drep_key_hash)]
+        else:
+            raise AssertionError("DRep identification, verification key or script hash is needed.")
+
+        self._clusterlib_obj.cli(
+            [
+                "stake-address",
+                "vote-delegation-certificate",
+                *stake_args,
+                *drep_args,
                 "--out-file",
                 str(out_file),
             ]
