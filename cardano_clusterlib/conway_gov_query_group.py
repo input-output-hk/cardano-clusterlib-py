@@ -28,9 +28,7 @@ class ConwayGovQueryGroup:
         elif drep_key_hash:
             key_args = ["--drep-key-hash", str(drep_key_hash)]
         else:
-            raise AssertionError(
-                "Either `drep_vkey`, `drep_vkey_file` or `drep_key_hash` is needed."
-            )
+            key_args = []
 
         return key_args
 
