@@ -112,11 +112,9 @@ class ConwayGovQueryGroup:
         )
         return out
 
-    def committee_state(self) -> tp.List[tp.List[tp.Dict[str, tp.Any]]]:
+    def committee_state(self) -> tp.Dict[str, tp.Any]:
         """Get the committee state."""
-        out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
-            self.query_cli(["committee-state"])
-        )
+        out: tp.Dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
         return out
 
     def __repr__(self) -> str:
