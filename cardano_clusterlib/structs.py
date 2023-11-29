@@ -253,3 +253,19 @@ class DataForBuild(tp.NamedTuple):
     txouts: tp.List[TxOut]
     withdrawals: OptionalTxOuts
     script_withdrawals: OptionalScriptWithdrawals
+
+
+class CCMember(tp.NamedTuple):
+    epoch: int
+    cold_vkey: str = ""
+    cold_vkey_file: itp.FileType = ""
+    cold_vkey_hash: str = ""
+    cold_skey: str = ""
+    cold_skey_file: itp.FileType = ""
+    cold_skey_hash: str = ""
+    hot_vkey: str = ""
+    hot_vkey_file: itp.FileType = ""
+    hot_vkey_hash: str = ""
+    hot_skey: str = ""
+    hot_skey_file: itp.FileType = ""
+    hot_skey_hash: str = ""

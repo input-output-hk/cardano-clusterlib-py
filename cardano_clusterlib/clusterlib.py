@@ -19,6 +19,7 @@ from cardano_clusterlib.helpers import get_rand_str
 from cardano_clusterlib.helpers import read_address_from_file
 from cardano_clusterlib.structs import AddressInfo
 from cardano_clusterlib.structs import AddressRecord
+from cardano_clusterlib.structs import CCMember
 from cardano_clusterlib.structs import CLIOut
 from cardano_clusterlib.structs import ColdKeyPair
 from cardano_clusterlib.structs import ComplexCert

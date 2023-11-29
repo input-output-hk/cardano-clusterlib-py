@@ -6,6 +6,7 @@ import typing as tp
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
 from cardano_clusterlib import helpers
+from cardano_clusterlib import structs
 from cardano_clusterlib import types as itp
 
 
@@ -42,6 +43,47 @@ class ConwayGovActionGroup:
             raise AssertionError("Either stake verification key or stake key hash must be set.")
 
         return key_args
+
+    def _get_cc_members_args(
+        self,
+        cc_members: tp.List[structs.CCMember],
+        remove: bool = False,
+    ) -> tp.List[str]:
+        """Get arguments for committee members."""
+        arg_action = "remove" if remove else "add"
+        cc_members_args = []
+
+        for cc_member in cc_members:
+            if cc_member.cold_vkey:
+                cc_members_args.extend(
+                    [
+                        f"--{arg_action}-cc-cold-verification-key",
+                        str(cc_member.cold_vkey),
+                    ]
+                )
+            elif cc_member.cold_vkey_file:
+                cc_members_args.extend(
+                    [
+                        f"--{arg_action}-cc-cold-verification-key-file",
+                        str(cc_member.cold_vkey_file),
+                    ]
+                )
+            elif cc_member.cold_vkey_hash:
+                cc_members_args.extend(
+                    [
+                        f"--{arg_action}-cc-cold-verification-key-hash",
+                        str(cc_member.cold_vkey_hash),
+                    ]
+                )
+            else:
+                raise AssertionError(
+                    f"Either {arg_action} cold verification key or its hash must be set."
+                )
+
+            if not remove:
+                cc_members_args.extend(["--epoch", str(cc_member.epoch)])
+
+        return cc_members_args
 
     def _get_optional_prev_action_args(
         self,
@@ -231,6 +273,70 @@ class ConwayGovActionGroup:
                 *key_args,
                 *prev_action_args,
                 *anchor_args,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        helpers._check_outfiles(out_file)
+        return out_file
+
+    def update_committee(
+        self,
+        action_name: str,
+        deposit_amt: int,
+        anchor_url: str,
+        anchor_data_hash: str,
+        quorum: str,
+        add_cc_members: tp.Optional[tp.List[structs.CCMember]] = None,
+        rem_cc_members: tp.Optional[tp.List[structs.CCMember]] = None,
+        prev_action_txid: str = "",
+        prev_action_ix: str = "",
+        deposit_return_stake_vkey: str = "",
+        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_key_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create or update a new committee proposal."""
+        # pylint: disable=too-many-arguments
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{action_name}_update_committee.action"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        anchor_args = self._get_anchor_args(
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+        )
+
+        key_args = self._get_deposit_return_key_args(
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=deposit_return_stake_vkey_file,
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+
+        prev_action_args = self._get_optional_prev_action_args(
+            prev_action_txid=prev_action_txid, prev_action_ix=prev_action_ix
+        )
+
+        rem_cc_members_args = self._get_cc_members_args(
+            cc_members=rem_cc_members or [], remove=True
+        )
+        add_cc_members_args = self._get_cc_members_args(cc_members=add_cc_members or [])
+
+        self._clusterlib_obj.cli(
+            [
+                *self._group_args,
+                "update-committee",
+                *self.magic_args,
+                "--governance-action-deposit",
+                str(deposit_amt),
+                *key_args,
+                *prev_action_args,
+                *anchor_args,
+                *rem_cc_members_args,
+                *add_cc_members_args,
+                "--quorum",
+                quorum,
                 "--out-file",
                 str(out_file),
             ]
