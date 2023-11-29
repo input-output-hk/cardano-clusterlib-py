@@ -256,16 +256,27 @@ class QueryGroup:
         """
         output_json = json.loads(self.query_cli(["stake-address-info", "--address", stake_addr]))
         if not output_json:
-            return structs.StakeAddrInfo(address="", delegation="", reward_account_balance=0)
+            return structs.StakeAddrInfo(
+                address="",
+                delegation="",
+                reward_account_balance=0,
+                delegation_deposit=-1,
+                vote_delegation="",
+            )
 
         address_rec = next(iter(output_json))
         address = address_rec.get("address") or ""
-        delegation = address_rec.get("delegation") or ""
+        delegation = address_rec.get("delegation") or address_rec.get("stakeDelegation") or ""
         reward_account_balance = address_rec.get("rewardAccountBalance") or 0
+        _delegation_deposit = address_rec.get("delegationDeposit")
+        delegation_deposit = -1 if _delegation_deposit is None else _delegation_deposit
+        vote_delegation = address_rec.get("voteDelegation") or ""
         return structs.StakeAddrInfo(
             address=address,
             delegation=delegation,
             reward_account_balance=reward_account_balance,
+            delegation_deposit=delegation_deposit,
+            vote_delegation=vote_delegation,
         )
 
     def get_address_deposit(self) -> int:
