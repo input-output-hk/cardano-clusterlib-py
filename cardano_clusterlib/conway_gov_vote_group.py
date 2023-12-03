@@ -17,16 +17,49 @@ class ConwayGovVoteGroup:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = ("governance", "vote")
 
-    def _get_key_args(
+    def create(  # noqa: C901
         self,
+        vote_name: str,
+        action_txid: str,
+        action_ix: int,
+        vote_yes: bool = False,
+        vote_no: bool = False,
+        vote_abstain: bool = False,
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
         stake_pool_vkey: str = "",
         cold_vkey_file: tp.Optional[itp.FileType] = None,
         stake_pool_id: str = "",
-    ) -> tp.List[str]:
-        """Get arguments for verification key."""
+        cc_hot_vkey: str = "",
+        cc_hot_vkey_file: tp.Optional[itp.FileType] = None,
+        cc_hot_key_hash: str = "",
+        anchor_url: str = "",
+        anchor_data_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create a governance action vote."""
+        # pylint: disable=too-many-arguments,too-many-branches
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{vote_name}.vote"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        if vote_yes:
+            vote_args = ["--yes"]
+        elif vote_no:
+            vote_args = ["--no"]
+        elif vote_abstain:
+            vote_args = ["--abstain"]
+        else:
+            raise AssertionError("No vote was specified.")
+
+        gov_action_args = [
+            "--governance-action-tx-id",
+            str(action_txid),
+            "--governance-action-index",
+            str(action_ix),
+        ]
+
         if drep_vkey:
             key_args = ["--drep-verification-key", str(drep_vkey)]
         elif drep_vkey_file:
@@ -39,123 +72,34 @@ class ConwayGovVoteGroup:
             key_args = ["--cold-verification-key-file", str(cold_vkey_file)]
         elif stake_pool_id:
             key_args = ["--stake-pool-id", str(stake_pool_id)]
-        else:
-            raise AssertionError("Either DRep hot key or stake pool id must be set.")
-
-        return key_args
-
-    def _get_cc_key_args(
-        self,
-        cc_hot_vkey: str = "",
-        cc_hot_vkey_file: tp.Optional[itp.FileType] = None,
-        cc_hot_key_hash: str = "",
-    ) -> tp.List[str]:
-        """Get arguments for verification key."""
-        if cc_hot_vkey:
-            key_args = ["--drep-verification-key", str(cc_hot_vkey)]
+        elif cc_hot_vkey:
+            key_args = ["--cc-hot-verification-key", str(cc_hot_vkey)]
         elif cc_hot_vkey_file:
-            key_args = ["--drep-verification-key-file", str(cc_hot_vkey_file)]
+            key_args = ["--cc-hot-verification-key-file", str(cc_hot_vkey_file)]
         elif cc_hot_key_hash:
-            key_args = ["--drep-key-hash", str(cc_hot_key_hash)]
+            key_args = ["--cc-hot-key-hash", str(cc_hot_key_hash)]
         else:
-            raise AssertionError("Either Constitutional Committee hot key or its hash must be set.")
+            raise AssertionError("No key was specified.")
 
-        return key_args
-
-    def _get_vote_anchor_args(
-        self,
-        vote_anchor_url: str,
-        vote_anchor_metadata: str = "",
-        vote_anchor_metadata_file: tp.Optional[itp.FileType] = None,
-        vote_anchor_metadata_hash: str = "",
-    ) -> tp.List[str]:
-        """Get arguments for vote anchor."""
-        vote_anchor_args = ["--vote-anchor-url", str(vote_anchor_url)]
-        if vote_anchor_metadata:
-            vote_anchor_args.extend(["--vote-anchor-metadata", str(vote_anchor_metadata)])
-        elif vote_anchor_metadata_file:
-            vote_anchor_args.extend(
-                [
-                    "--vote-anchor-metadata-file",
-                    str(vote_anchor_metadata_file),
-                ]
-            )
-        elif vote_anchor_metadata_hash:
-            vote_anchor_args.extend(
-                [
-                    "--vote-anchor-metadata-hash",
-                    str(vote_anchor_metadata_hash),
-                ]
-            )
-        else:
-            raise AssertionError("Either vote anchor metadata or its hash must be set.")
-
-        return vote_anchor_args
-
-    def create(
-        self,
-        vote_name: str,
-        action_txid: str,
-        action_ix: int,
-        vote_anchor_url: str,
-        drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
-        drep_key_hash: str = "",
-        stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_pool_id: str = "",
-        cc_hot_vkey: str = "",
-        cc_hot_vkey_file: tp.Optional[itp.FileType] = None,
-        cc_hot_key_hash: str = "",
-        vote_anchor_metadata: str = "",
-        vote_anchor_metadata_file: tp.Optional[itp.FileType] = None,
-        vote_anchor_metadata_hash: str = "",
-        destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
-        """Create a governance action vote."""
-        # pylint: disable=too-many-arguments
-        destination_dir = pl.Path(destination_dir).expanduser()
-        out_file = destination_dir / f"{vote_name}.vote"
-        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
-
-        gov_action_args = [
-            "--governance-action-tx-id",
-            str(action_txid),
-            "--governance-action-index",
-            str(action_ix),
-        ]
-
-        key_args = self._get_key_args(
-            drep_vkey=drep_vkey,
-            drep_vkey_file=drep_vkey_file,
-            drep_key_hash=drep_key_hash,
-            stake_pool_vkey=stake_pool_vkey,
-            cold_vkey_file=cold_vkey_file,
-            stake_pool_id=stake_pool_id,
-        )
-
-        cc_key_args = self._get_cc_key_args(
-            cc_hot_vkey=cc_hot_vkey,
-            cc_hot_vkey_file=cc_hot_vkey_file,
-            cc_hot_key_hash=cc_hot_key_hash,
-        )
-
-        vote_anchor_args = self._get_vote_anchor_args(
-            vote_anchor_url=vote_anchor_url,
-            vote_anchor_metadata=vote_anchor_metadata,
-            vote_anchor_metadata_file=vote_anchor_metadata_file,
-            vote_anchor_metadata_hash=vote_anchor_metadata_hash,
-        )
+        anchor_args = []
+        if anchor_url:
+            if not anchor_data_hash:
+                raise AssertionError("Anchor data hash is required when anchor URL is specified.")
+            anchor_args = [
+                "--anchor-url",
+                str(anchor_url),
+                "--anchor-data-hash",
+                str(anchor_data_hash),
+            ]
 
         self._clusterlib_obj.cli(
             [
                 *self._group_args,
                 "create",
-                *key_args,
+                *vote_args,
                 *gov_action_args,
                 *key_args,
-                *cc_key_args,
-                *vote_anchor_args,
+                *anchor_args,
                 "--out-file",
                 str(out_file),
             ]
