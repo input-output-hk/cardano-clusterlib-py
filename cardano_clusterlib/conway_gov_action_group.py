@@ -88,12 +88,12 @@ class ConwayGovActionGroup:
     def _get_optional_prev_action_args(
         self,
         prev_action_txid: str = "",
-        prev_action_ix: str = "",
+        prev_action_ix: int = -1,
     ) -> tp.List[str]:
         """Get arguments for previous action."""
         prev_action_args = []
         if prev_action_txid:
-            if not prev_action_ix:
+            if prev_action_ix == -1:
                 raise AssertionError("Previous action index must be set.")
             prev_action_args = [
                 "--governance-action-tx-id",
@@ -131,7 +131,7 @@ class ConwayGovActionGroup:
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
         prev_action_txid: str = "",
-        prev_action_ix: str = "",
+        prev_action_ix: int = -1,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Create a constitution."""
@@ -233,7 +233,7 @@ class ConwayGovActionGroup:
         anchor_url: str,
         anchor_data_hash: str,
         prev_action_txid: str,
-        prev_action_ix: str,
+        prev_action_ix: int,
         deposit_return_stake_vkey: str = "",
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
@@ -291,7 +291,7 @@ class ConwayGovActionGroup:
         add_cc_members: tp.Optional[tp.List[structs.CCMember]] = None,
         rem_cc_members: tp.Optional[tp.List[structs.CCMember]] = None,
         prev_action_txid: str = "",
-        prev_action_ix: str = "",
+        prev_action_ix: int = -1,
         deposit_return_stake_vkey: str = "",
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
