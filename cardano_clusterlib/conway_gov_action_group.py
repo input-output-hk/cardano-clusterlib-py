@@ -96,9 +96,9 @@ class ConwayGovActionGroup:
             if prev_action_ix == -1:
                 raise AssertionError("Previous action index must be set.")
             prev_action_args = [
-                "--governance-action-tx-id",
+                "--prev-governance-action-tx-id",
                 str(prev_action_txid),
-                "--governance-action-index",
+                "--prev-governance-action-index",
                 str(prev_action_ix),
             ]
 
@@ -257,9 +257,9 @@ class ConwayGovActionGroup:
         )
 
         prev_action_args = [
-            "--governance-action-tx-id",
+            "--prev-governance-action-tx-id",
             str(prev_action_txid),
-            "--governance-action-index",
+            "--prev-governance-action-index",
             str(prev_action_ix),
         ]
 
@@ -337,6 +337,130 @@ class ConwayGovActionGroup:
                 *add_cc_members_args,
                 "--quorum",
                 quorum,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        helpers._check_outfiles(out_file)
+        return out_file
+
+    def create_pparams_update(
+        self,
+        action_name: str,
+        deposit_amt: int,
+        anchor_url: str,
+        anchor_data_hash: str,
+        cli_args: itp.UnpackableSequence,
+        prev_action_txid: str = "",
+        prev_action_ix: int = -1,
+        deposit_return_stake_vkey: str = "",
+        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_key_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create a protocol parameters update proposal."""
+        # pylint: disable=too-many-arguments
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{action_name}_pparams_update.action"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        key_args = self._get_deposit_return_key_args(
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=deposit_return_stake_vkey_file,
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+
+        anchor_args = self._get_anchor_args(
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+        )
+
+        prev_action_args = self._get_optional_prev_action_args(
+            prev_action_txid=prev_action_txid, prev_action_ix=prev_action_ix
+        )
+
+        self._clusterlib_obj.cli(
+            [
+                *self._group_args,
+                "create-protocol-parameters-update",
+                *self.magic_args,
+                "--governance-action-deposit",
+                str(deposit_amt),
+                *key_args,
+                *prev_action_args,
+                *anchor_args,
+                *cli_args,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        helpers._check_outfiles(out_file)
+        return out_file
+
+    def create_treasury_withdrawal(
+        self,
+        action_name: str,
+        transfer_amt: int,
+        deposit_amt: int,
+        anchor_url: str,
+        anchor_data_hash: str,
+        funds_receiving_stake_vkey: str = "",
+        funds_receiving_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        funds_receiving_stake_key_hash: str = "",
+        deposit_return_stake_vkey: str = "",
+        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_key_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create a treasury withdrawal."""
+        # pylint: disable=too-many-arguments
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{action_name}_info.action"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        if funds_receiving_stake_vkey:
+            funds_key_args = [
+                "--funds-receiving-stake-verification-key",
+                str(funds_receiving_stake_vkey),
+            ]
+        elif funds_receiving_stake_vkey_file:
+            funds_key_args = [
+                "--funds-receiving-stake-verification-key-file",
+                str(funds_receiving_stake_vkey_file),
+            ]
+        elif funds_receiving_stake_key_hash:
+            funds_key_args = [
+                "--funds-receiving-stake-key-hash",
+                str(funds_receiving_stake_key_hash),
+            ]
+        else:
+            raise AssertionError("Either stake verification key or stake key hash must be set.")
+
+        deposit_key_args = self._get_deposit_return_key_args(
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=deposit_return_stake_vkey_file,
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+
+        anchor_args = self._get_anchor_args(
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+        )
+
+        self._clusterlib_obj.cli(
+            [
+                *self._group_args,
+                "create-treasury-withdrawal",
+                *self.magic_args,
+                "--governance-action-deposit",
+                str(deposit_amt),
+                *deposit_key_args,
+                *anchor_args,
+                *funds_key_args,
+                "--transfer",
+                str(transfer_amt),
                 "--out-file",
                 str(out_file),
             ]
