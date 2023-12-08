@@ -344,3 +344,57 @@ class ConwayGovActionGroup:
 
         helpers._check_outfiles(out_file)
         return out_file
+
+    def create_pparams_update(
+        self,
+        action_name: str,
+        deposit_amt: int,
+        anchor_url: str,
+        anchor_data_hash: str,
+        cli_args: itp.UnpackableSequence,
+        prev_action_txid: str = "",
+        prev_action_ix: int = -1,
+        deposit_return_stake_vkey: str = "",
+        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_key_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create a protocol parameters update proposal."""
+        # pylint: disable=too-many-arguments
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{action_name}_pparams_update.action"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        key_args = self._get_deposit_return_key_args(
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=deposit_return_stake_vkey_file,
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+
+        anchor_args = self._get_anchor_args(
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+        )
+
+        prev_action_args = self._get_optional_prev_action_args(
+            prev_action_txid=prev_action_txid, prev_action_ix=prev_action_ix
+        )
+
+        self._clusterlib_obj.cli(
+            [
+                *self._group_args,
+                "create-protocol-parameters-update",
+                *self.magic_args,
+                "--governance-action-deposit",
+                str(deposit_amt),
+                *key_args,
+                *prev_action_args,
+                *anchor_args,
+                *cli_args,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        helpers._check_outfiles(out_file)
+        return out_file
