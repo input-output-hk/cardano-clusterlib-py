@@ -108,7 +108,7 @@ class ConwayGovVoteGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
-    def view(self, vote_file: itp.FileType) -> dict:
+    def view(self, vote_file: itp.FileType) -> tp.Dict[str, tp.Any]:
         """View a governance action vote."""
         vote_file = pl.Path(vote_file).expanduser()
         clusterlib_helpers._check_files_exist(vote_file, clusterlib_obj=self._clusterlib_obj)
@@ -123,5 +123,5 @@ class ConwayGovVoteGroup:
         ).stdout.strip()
         stdout_dec = stdout.decode("utf-8") if stdout else ""
 
-        out: dict = json.loads(stdout_dec)
+        out: tp.Dict[str, tp.Any] = json.loads(stdout_dec)
         return out
