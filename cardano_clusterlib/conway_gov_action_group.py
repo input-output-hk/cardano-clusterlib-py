@@ -1,4 +1,5 @@
 """Group of methods for Conway governance action commands."""
+import json
 import logging
 import pathlib as pl
 import typing as tp
@@ -468,3 +469,21 @@ class ConwayGovActionGroup:
 
         helpers._check_outfiles(out_file)
         return out_file
+
+    def view(self, action_file: itp.FileType) -> tp.Dict[str, tp.Any]:
+        """View a governance action vote."""
+        action_file = pl.Path(action_file).expanduser()
+        clusterlib_helpers._check_files_exist(action_file, clusterlib_obj=self._clusterlib_obj)
+
+        stdout = self._clusterlib_obj.cli(
+            [
+                *self._group_args,
+                "view",
+                "--action-file",
+                str(action_file),
+            ]
+        ).stdout.strip()
+        stdout_dec = stdout.decode("utf-8") if stdout else ""
+
+        out: tp.Dict[str, tp.Any] = json.loads(stdout_dec)
+        return out
