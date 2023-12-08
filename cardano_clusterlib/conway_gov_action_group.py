@@ -96,9 +96,9 @@ class ConwayGovActionGroup:
             if prev_action_ix == -1:
                 raise AssertionError("Previous action index must be set.")
             prev_action_args = [
-                "--governance-action-tx-id",
+                "--prev-governance-action-tx-id",
                 str(prev_action_txid),
-                "--governance-action-index",
+                "--prev-governance-action-index",
                 str(prev_action_ix),
             ]
 
@@ -257,9 +257,9 @@ class ConwayGovActionGroup:
         )
 
         prev_action_args = [
-            "--governance-action-tx-id",
+            "--prev-governance-action-tx-id",
             str(prev_action_txid),
-            "--governance-action-index",
+            "--prev-governance-action-index",
             str(prev_action_ix),
         ]
 
