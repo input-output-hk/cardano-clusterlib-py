@@ -13,6 +13,7 @@ from cardano_clusterlib.consts import MultiSlotTypeArgs
 from cardano_clusterlib.consts import Protocols
 from cardano_clusterlib.consts import ScriptTypes
 from cardano_clusterlib.consts import SLOTS_OFFSETS
+from cardano_clusterlib.consts import Votes
 from cardano_clusterlib.coverage import record_cli_coverage
 from cardano_clusterlib.exceptions import CLIError
 from cardano_clusterlib.helpers import get_rand_str
@@ -46,6 +47,9 @@ from cardano_clusterlib.structs import TxOut
 from cardano_clusterlib.structs import TxRawOutput
 from cardano_clusterlib.structs import UTXOData
 from cardano_clusterlib.structs import Value
+from cardano_clusterlib.structs import VoteCC
+from cardano_clusterlib.structs import VoteDrep
+from cardano_clusterlib.structs import VoteSPO
 from cardano_clusterlib.txtools import calculate_utxos_balance
 from cardano_clusterlib.txtools import collect_data_for_build
 from cardano_clusterlib.txtools import filter_utxo_with_highest_amount

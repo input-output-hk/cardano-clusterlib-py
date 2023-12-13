@@ -146,21 +146,29 @@ class StakePoolGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
-    def get_stake_pool_id(self, cold_vkey_file: itp.FileType) -> str:
+    def get_stake_pool_id(
+        self,
+        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        stake_pool_vkey: str = "",
+    ) -> str:
         """Return pool ID from the offline key.
 
         Args:
             cold_vkey_file: A path to pool cold vkey file.
+            stake_pool_vkey: A stake pool verification key (Bech32 or hex-encoded).
 
         Returns:
             str: A pool ID.
         """
+        if stake_pool_vkey:
+            key_args = ["--stake-pool-verification-key", str(stake_pool_vkey)]
+        elif cold_vkey_file:
+            key_args = ["--cold-verification-key-file", str(cold_vkey_file)]
+        else:
+            raise AssertionError("No key was specified.")
+
         pool_id = (
-            self._clusterlib_obj.cli(
-                ["stake-pool", "id", "--cold-verification-key-file", str(cold_vkey_file)]
-            )
-            .stdout.strip()
-            .decode("utf-8")
+            self._clusterlib_obj.cli(["stake-pool", "id", *key_args]).stdout.strip().decode("ascii")
         )
         return pool_id
 

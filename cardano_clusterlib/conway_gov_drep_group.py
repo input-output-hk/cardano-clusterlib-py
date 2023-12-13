@@ -66,30 +66,22 @@ class ConwayGovDrepGroup:
         helpers._check_outfiles(vkey, skey)
         return structs.KeyPair(vkey, skey)
 
-    def gen_id(
+    def get_id(
         self,
-        id_name: str,
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         out_format: str = "",
-        destination_dir: itp.FileType = ".",
     ) -> str:
-        """Generate a DRep id.
+        """Return a DRep id.
 
         Args:
-            id_name: A name of payment address.
             drep_vkey: DRep verification key (Bech32 or hex-encoded, optional).
             drep_vkey_file: A path to corresponding drep vkey file (optional).
             out_format: Output format (optional, bech32 by default).
-            destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
             str: A generated DRep id.
         """
-        destination_dir = pl.Path(destination_dir).expanduser()
-        out_file = destination_dir / f"{id_name}_drep.id"
-        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
-
         if drep_vkey:
             cli_args = ["--drep-verification-key", str(drep_vkey)]
         elif drep_vkey_file:
@@ -100,18 +92,19 @@ class ConwayGovDrepGroup:
         if out_format:
             cli_args.extend(["--output-format", str(out_format)])
 
-        self._clusterlib_obj.cli(
-            [
-                *self._group_args,
-                "id",
-                *cli_args,
-                "--out-file",
-                str(out_file),
-            ]
+        drep_id = (
+            self._clusterlib_obj.cli(
+                [
+                    *self._group_args,
+                    "id",
+                    *cli_args,
+                ]
+            )
+            .stdout.strip()
+            .decode("ascii")
         )
 
-        helpers._check_outfiles(out_file)
-        return helpers.read_address_from_file(out_file)
+        return drep_id
 
     def gen_registration_cert(
         self,
