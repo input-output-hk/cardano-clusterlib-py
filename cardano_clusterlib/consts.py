@@ -53,3 +53,9 @@ class ScriptTypes:
     SIMPLE_V2: tp.Final[str] = "simple_v2"
     PLUTUS_V1: tp.Final[str] = "plutus_v1"
     PLUTUS_V2: tp.Final[str] = "plutus_v2"
+
+
+class Votes(enum.Enum):
+    YES: int = 1
+    NO: int = 2
+    ABSTAIN: int = 3

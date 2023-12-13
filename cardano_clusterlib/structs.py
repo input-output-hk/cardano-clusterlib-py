@@ -269,3 +269,42 @@ class CCMember(tp.NamedTuple):
     hot_skey: str = ""
     hot_skey_file: itp.FileType = ""
     hot_skey_hash: str = ""
+
+
+class VoteCC(tp.NamedTuple):
+    action_txid: str
+    action_ix: int
+    vote: consts.Votes
+    key_hash: str
+    vote_file: pl.Path
+    cc_hot_vkey: str = ""
+    cc_hot_vkey_file: tp.Optional[itp.FileType] = None
+    cc_hot_key_hash: str = ""
+    anchor_url: str = ""
+    anchor_data_hash: str = ""
+
+
+class VoteDrep(tp.NamedTuple):
+    action_txid: str
+    action_ix: int
+    vote: consts.Votes
+    key_hash: str
+    vote_file: pl.Path
+    drep_vkey: str = ""
+    drep_vkey_file: tp.Optional[itp.FileType] = None
+    drep_key_hash: str = ""
+    anchor_url: str = ""
+    anchor_data_hash: str = ""
+
+
+class VoteSPO(tp.NamedTuple):
+    action_txid: str
+    action_ix: int
+    vote: consts.Votes
+    key_hash: str
+    vote_file: pl.Path
+    stake_pool_vkey: str = ""
+    cold_vkey_file: tp.Optional[itp.FileType] = None
+    stake_pool_id: str = ""
+    anchor_url: str = ""
+    anchor_data_hash: str = ""
