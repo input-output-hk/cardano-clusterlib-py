@@ -18,6 +18,12 @@ from cardano_clusterlib.coverage import record_cli_coverage
 from cardano_clusterlib.exceptions import CLIError
 from cardano_clusterlib.helpers import get_rand_str
 from cardano_clusterlib.helpers import read_address_from_file
+from cardano_clusterlib.structs import ActionConstitution
+from cardano_clusterlib.structs import ActionInfo
+from cardano_clusterlib.structs import ActionNoConfidence
+from cardano_clusterlib.structs import ActionPParamsUpdate
+from cardano_clusterlib.structs import ActionTreasuryWithdrawal
+from cardano_clusterlib.structs import ActionUpdateCommittee
 from cardano_clusterlib.structs import AddressInfo
 from cardano_clusterlib.structs import AddressRecord
 from cardano_clusterlib.structs import CCMember
