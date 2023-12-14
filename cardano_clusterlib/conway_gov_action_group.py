@@ -134,7 +134,7 @@ class ConwayGovActionGroup:
         prev_action_txid: str = "",
         prev_action_ix: int = -1,
         destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
+    ) -> structs.ActionConstitution:
         """Create a constitution."""
         # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
@@ -178,9 +178,23 @@ class ConwayGovActionGroup:
                 str(out_file),
             ]
         )
-
         helpers._check_outfiles(out_file)
-        return out_file
+
+        action_out = structs.ActionConstitution(
+            action_file=out_file,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            constitution_url=constitution_url,
+            constitution_hash=constitution_hash,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(file=deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+            prev_action_txid=prev_action_txid,
+            prev_action_ix=prev_action_ix,
+        )
+
+        return action_out
 
     def create_info(
         self,
@@ -192,7 +206,7 @@ class ConwayGovActionGroup:
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
+    ) -> structs.ActionInfo:
         """Create an info action."""
         # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
@@ -223,9 +237,18 @@ class ConwayGovActionGroup:
                 str(out_file),
             ]
         )
-
         helpers._check_outfiles(out_file)
-        return out_file
+
+        action_out = structs.ActionInfo(
+            action_file=out_file,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+        return action_out
 
     def create_no_confidence(
         self,
@@ -239,7 +262,7 @@ class ConwayGovActionGroup:
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
+    ) -> structs.ActionNoConfidence:
         """Create a no confidence proposal."""
         # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
@@ -278,9 +301,20 @@ class ConwayGovActionGroup:
                 str(out_file),
             ]
         )
-
         helpers._check_outfiles(out_file)
-        return out_file
+
+        action_out = structs.ActionNoConfidence(
+            action_file=out_file,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            prev_action_txid=prev_action_txid,
+            prev_action_ix=prev_action_ix,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+        return action_out
 
     def update_committee(
         self,
@@ -297,7 +331,7 @@ class ConwayGovActionGroup:
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
+    ) -> structs.ActionUpdateCommittee:
         """Create or update a new committee proposal."""
         # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
@@ -342,9 +376,23 @@ class ConwayGovActionGroup:
                 str(out_file),
             ]
         )
-
         helpers._check_outfiles(out_file)
-        return out_file
+
+        action_out = structs.ActionUpdateCommittee(
+            action_file=out_file,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            quorum=quorum,
+            add_cc_members=add_cc_members or [],
+            rem_cc_members=rem_cc_members or [],
+            prev_action_txid=prev_action_txid,
+            prev_action_ix=prev_action_ix,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+        return action_out
 
     def create_pparams_update(
         self,
@@ -359,7 +407,7 @@ class ConwayGovActionGroup:
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
+    ) -> structs.ActionPParamsUpdate:
         """Create a protocol parameters update proposal."""
         # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
@@ -396,9 +444,21 @@ class ConwayGovActionGroup:
                 str(out_file),
             ]
         )
-
         helpers._check_outfiles(out_file)
-        return out_file
+
+        action_out = structs.ActionPParamsUpdate(
+            action_file=out_file,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            cli_args=cli_args,
+            prev_action_txid=prev_action_txid,
+            prev_action_ix=prev_action_ix,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+        return action_out
 
     def create_treasury_withdrawal(
         self,
@@ -414,7 +474,7 @@ class ConwayGovActionGroup:
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
-    ) -> pl.Path:
+    ) -> structs.ActionTreasuryWithdrawal:
         """Create a treasury withdrawal."""
         # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
@@ -466,9 +526,22 @@ class ConwayGovActionGroup:
                 str(out_file),
             ]
         )
-
         helpers._check_outfiles(out_file)
-        return out_file
+
+        action_out = structs.ActionTreasuryWithdrawal(
+            action_file=out_file,
+            transfer_amt=transfer_amt,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            funds_receiving_stake_vkey=funds_receiving_stake_vkey,
+            funds_receiving_stake_vkey_file=helpers._maybe_path(funds_receiving_stake_vkey_file),
+            funds_receiving_stake_key_hash=funds_receiving_stake_key_hash,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+        return action_out
 
     def view(self, action_file: itp.FileType) -> tp.Dict[str, tp.Any]:
         """View a governance action vote."""

@@ -310,3 +310,87 @@ class VoteSPO:
     stake_pool_id: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class ActionConstitution:
+    action_file: pl.Path
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    constitution_url: str
+    constitution_hash: str
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
+    prev_action_txid: str = ""
+    prev_action_ix: int = -1
+
+
+@dataclasses.dataclass(frozen=True)
+class ActionInfo:
+    action_file: pl.Path
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class ActionNoConfidence:
+    action_file: pl.Path
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    prev_action_txid: str
+    prev_action_ix: int
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class ActionUpdateCommittee:
+    action_file: pl.Path
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    quorum: str
+    add_cc_members: tp.List[CCMember] = dataclasses.field(default_factory=list)
+    rem_cc_members: tp.List[CCMember] = dataclasses.field(default_factory=list)
+    prev_action_txid: str = ""
+    prev_action_ix: int = -1
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class ActionPParamsUpdate:
+    action_file: pl.Path
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    cli_args: itp.UnpackableSequence
+    prev_action_txid: str = ""
+    prev_action_ix: int = -1
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class ActionTreasuryWithdrawal:
+    action_file: pl.Path
+    transfer_amt: int
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    funds_receiving_stake_vkey: str = ""
+    funds_receiving_stake_vkey_file: tp.Optional[pl.Path] = None
+    funds_receiving_stake_key_hash: str = ""
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
