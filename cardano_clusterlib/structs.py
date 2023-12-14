@@ -275,7 +275,6 @@ class VoteCC(tp.NamedTuple):
     action_txid: str
     action_ix: int
     vote: consts.Votes
-    key_hash: str
     vote_file: pl.Path
     cc_hot_vkey: str = ""
     cc_hot_vkey_file: tp.Optional[itp.FileType] = None
@@ -288,7 +287,6 @@ class VoteDrep(tp.NamedTuple):
     action_txid: str
     action_ix: int
     vote: consts.Votes
-    key_hash: str
     vote_file: pl.Path
     drep_vkey: str = ""
     drep_vkey_file: tp.Optional[itp.FileType] = None
@@ -301,7 +299,6 @@ class VoteSPO(tp.NamedTuple):
     action_txid: str
     action_ix: int
     vote: consts.Votes
-    key_hash: str
     vote_file: pl.Path
     stake_pool_vkey: str = ""
     cold_vkey_file: tp.Optional[itp.FileType] = None

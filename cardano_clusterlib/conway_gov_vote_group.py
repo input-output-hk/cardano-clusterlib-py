@@ -91,17 +91,10 @@ class ConwayGovVoteGroup:
 
         if cc_hot_vkey:
             key_args = ["--cc-hot-verification-key", cc_hot_vkey]
-            key_hash = self._clusterlib_obj.g_conway_governance.committee.get_key_hash(
-                vkey=cc_hot_vkey,
-            )
         elif cc_hot_vkey_file:
             key_args = ["--cc-hot-verification-key-file", str(cc_hot_vkey_file)]
-            key_hash = self._clusterlib_obj.g_conway_governance.committee.get_key_hash(
-                vkey_file=cc_hot_vkey_file,
-            )
         elif cc_hot_key_hash:
             key_args = ["--cc-hot-key-hash", cc_hot_key_hash]
-            key_hash = cc_hot_key_hash
         else:
             raise AssertionError("No CC key was specified.")
 
@@ -123,7 +116,6 @@ class ConwayGovVoteGroup:
             action_txid=action_txid,
             action_ix=action_ix,
             vote=vote,
-            key_hash=key_hash,
             vote_file=out_file,
             cc_hot_vkey=cc_hot_vkey,
             cc_hot_vkey_file=cc_hot_vkey_file,
@@ -160,19 +152,10 @@ class ConwayGovVoteGroup:
 
         if drep_vkey:
             key_args = ["--drep-verification-key", drep_vkey]
-            key_hash = self._clusterlib_obj.g_conway_governance.drep.get_id(
-                drep_vkey=drep_vkey,
-                out_format="hex",
-            )
         elif drep_vkey_file:
             key_args = ["--drep-verification-key-file", str(drep_vkey_file)]
-            key_hash = self._clusterlib_obj.g_conway_governance.drep.get_id(
-                drep_vkey_file=drep_vkey_file,
-                out_format="hex",
-            )
         elif drep_key_hash:
             key_args = ["--drep-key-hash", drep_key_hash]
-            key_hash = drep_key_hash
         else:
             raise AssertionError("No DRep key was specified.")
 
@@ -194,7 +177,6 @@ class ConwayGovVoteGroup:
             action_txid=action_txid,
             action_ix=action_ix,
             vote=vote,
-            key_hash=key_hash,
             vote_file=out_file,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
@@ -231,17 +213,10 @@ class ConwayGovVoteGroup:
 
         if stake_pool_vkey:
             key_args = ["--stake-pool-verification-key", stake_pool_vkey]
-            key_hash = self._clusterlib_obj.g_stake_pool.get_stake_pool_id(
-                stake_pool_vkey=stake_pool_vkey,
-            )
         elif cold_vkey_file:
             key_args = ["--cold-verification-key-file", str(cold_vkey_file)]
-            key_hash = self._clusterlib_obj.g_stake_pool.get_stake_pool_id(
-                cold_vkey_file=cold_vkey_file,
-            )
         elif stake_pool_id:
             key_args = ["--stake-pool-id", stake_pool_id]
-            key_hash = stake_pool_id
         else:
             raise AssertionError("No key was specified.")
 
@@ -263,7 +238,6 @@ class ConwayGovVoteGroup:
             action_txid=action_txid,
             action_ix=action_ix,
             vote=vote,
-            key_hash=key_hash,
             stake_pool_vkey=stake_pool_vkey,
             cold_vkey_file=cold_vkey_file,
             stake_pool_id=stake_pool_id,
