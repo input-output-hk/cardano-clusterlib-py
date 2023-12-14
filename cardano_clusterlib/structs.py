@@ -1,3 +1,4 @@
+import dataclasses
 import datetime
 import pathlib as pl
 import typing as tp
@@ -255,7 +256,8 @@ class DataForBuild(tp.NamedTuple):
     script_withdrawals: OptionalScriptWithdrawals
 
 
-class CCMember(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class CCMember:
     epoch: int
     cold_vkey: str = ""
     cold_vkey_file: itp.FileType = ""
@@ -271,37 +273,40 @@ class CCMember(tp.NamedTuple):
     hot_skey_hash: str = ""
 
 
-class VoteCC(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class VoteCC:
     action_txid: str
     action_ix: int
     vote: consts.Votes
     vote_file: pl.Path
     cc_hot_vkey: str = ""
-    cc_hot_vkey_file: tp.Optional[itp.FileType] = None
+    cc_hot_vkey_file: tp.Optional[pl.Path] = None
     cc_hot_key_hash: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""
 
 
-class VoteDrep(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class VoteDrep:
     action_txid: str
     action_ix: int
     vote: consts.Votes
     vote_file: pl.Path
     drep_vkey: str = ""
-    drep_vkey_file: tp.Optional[itp.FileType] = None
+    drep_vkey_file: tp.Optional[pl.Path] = None
     drep_key_hash: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""
 
 
-class VoteSPO(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class VoteSPO:
     action_txid: str
     action_ix: int
     vote: consts.Votes
     vote_file: pl.Path
     stake_pool_vkey: str = ""
-    cold_vkey_file: tp.Optional[itp.FileType] = None
+    cold_vkey_file: tp.Optional[pl.Path] = None
     stake_pool_id: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""

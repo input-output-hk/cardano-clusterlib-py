@@ -47,3 +47,8 @@ def _check_outfiles(*out_files: itp.FileType) -> None:
         out_file_p = pl.Path(out_file).expanduser()
         if not out_file_p.exists():
             raise exceptions.CLIError(f"The expected file `{out_file}` doesn't exist.")
+
+
+def _maybe_path(file: tp.Optional[itp.FileType]) -> tp.Optional[pl.Path]:
+    """Return `Path` if `file` is thruthy."""
+    return pl.Path(file) if file else None
