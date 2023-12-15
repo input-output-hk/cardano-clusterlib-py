@@ -7,29 +7,34 @@ from cardano_clusterlib import consts
 from cardano_clusterlib import types as itp
 
 
-class CLIOut(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class CLIOut:
     stdout: bytes
     stderr: bytes
 
 
-class KeyPair(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class KeyPair:
     vkey_file: pl.Path
     skey_file: pl.Path
 
 
-class ColdKeyPair(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class ColdKeyPair:
     vkey_file: pl.Path
     skey_file: pl.Path
     counter_file: pl.Path
 
 
-class AddressRecord(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class AddressRecord:
     address: str
     vkey_file: pl.Path
     skey_file: pl.Path
 
 
-class StakeAddrInfo(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class StakeAddrInfo:
     address: str
     delegation: str
     reward_account_balance: int
@@ -40,7 +45,8 @@ class StakeAddrInfo(tp.NamedTuple):
         return bool(self.address)
 
 
-class UTXOData(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class UTXOData:
     utxo_hash: str
     utxo_ix: int
     amount: int
@@ -53,7 +59,8 @@ class UTXOData(tp.NamedTuple):
     reference_script: tp.Optional[dict] = None
 
 
-class TxOut(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class TxOut:
     address: str
     amount: int
     coin: str = consts.DEFAULT_COIN
@@ -76,7 +83,8 @@ OptionalTxOuts = tp.Union[tp.List[TxOut], tp.Tuple[()]]
 OptionalUTXOData = tp.Union[tp.List[UTXOData], tp.Tuple[()]]  # pylint: disable=invalid-name
 
 
-class ScriptTxIn(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class ScriptTxIn:
     """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
 
     txins: tp.List[UTXOData]
@@ -95,7 +103,8 @@ class ScriptTxIn(tp.NamedTuple):
     redeemer_value: str = ""
 
 
-class ScriptWithdrawal(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class ScriptWithdrawal:
     """Data structure for withdrawals that are combined with Plutus scripts."""
 
     txout: TxOut
@@ -109,7 +118,8 @@ class ScriptWithdrawal(tp.NamedTuple):
     redeemer_value: str = ""
 
 
-class ComplexCert(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class ComplexCert:
     """Data structure for certificates with optional data for Plutus scripts.
 
     If used for one certificate, it needs to be used for all the other certificates in a given
@@ -128,7 +138,8 @@ class ComplexCert(tp.NamedTuple):
     redeemer_value: str = ""
 
 
-class Mint(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class Mint:
     txouts: tp.List[TxOut]
     script_file: itp.FileType = ""
     reference_txin: tp.Optional[UTXOData] = None
@@ -152,7 +163,8 @@ OptionalScriptWithdrawals = tp.Union[tp.List[ScriptWithdrawal], tp.Tuple[()]]
 OptionalMint = tp.Union[tp.List[Mint], tp.Tuple[()]]
 
 
-class TxFiles(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class TxFiles:
     certificate_files: itp.OptionalFiles = ()
     proposal_files: itp.OptionalFiles = ()
     metadata_json_files: itp.OptionalFiles = ()
@@ -163,12 +175,14 @@ class TxFiles(tp.NamedTuple):
     metadata_json_detailed_schema: bool = False
 
 
-class PoolUser(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class PoolUser:
     payment: AddressRecord
     stake: AddressRecord
 
 
-class PoolData(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class PoolData:
     pool_name: str
     pool_pledge: int
     pool_cost: int
@@ -180,7 +194,8 @@ class PoolData(tp.NamedTuple):
     pool_relay_port: int = 0
 
 
-class TxRawOutput(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class TxRawOutput:
     txins: tp.List[UTXOData]  # UTXOs used as inputs
     txouts: tp.List[TxOut]  # Tx outputs
     txouts_count: int  # Final number of tx outputs after adding change address and joining outputs
@@ -207,7 +222,8 @@ class TxRawOutput(tp.NamedTuple):
     combined_reference_txins: OptionalUTXOData = ()  # All reference tx inputs
 
 
-class PoolCreationOutput(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class PoolCreationOutput:
     stake_pool_id: str
     vrf_key_pair: KeyPair
     cold_key_pair: ColdKeyPair
@@ -218,20 +234,23 @@ class PoolCreationOutput(tp.NamedTuple):
     kes_key_pair: tp.Optional[KeyPair] = None
 
 
-class GenesisKeys(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class GenesisKeys:
     genesis_utxo_vkey: pl.Path
     genesis_utxo_skey: pl.Path
     genesis_vkeys: tp.List[pl.Path]
     delegate_skeys: tp.List[pl.Path]
 
 
-class PoolParamsTop(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class PoolParamsTop:
     pool_params: dict
     future_pool_params: dict
     retiring: tp.Optional[int]
 
 
-class AddressInfo(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class AddressInfo:
     address: str
     era: str
     encoding: str
@@ -239,24 +258,27 @@ class AddressInfo(tp.NamedTuple):
     base16: str
 
 
-class Value(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class Value:
     value: int
     coin: str
 
 
-class LeadershipSchedule(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class LeadershipSchedule:
     slot_no: int
     utc_time: datetime.datetime
 
 
-class DataForBuild(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class DataForBuild:
     txins: tp.List[UTXOData]
     txouts: tp.List[TxOut]
     withdrawals: OptionalTxOuts
     script_withdrawals: OptionalScriptWithdrawals
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class CCMember:
     epoch: int
     cold_vkey: str = ""
@@ -273,7 +295,7 @@ class CCMember:
     hot_skey_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class VoteCC:
     action_txid: str
     action_ix: int
@@ -286,7 +308,7 @@ class VoteCC:
     anchor_data_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class VoteDrep:
     action_txid: str
     action_ix: int
@@ -299,7 +321,7 @@ class VoteDrep:
     anchor_data_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class VoteSPO:
     action_txid: str
     action_ix: int
@@ -312,7 +334,7 @@ class VoteSPO:
     anchor_data_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class ActionConstitution:
     action_file: pl.Path
     deposit_amt: int
@@ -327,7 +349,7 @@ class ActionConstitution:
     prev_action_ix: int = -1
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class ActionInfo:
     action_file: pl.Path
     deposit_amt: int
@@ -338,7 +360,7 @@ class ActionInfo:
     deposit_return_stake_key_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class ActionNoConfidence:
     action_file: pl.Path
     deposit_amt: int
@@ -351,7 +373,7 @@ class ActionNoConfidence:
     deposit_return_stake_key_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class ActionUpdateCommittee:
     action_file: pl.Path
     deposit_amt: int
@@ -367,7 +389,7 @@ class ActionUpdateCommittee:
     deposit_return_stake_key_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class ActionPParamsUpdate:
     action_file: pl.Path
     deposit_amt: int
@@ -381,7 +403,7 @@ class ActionPParamsUpdate:
     deposit_return_stake_key_hash: str = ""
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class ActionTreasuryWithdrawal:
     action_file: pl.Path
     transfer_amt: int
