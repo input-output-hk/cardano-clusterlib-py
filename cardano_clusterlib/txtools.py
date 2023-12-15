@@ -1,6 +1,7 @@
 """Tools used by `ClusterLib` for constructing transactions."""
 import base64
 import contextlib
+import dataclasses
 import functools
 import itertools
 import logging
@@ -253,8 +254,8 @@ def _get_withdrawals(
         clusterlib_obj=clusterlib_obj, withdrawals=withdrawals
     )
     script_withdrawals = [
-        s._replace(
-            txout=_resolve_withdrawals(clusterlib_obj=clusterlib_obj, withdrawals=[s.txout])[0]
+        dataclasses.replace(
+            s, txout=_resolve_withdrawals(clusterlib_obj=clusterlib_obj, withdrawals=[s.txout])[0]
         )
         for s in script_withdrawals
     ]
@@ -410,7 +411,7 @@ def get_joined_txouts(
         # The tuple for each coin is `("one of the original TxOuts", "list of amounts")`.
         # All the `TxOut` values except of amount are the same in this loop, so we can
         # take the original `TxOut` and replace `amount` with sum of all amounts.
-        sum_txouts = [r[0]._replace(amount=sum(r[1])) for r in txouts_by_coin.values()]
+        sum_txouts = [dataclasses.replace(r[0], amount=sum(r[1])) for r in txouts_by_coin.values()]
 
         joined_txouts.append(sum_txouts)
 
@@ -655,11 +656,12 @@ def collect_data_for_build(
         *script_txins_records,
     ]
     mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
-    combined_tx_files = tx_files._replace(
+    combined_tx_files = dataclasses.replace(
+        tx_files,
         certificate_files=[
             *tx_files.certificate_files,
             *[c.certificate_file for c in complex_certs],
-        ]
+        ],
     )
     txins_copy, txouts_copy = _get_tx_ins_outs(
         clusterlib_obj=clusterlib_obj,

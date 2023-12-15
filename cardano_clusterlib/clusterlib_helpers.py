@@ -1,4 +1,5 @@
 """Helper functions for `ClusterLib`."""
+import dataclasses
 import datetime
 import json
 import logging
@@ -15,7 +16,8 @@ LOGGER = logging.getLogger(__name__)
 SPECIAL_ARG_CHARS_RE = re.compile("[^A-Za-z0-9/._-]")
 
 
-class EpochInfo(tp.NamedTuple):
+@dataclasses.dataclass(frozen=True, order=True)
+class EpochInfo:
     epoch: int
     first_slot: int
     last_slot: int
