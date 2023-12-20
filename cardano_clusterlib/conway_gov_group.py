@@ -71,5 +71,38 @@ class ConwayGovGroup:
             )
         return self._vote_group
 
+    def get_hash(
+        self,
+        text: str = "",
+        file_binary: tp.Optional[itp.FileType] = None,
+        file_text: tp.Optional[itp.FileType] = None,
+    ) -> str:
+        """Compute the hash to pass to the various --*-hash arguments of governance commands.
+
+        Args:
+            text: A text to hash as UTF-8.
+            file_binary: A path to the binary file to hash.
+            file_text: A path to the text file to hash.
+
+        Returns:
+            str: A hash of the metadata.
+        """
+        if text:
+            content_args = ["--text", text]
+        elif file_binary:
+            content_args = ["--file-binary", str(file_binary)]
+        elif file_text:
+            content_args = ["--file-text", str(file_text)]
+        else:
+            raise AssertionError("Either `text`, `file_binary` or `file_text` is needed.")
+
+        out_hash = (
+            self._clusterlib_obj.cli(["governance", "hash", *content_args])
+            .stdout.rstrip()
+            .decode("ascii")
+        )
+
+        return out_hash
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
