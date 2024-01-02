@@ -23,11 +23,11 @@ class ConwayGovVoteGroup:
         self,
         vote: consts.Votes,
     ) -> tp.List[str]:
-        if vote.YES:
+        if vote == consts.Votes.YES:
             vote_args = ["--yes"]
-        elif vote.NO:
+        elif vote == consts.Votes.NO:
             vote_args = ["--no"]
-        elif vote.ABSTAIN:
+        elif vote == consts.Votes.ABSTAIN:
             vote_args = ["--abstain"]
         else:
             raise AssertionError("No vote was specified.")
