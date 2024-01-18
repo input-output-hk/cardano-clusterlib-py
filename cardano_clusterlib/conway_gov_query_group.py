@@ -90,7 +90,7 @@ class ConwayGovQueryGroup:
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
-    ) -> tp.List[tp.List[tp.Dict[str, tp.Any]]]:
+    ) -> tp.List[list]:
         """Get the DRep stake distribution.
 
         Args:
