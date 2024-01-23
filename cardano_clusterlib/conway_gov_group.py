@@ -71,13 +71,13 @@ class ConwayGovGroup:
             )
         return self._vote_group
 
-    def get_hash(
+    def get_anchor_data_hash(
         self,
         text: str = "",
         file_binary: tp.Optional[itp.FileType] = None,
         file_text: tp.Optional[itp.FileType] = None,
     ) -> str:
-        """Compute the hash to pass to the various --*-hash arguments of governance commands.
+        """Compute the hash of some anchor data.
 
         Args:
             text: A text to hash as UTF-8.
@@ -85,7 +85,7 @@ class ConwayGovGroup:
             file_text: A path to the text file to hash.
 
         Returns:
-            str: A hash of the metadata.
+            str: A hash string.
         """
         if text:
             content_args = ["--text", text]
@@ -97,7 +97,29 @@ class ConwayGovGroup:
             raise AssertionError("Either `text`, `file_binary` or `file_text` is needed.")
 
         out_hash = (
-            self._clusterlib_obj.cli(["governance", "hash", *content_args])
+            self._clusterlib_obj.cli(["governance", "hash", "anchor-data", *content_args])
+            .stdout.rstrip()
+            .decode("ascii")
+        )
+
+        return out_hash
+
+    def get_script_hash(
+        self,
+        script_file: tp.Optional[itp.FileType] = None,
+    ) -> str:
+        """Compute the hash of a script.
+
+        Args:
+            script_file: A path to the text file to hash.
+
+        Returns:
+            str: A hash string.
+        """
+        out_hash = (
+            self._clusterlib_obj.cli(
+                ["governance", "hash", "script", "--script-file", str(script_file)]
+            )
             .stdout.rstrip()
             .decode("ascii")
         )

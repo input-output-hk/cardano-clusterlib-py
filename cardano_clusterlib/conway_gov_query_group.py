@@ -66,6 +66,8 @@ class ConwayGovQueryGroup:
     ) -> tp.List[tp.List[tp.Dict[str, tp.Any]]]:
         """Get the DRep state.
 
+        When no key is provided, query all DReps.
+
         Args:
             drep_vkey: DRep verification key (Bech32 or hex-encoded).
             drep_vkey_file: Filepath of the DRep verification key.
@@ -79,6 +81,8 @@ class ConwayGovQueryGroup:
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
         )
+        if not key_args:
+            key_args = ["--all-dreps"]
 
         out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
             self.query_cli(["drep-state", *key_args])
@@ -93,6 +97,8 @@ class ConwayGovQueryGroup:
     ) -> tp.List[list]:
         """Get the DRep stake distribution.
 
+        When no key is provided, query all DReps.
+
         Args:
             drep_vkey: DRep verification key (Bech32 or hex-encoded).
             drep_vkey_file: Filepath of the DRep verification key.
@@ -106,6 +112,8 @@ class ConwayGovQueryGroup:
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
         )
+        if not key_args:
+            key_args = ["--all-dreps"]
 
         out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
             self.query_cli(["drep-stake-distribution", *key_args])
