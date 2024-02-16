@@ -290,6 +290,10 @@ class StakeAddressGroup:
         out_file = destination_dir / f"{addr_name}_stake_deleg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
+        command_name = "delegation-certificate"
+        if self._clusterlib_obj.command_era:
+            command_name = "stake-delegation-certificate"
+
         stake_key_args = self._get_stake_vkey_args(
             stake_vkey=stake_vkey,
             stake_vkey_file=stake_vkey_file,
@@ -305,7 +309,7 @@ class StakeAddressGroup:
         self._clusterlib_obj.cli(
             [
                 "stake-address",
-                "delegation-certificate",
+                command_name,
                 *stake_key_args,
                 *pool_key_args,
                 "--out-file",
