@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _organize_tx_ins_outs_by_coin(
-    tx_list: tp.Union[tp.List[structs.UTXOData], tp.List[structs.TxOut], tp.Tuple[()]]
+    tx_list: tp.Union[tp.List[structs.UTXOData], tp.List[structs.TxOut], tp.Tuple[()]],
 ) -> tp.Dict[str, list]:
     """Organize transaction inputs or outputs by coin type."""
     db: tp.Dict[str, list] = {}
