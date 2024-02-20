@@ -669,19 +669,32 @@ class TransactionGroup:
                 "(same address, datum, script)."
             )
 
-        era = self._clusterlib_obj.g_query.get_era()
-        era_arg = f"--{era.lower()}-era"
+        era = self._clusterlib_obj.g_query.get_era().lower()
+        era_upper = era.upper()
+        tx_era_args = []
+        command_era_args = []
+        if (
+            self._clusterlib_obj.command_era
+            or (era_upper not in consts.Eras.__members__)
+            or consts.Eras[era_upper].value >= consts.Eras.CONWAY.value
+        ):
+            command_era_args = [era]
+        else:
+            tx_era_args = [f"--{era}-era"]
 
         self._clusterlib_obj.create_pparams_file()
         stdout = self._clusterlib_obj.cli(
             [
+                "cardano-cli",
+                *command_era_args,
                 "transaction",
                 "calculate-min-required-utxo",
                 "--protocol-params-file",
                 str(self._clusterlib_obj.pparams_file),
-                era_arg,
+                *tx_era_args,
                 *txout_args,
-            ]
+            ],
+            add_default_args=False,
         ).stdout
         coin, value = stdout.decode().split()
         return structs.Value(value=int(value), coin=coin)
