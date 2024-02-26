@@ -5,7 +5,6 @@ import typing as tp
 
 from cardano_clusterlib import types as itp
 
-
 LOGGER = logging.getLogger(__name__)
 
 

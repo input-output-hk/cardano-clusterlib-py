@@ -14,7 +14,6 @@ from cardano_clusterlib import structs
 from cardano_clusterlib import txtools
 from cardano_clusterlib import types as itp
 
-
 LOGGER = logging.getLogger(__name__)
 
 

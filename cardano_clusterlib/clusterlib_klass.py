@@ -24,7 +24,6 @@ from cardano_clusterlib import structs
 from cardano_clusterlib import transaction_group
 from cardano_clusterlib import types as itp
 
-
 LOGGER = logging.getLogger(__name__)
 
 
