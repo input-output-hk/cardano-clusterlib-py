@@ -9,7 +9,6 @@ from cardano_clusterlib import conway_gov_query_group
 from cardano_clusterlib import conway_gov_vote_group
 from cardano_clusterlib import types as itp
 
-
 LOGGER = logging.getLogger(__name__)
 
 

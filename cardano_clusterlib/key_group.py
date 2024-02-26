@@ -6,7 +6,6 @@ from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
 from cardano_clusterlib import types as itp
 
-
 LOGGER = logging.getLogger(__name__)
 
 
