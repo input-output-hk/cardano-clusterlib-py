@@ -1097,7 +1097,7 @@ class TransactionGroup:
                     # Check if resubmitting failed because an input UTxO was already spent
                     if "(BadInputsUTxO" not in str(exc):
                         raise
-                    err = exc
+                    err = err or exc
                     # If here, the TX is likely still in mempool and we need to wait
 
             self._clusterlib_obj.wait_for_new_block(wait_blocks)
