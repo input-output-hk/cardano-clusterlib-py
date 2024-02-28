@@ -16,25 +16,28 @@ class ConwayGovDrepGroup:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = ("governance", "drep")
 
-    def _get_key_args(
+    def _get_cred_args(
         self,
+        drep_script_hash: str = "",
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
     ) -> tp.List[str]:
-        """Get arguments for verification key."""
-        if drep_vkey:
-            key_args = ["--drep-verification-key", str(drep_vkey)]
+        """Get arguments for script or vkey credentials."""
+        if drep_script_hash:
+            cred_args = ["--drep-script-hash", str(drep_script_hash)]
+        elif drep_vkey:
+            cred_args = ["--drep-verification-key", str(drep_vkey)]
         elif drep_vkey_file:
-            key_args = ["--drep-verification-key-file", str(drep_vkey_file)]
+            cred_args = ["--drep-verification-key-file", str(drep_vkey_file)]
         elif drep_key_hash:
-            key_args = ["--drep-key-hash", str(drep_key_hash)]
+            cred_args = ["--drep-key-hash", str(drep_key_hash)]
         else:
             raise AssertionError(
-                "Either `drep_vkey`, `drep_vkey_file` or `drep_key_hash` is needed."
+                "Either `script_hash`, `drep_vkey`, `drep_vkey_file` or `drep_key_hash` is needed."
             )
 
-        return key_args
+        return cred_args
 
     def gen_key_pair(self, key_name: str, destination_dir: itp.FileType = ".") -> structs.KeyPair:
         """Generate DRep verification and signing keys.
@@ -109,6 +112,7 @@ class ConwayGovDrepGroup:
         self,
         cert_name: str,
         deposit_amt: int,
+        drep_script_hash: str,
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
@@ -121,6 +125,7 @@ class ConwayGovDrepGroup:
         Args:
             cert_name: A name of the cert.
             deposit_amt: A key registration deposit amount.
+            drep_script_hash: DRep script hash (hex-encoded, optional).
             drep_vkey: DRep verification key (Bech32 or hex-encoded, optional).
             drep_vkey_file: Filepath of the DRep verification key (optional).
             drep_key_hash: DRep verification key hash
@@ -136,7 +141,8 @@ class ConwayGovDrepGroup:
         out_file = destination_dir / f"{cert_name}_drep_reg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
-        key_args = self._get_key_args(
+        cred_args = self._get_cred_args(
+            drep_script_hash=drep_script_hash,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
@@ -155,7 +161,7 @@ class ConwayGovDrepGroup:
             [
                 *self._group_args,
                 "registration-certificate",
-                *key_args,
+                *cred_args,
                 "--key-reg-deposit-amt",
                 str(deposit_amt),
                 *metadata_args,
@@ -194,7 +200,7 @@ class ConwayGovDrepGroup:
         out_file = destination_dir / f"{cert_name}_drep_retirement.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
-        key_args = self._get_key_args(
+        cred_args = self._get_cred_args(
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
@@ -204,7 +210,7 @@ class ConwayGovDrepGroup:
             [
                 *self._group_args,
                 "retirement-certificate",
-                *key_args,
+                *cred_args,
                 "--deposit-amt",
                 str(deposit_amt),
                 "--out-file",
