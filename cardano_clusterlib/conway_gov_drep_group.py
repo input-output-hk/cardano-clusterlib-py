@@ -173,6 +173,68 @@ class ConwayGovDrepGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
+    def gen_update_cert(
+        self,
+        cert_name: str,
+        deposit_amt: int,
+        drep_vkey: str = "",
+        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_key_hash: str = "",
+        drep_metadata_url: str = "",
+        drep_metadata_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Generate a DRep update certificate.
+
+        Args:
+            cert_name: A name of the cert.
+            deposit_amt: A key registration deposit amount.
+            drep_vkey: DRep verification key (Bech32 or hex-encoded, optional).
+            drep_vkey_file: Filepath of the DRep verification key (optional).
+            drep_key_hash: DRep verification key hash
+                (either Bech32-encoded or hex-encoded, optional).
+            drep_metadata_url: URL to the metadata file (optional).
+            drep_metadata_hash: Hash of the metadata file (optional).
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            Path: A path to the generated certificate.
+        """
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{cert_name}_drep_update.cert"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        cred_args = self._get_cred_args(
+            drep_vkey=drep_vkey,
+            drep_vkey_file=drep_vkey_file,
+            drep_key_hash=drep_key_hash,
+        )
+
+        metadata_args = []
+        if drep_metadata_url:
+            metadata_args = [
+                "--drep-metadata-url",
+                str(drep_metadata_url),
+                "--drep-metadata-hash",
+                str(drep_metadata_hash),
+            ]
+
+        self._clusterlib_obj.cli(
+            [
+                *self._group_args,
+                "update-certificate",
+                *cred_args,
+                "--key-reg-deposit-amt",
+                str(deposit_amt),
+                *metadata_args,
+                "--out-file",
+                str(out_file),
+            ]
+        )
+
+        helpers._check_outfiles(out_file)
+        return out_file
+
     def gen_retirement_cert(
         self,
         cert_name: str,
