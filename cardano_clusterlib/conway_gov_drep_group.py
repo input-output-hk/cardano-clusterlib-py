@@ -112,7 +112,7 @@ class ConwayGovDrepGroup:
         self,
         cert_name: str,
         deposit_amt: int,
-        drep_script_hash: str,
+        drep_script_hash: str = "",
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
