@@ -1,4 +1,5 @@
 """Group of methods for working with key commands."""
+
 import logging
 import pathlib as pl
 

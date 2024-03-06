@@ -1,4 +1,5 @@
 """Group of methods for Conway governance query commands."""
+
 import json
 import logging
 import typing as tp

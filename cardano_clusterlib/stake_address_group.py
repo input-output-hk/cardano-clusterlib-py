@@ -1,4 +1,5 @@
 """Group of methods for working with stake addresses."""
+
 import logging
 import pathlib as pl
 import typing as tp
@@ -33,9 +34,8 @@ class StakeAddressGroup:
         elif stake_address:
             stake_args = ["--stake-address", stake_address]
         else:
-            raise AssertionError(
-                "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
-            )
+            msg = "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
+            raise AssertionError(msg)
 
         return stake_args
 
@@ -62,7 +62,8 @@ class StakeAddressGroup:
         elif drep_key_hash:
             drep_args = ["--drep-key-hash", str(drep_key_hash)]
         else:
-            raise AssertionError("DRep identification, verification key or script hash is needed.")
+            msg = "DRep identification, verification key or script hash is needed."
+            raise AssertionError(msg)
 
         return drep_args
 
@@ -80,7 +81,8 @@ class StakeAddressGroup:
         elif stake_pool_id:
             pool_key_args = ["--stake-pool-id", stake_pool_id]
         else:
-            raise AssertionError("No stake pool key was specified.")
+            msg = "No stake pool key was specified."
+            raise AssertionError(msg)
 
         return pool_key_args
 
@@ -111,7 +113,8 @@ class StakeAddressGroup:
         elif stake_script_file:
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
-            raise AssertionError("Either `stake_vkey_file` or `stake_script_file` is needed.")
+            msg = "Either `stake_vkey_file` or `stake_script_file` is needed."
+            raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -357,9 +360,8 @@ class StakeAddressGroup:
         """
         # pylint: disable=too-many-arguments
         if not self._clusterlib_obj.conway_genesis:
-            raise exceptions.CLIError(
-                "Conway governance can be used only with Command era >= Conway."
-            )
+            msg = "Conway governance can be used only with Command era >= Conway."
+            raise exceptions.CLIError(msg)
 
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_vote_deleg.cert"
@@ -438,9 +440,8 @@ class StakeAddressGroup:
         """
         # pylint: disable=too-many-arguments
         if not self._clusterlib_obj.conway_genesis:
-            raise exceptions.CLIError(
-                "Conway governance can be used only with Command era >= Conway."
-            )
+            msg = "Conway governance can be used only with Command era >= Conway."
+            raise exceptions.CLIError(msg)
 
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{addr_name}_vote_deleg.cert"
@@ -521,7 +522,8 @@ class StakeAddressGroup:
         elif stake_vkey_file:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
         else:
-            raise AssertionError("Either `stake_vkey` or `stake_vkey_file` is needed.")
+            msg = "Either `stake_vkey` or `stake_vkey_file` is needed."
+            raise AssertionError(msg)
 
         return (
             self._clusterlib_obj.cli(["stake-address", "key-hash", *cli_args])
@@ -571,7 +573,8 @@ class StakeAddressGroup:
             ).reward_account_balance
             != 0
         ):
-            raise exceptions.CLIError("Not all rewards were transferred.")
+            msg = "Not all rewards were transferred."
+            raise exceptions.CLIError(msg)
 
         # check that rewards were transferred
         src_reward_balance = self._clusterlib_obj.g_query.get_address_balance(dst_address)
@@ -581,7 +584,8 @@ class StakeAddressGroup:
             - tx_raw_withdrawal_output.fee
             + tx_raw_withdrawal_output.withdrawals[0].amount  # type: ignore
         ):
-            raise exceptions.CLIError(f"Incorrect balance for destination address `{dst_address}`.")
+            msg = f"Incorrect balance for destination address `{dst_address}`."
+            raise exceptions.CLIError(msg)
 
         return tx_raw_withdrawal_output
 

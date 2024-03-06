@@ -1,4 +1,5 @@
 """Group of methods for working with stake pools."""
+
 import logging
 import pathlib as pl
 import typing as tp
@@ -164,7 +165,8 @@ class StakePoolGroup:
         elif cold_vkey_file:
             key_args = ["--cold-verification-key-file", str(cold_vkey_file)]
         else:
-            raise AssertionError("No key was specified.")
+            msg = "No key was specified."
+            raise AssertionError(msg)
 
         pool_id = (
             self._clusterlib_obj.cli(["stake-pool", "id", *key_args]).stdout.strip().decode("ascii")

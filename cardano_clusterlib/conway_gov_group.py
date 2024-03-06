@@ -1,4 +1,5 @@
 """Group of subgroups for governance in Conway+ eras."""
+
 import logging
 import typing as tp
 
@@ -18,9 +19,9 @@ class ConwayGovGroup:
 
         # Groups of commands
         self._action_group: tp.Optional[conway_gov_action_group.ConwayGovActionGroup] = None
-        self._committee_group: tp.Optional[
-            conway_gov_committee_group.ConwayGovCommitteeGroup
-        ] = None
+        self._committee_group: tp.Optional[conway_gov_committee_group.ConwayGovCommitteeGroup] = (
+            None
+        )
         self._drep_group: tp.Optional[conway_gov_drep_group.ConwayGovDrepGroup] = None
         self._query_group: tp.Optional[conway_gov_query_group.ConwayGovQueryGroup] = None
         self._vote_group: tp.Optional[conway_gov_vote_group.ConwayGovVoteGroup] = None
@@ -93,7 +94,8 @@ class ConwayGovGroup:
         elif file_text:
             content_args = ["--file-text", str(file_text)]
         else:
-            raise AssertionError("Either `text`, `file_binary` or `file_text` is needed.")
+            msg = "Either `text`, `file_binary` or `file_text` is needed."
+            raise AssertionError(msg)
 
         out_hash = (
             self._clusterlib_obj.cli(["governance", "hash", "anchor-data", *content_args])
