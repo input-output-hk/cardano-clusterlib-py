@@ -1,4 +1,5 @@
 """Group of methods related to genesis block."""
+
 import logging
 import pathlib as pl
 import typing as tp
@@ -35,16 +36,19 @@ class GenesisGroup:
         )
 
         if not genesis_vkeys:
-            raise exceptions.CLIError("The genesis verification keys don't exist.")
+            msg = "The genesis verification keys don't exist."
+            raise exceptions.CLIError(msg)
         if not delegate_skeys:
-            raise exceptions.CLIError("The delegation signing keys don't exist.")
+            msg = "The delegation signing keys don't exist."
+            raise exceptions.CLIError(msg)
 
         for file_name in (
             genesis_utxo_vkey,
             genesis_utxo_skey,
         ):
             if not file_name.exists():
-                raise exceptions.CLIError(f"The file `{file_name}` doesn't exist.")
+                msg = f"The file `{file_name}` doesn't exist."
+                raise exceptions.CLIError(msg)
 
         genesis_keys = structs.GenesisKeys(
             genesis_utxo_vkey=genesis_utxo_skey,

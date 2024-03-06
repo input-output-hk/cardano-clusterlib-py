@@ -1,4 +1,5 @@
 """Helper functions for `ClusterLib`."""
+
 import dataclasses
 import datetime
 import json
@@ -34,9 +35,8 @@ def _find_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
         *clusterlib_obj.state_dir.glob("*genesis*shelley.json"),
     ]
     if not potential:
-        raise exceptions.CLIError(
-            f"Shelley genesis JSON file not found in `{clusterlib_obj.state_dir}`."
-        )
+        msg = f"Shelley genesis JSON file not found in `{clusterlib_obj.state_dir}`."
+        raise exceptions.CLIError(msg)
 
     genesis_json = potential[0]
     LOGGER.debug(f"Using shelley genesis JSON file `{genesis_json}")
@@ -54,9 +54,8 @@ def _find_conway_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
         *clusterlib_obj.state_dir.glob("*genesis*conway.json"),
     ]
     if not potential:
-        raise exceptions.CLIError(
-            f"Conway genesis JSON file not found in `{clusterlib_obj.state_dir}`."
-        )
+        msg = f"Conway genesis JSON file not found in `{clusterlib_obj.state_dir}`."
+        raise exceptions.CLIError(msg)
 
     genesis_json = potential[0]
     LOGGER.debug(f"Using Conway genesis JSON file `{genesis_json}")
@@ -70,9 +69,8 @@ def _check_protocol(clusterlib_obj: "itp.ClusterLib") -> None:
     except exceptions.CLIError as exc:
         if "SingleEraInfo" not in str(exc):
             raise
-        raise exceptions.CLIError(
-            f"The cluster is running with protocol different from '{clusterlib_obj.protocol}'."
-        ) from exc
+        msg = f"The cluster is running with protocol different from '{clusterlib_obj.protocol}'."
+        raise exceptions.CLIError(msg) from exc
 
 
 def _check_files_exist(*out_files: itp.FileType, clusterlib_obj: "itp.ClusterLib") -> None:
@@ -88,7 +86,8 @@ def _check_files_exist(*out_files: itp.FileType, clusterlib_obj: "itp.ClusterLib
     for out_file in out_files:
         out_file_p = pl.Path(out_file).expanduser()
         if out_file_p.exists():
-            raise exceptions.CLIError(f"The expected file `{out_file}` already exist.")
+            msg = f"The expected file `{out_file}` already exist."
+            raise exceptions.CLIError(msg)
 
 
 def _format_cli_args(cli_args: tp.List[str]) -> str:
@@ -111,7 +110,7 @@ def _write_cli_log(clusterlib_obj: "itp.ClusterLib", command: str) -> None:
         return
 
     with open(clusterlib_obj._cli_log, "a", encoding="utf-8") as logfile:
-        logfile.write(f"{datetime.datetime.now()}: {command}\n")
+        logfile.write(f"{datetime.datetime.now(tz=datetime.timezone.utc)}: {command}\n")
 
 
 def _get_kes_period_info(kes_info: str) -> tp.Dict[str, tp.Any]:
@@ -171,7 +170,8 @@ def get_epoch_for_slot(cluster_obj: "itp.ClusterLib", slot_no: int) -> EpochInfo
     """Given slot number, return corresponding epoch number and first and last slot of the epoch."""
     genesis_byron = cluster_obj.state_dir / "byron" / "genesis.json"
     if not genesis_byron.exists():
-        raise AssertionError(f"File '{genesis_byron}' does not exist.")
+        msg = f"File '{genesis_byron}' does not exist."
+        raise AssertionError(msg)
 
     with open(genesis_byron, encoding="utf-8") as in_json:
         byron_dict = json.load(in_json)
@@ -249,9 +249,8 @@ def wait_for_block(
         tip_throttle = min(max_tip_throttle, tip_throttle + clusterlib_obj.slot_length)
     else:
         waited_sec = (this_slot - initial_slot) * clusterlib_obj.slot_length
-        raise exceptions.CLIError(
-            f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s)."
-        )
+        msg = f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s)."
+        raise exceptions.CLIError(msg)
 
     LOGGER.debug(f"New block(s) were created; block number: {this_block}")
     return this_block

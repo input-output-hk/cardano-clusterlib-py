@@ -1,4 +1,5 @@
 """Tools used by `ClusterLib` for constructing transactions."""
+
 import base64
 import contextlib
 import dataclasses
@@ -61,7 +62,8 @@ def _get_usable_utxos(
             txins.extend(txins_by_id[utxo_id])
 
     if not txins and matching_with_datum:
-        raise exceptions.CLIError("The only matching UTxOs have datum.")
+        msg = "The only matching UTxOs have datum."
+        raise exceptions.CLIError(msg)
 
     return txins
 
@@ -155,7 +157,8 @@ def _balance_txouts(  # noqa: C901
     # records for burning tokens, i.e. records with negative amount, are not allowed in `txouts`
     burning_txouts = [r for r in txouts if r.amount < 0 and r.coin != consts.DEFAULT_COIN]
     if burning_txouts:
-        raise AssertionError(f"Token burning is not allowed in txouts: {burning_txouts}")
+        msg = f"Token burning is not allowed in txouts: {burning_txouts}"
+        raise AssertionError(msg)
 
     txouts_result: tp.List[structs.TxOut] = list(txouts)
 
@@ -171,7 +174,8 @@ def _balance_txouts(  # noqa: C901
             # the value "-1" means all available funds
             max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
             if len(max_index) > 1:
-                raise AssertionError("Cannot send all remaining funds to more than one address.")
+                msg = "Cannot send all remaining funds to more than one address."
+                raise AssertionError(msg)
             if max_index:
                 # remove the "-1" record and get its address
                 max_address = coin_txouts.pop(max_index[0]).address
@@ -459,7 +463,8 @@ def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> tp.List
 
     addresses = {t.address for t in txouts}
     if len(addresses) > 1:
-        raise AssertionError("Accepts `txouts` only for single address.")
+        msg = "Accepts `txouts` only for single address."
+        raise AssertionError(msg)
 
     txout_records = [
         f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
@@ -527,18 +532,21 @@ def _get_tx_ins_outs(
         # no txins were provided, so we'll select them from the source address
         address_utxos = clusterlib_obj.g_query.get_utxo(address=src_address)
         if not address_utxos:
-            raise exceptions.CLIError(f"No UTxO returned for '{src_address}'.")
+            msg = f"No UTxO returned for '{src_address}'."
+            raise exceptions.CLIError(msg)
         txins_all = _get_usable_utxos(address_utxos=address_utxos, coins=outcoins_all)
 
     if not txins_all:
-        raise exceptions.CLIError("No input UTxO.")
+        msg = "No input UTxO."
+        raise exceptions.CLIError(msg)
 
     txins_db_all: tp.Dict[str, tp.List[structs.UTXOData]] = _organize_tx_ins_outs_by_coin(txins_all)
 
     # all output coins, except those minted by this transaction, need to be present in
     # transaction inputs
     if not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
-        raise exceptions.CLIError("Not all output coins are present in input UTxOs.")
+        msg = "Not all output coins are present in input UTxOs."
+        raise exceptions.CLIError(msg)
 
     tx_deposit = (
         clusterlib_obj.g_transaction.get_tx_deposit(tx_files=tx_files)
@@ -568,7 +576,8 @@ def _get_tx_ins_outs(
         txins_db_filtered = _organize_tx_ins_outs_by_coin(txins_filtered)
 
     if not txins_filtered:
-        raise exceptions.CLIError("Cannot build transaction, empty `txins`.")
+        msg = "Cannot build transaction, empty `txins`."
+        raise exceptions.CLIError(msg)
 
     # balance the transaction
     txouts_balanced = _balance_txouts(
@@ -648,7 +657,8 @@ def collect_data_for_build(
 
     script_addresses = {r.address for r in script_txins_records}
     if src_address in script_addresses:
-        raise AssertionError("Source address cannot be a script address.")
+        msg = "Source address cannot be a script address."
+        raise AssertionError(msg)
 
     # combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [

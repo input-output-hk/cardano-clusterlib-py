@@ -1,4 +1,5 @@
 """Group of methods for governance."""
+
 import logging
 import pathlib as pl
 import typing as tp

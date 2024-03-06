@@ -1,4 +1,5 @@
 """Group of methods for node operation."""
+
 import logging
 import pathlib as pl
 import typing as tp

@@ -1,4 +1,5 @@
 """Group of methods for Conway governance committee commands."""
+
 import logging
 import pathlib as pl
 import typing as tp
@@ -30,9 +31,8 @@ class ConwayGovCommitteeGroup:
         elif cold_vkey_hash:
             key_args = ["--cold-key-hash", str(cold_vkey_hash)]
         else:
-            raise AssertionError(
-                "Either `cold_vkey`, `cold_vkey_file` or `cold_vkey_hash` is needed."
-            )
+            msg = "Either `cold_vkey`, `cold_vkey_file` or `cold_vkey_hash` is needed."
+            raise AssertionError(msg)
 
         return key_args
 
@@ -99,7 +99,8 @@ class ConwayGovCommitteeGroup:
         elif hot_key_hash:
             hot_key_args = ["--hot-key-hash", str(hot_key_hash)]
         else:
-            raise AssertionError("Either `hot_key`, `hot_key_file` or `hot_key_hash` is needed.")
+            msg = "Either `hot_key`, `hot_key_file` or `hot_key_hash` is needed."
+            raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -175,7 +176,8 @@ class ConwayGovCommitteeGroup:
         elif vkey_file:
             key_args = ["--verification-key-file", str(vkey_file)]
         else:
-            raise AssertionError("Either `vkey` or `vkey_file` is needed.")
+            msg = "Either `vkey` or `vkey_file` is needed."
+            raise AssertionError(msg)
 
         key_hash = (
             self._clusterlib_obj.cli([*self._group_args, "key-hash", *key_args])

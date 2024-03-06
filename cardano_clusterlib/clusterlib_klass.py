@@ -1,4 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
+
 import json
 import logging
 import pathlib as pl
@@ -63,7 +64,8 @@ class ClusterLib:
 
         self.state_dir = pl.Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
-            raise exceptions.CLIError(f"The state dir `{self.state_dir}` doesn't exist.")
+            msg = f"The state dir `{self.state_dir}` doesn't exist."
+            raise exceptions.CLIError(msg)
 
         self._init_socket_path = socket_path
         self.socket_path: tp.Optional[pl.Path] = None
@@ -134,7 +136,8 @@ class ClusterLib:
 
         socket_path = pl.Path(socket_path).expanduser().resolve()
         if not socket_path.exists():
-            raise exceptions.CLIError(f"The socket `{socket_path}` doesn't exist.")
+            msg = f"The socket `{socket_path}` doesn't exist."
+            raise exceptions.CLIError(msg)
 
         self.socket_path = socket_path
         self.socket_args = ["--socket-path", str(self.socket_path)]
@@ -209,9 +212,8 @@ class ClusterLib:
             return self._conway_gov_group
 
         if not self.conway_genesis:
-            raise exceptions.CLIError(
-                "Conway governance group can be used only with Command era >= Conway."
-            )
+            msg = "Conway governance group can be used only with Command era >= Conway."
+            raise exceptions.CLIError(msg)
 
         self._conway_gov_group = conway_gov_group.ConwayGovGroup(clusterlib_obj=self)
         return self._conway_gov_group
@@ -343,9 +345,8 @@ class ClusterLib:
 
             if this_slot == last_slot:
                 if no_block_time >= next_block_timeout:
-                    raise exceptions.CLIError(
-                        f"Failed to wait for slot number {slot}, no new blocks are being created."
-                    )
+                    msg = f"Failed to wait for slot number {slot}, no new blocks are being created."
+                    raise exceptions.CLIError(msg)
             else:
                 no_block_time = 0
 
@@ -360,7 +361,8 @@ class ClusterLib:
             no_block_time += slots_diff
             time.sleep(sleep_time)
 
-        raise exceptions.CLIError(f"Failed to wait for slot number {slot}.")
+        msg = f"Failed to wait for slot number {slot}."
+        raise exceptions.CLIError(msg)
 
     def poll_new_epoch(self, exp_epoch: int, padding_seconds: int = 0) -> None:
         """Wait for new epoch(s) by polling current epoch every 3 sec.
@@ -422,9 +424,8 @@ class ClusterLib:
         # Still not in the correct epoch? Something is wrong.
         this_epoch = self.g_query.get_epoch()
         if this_epoch != exp_epoch:
-            raise exceptions.CLIError(
-                f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}."
-            )
+            msg = f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}."
+            raise exceptions.CLIError(msg)
 
         LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
         return this_epoch

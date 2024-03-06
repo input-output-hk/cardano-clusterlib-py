@@ -1,4 +1,5 @@
 """Group of methods for Conway governance DRep commands."""
+
 import logging
 import pathlib as pl
 import typing as tp
@@ -33,9 +34,10 @@ class ConwayGovDrepGroup:
         elif drep_key_hash:
             cred_args = ["--drep-key-hash", str(drep_key_hash)]
         else:
-            raise AssertionError(
+            msg = (
                 "Either `script_hash`, `drep_vkey`, `drep_vkey_file` or `drep_key_hash` is needed."
             )
+            raise AssertionError(msg)
 
         return cred_args
 
@@ -89,7 +91,8 @@ class ConwayGovDrepGroup:
         elif drep_vkey_file:
             cli_args = ["--drep-verification-key-file", str(drep_vkey_file)]
         else:
-            raise AssertionError("Either `drep_vkey` or `drep_vkey_file` is needed.")
+            msg = "Either `drep_vkey` or `drep_vkey_file` is needed."
+            raise AssertionError(msg)
 
         if out_format:
             cli_args.extend(["--output-format", str(out_format)])

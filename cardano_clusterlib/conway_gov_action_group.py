@@ -1,4 +1,5 @@
 """Group of methods for Conway governance action commands."""
+
 import json
 import logging
 import pathlib as pl
@@ -40,7 +41,8 @@ class ConwayGovActionGroup:
         elif deposit_return_stake_key_hash:
             key_args = ["--deposit-return-stake-key-hash", str(deposit_return_stake_key_hash)]
         else:
-            raise AssertionError("Either stake verification key or stake key hash must be set.")
+            msg = "Either stake verification key or stake key hash must be set."
+            raise AssertionError(msg)
 
         return key_args
 
@@ -76,9 +78,8 @@ class ConwayGovActionGroup:
                     ]
                 )
             else:
-                raise AssertionError(
-                    f"Either {arg_action} cold verification key or its hash must be set."
-                )
+                msg = f"Either {arg_action} cold verification key or its hash must be set."
+                raise AssertionError(msg)
 
             if not remove:
                 cc_members_args.extend(["--epoch", str(cc_member.epoch)])
@@ -94,7 +95,8 @@ class ConwayGovActionGroup:
         prev_action_args = []
         if prev_action_txid:
             if prev_action_ix == -1:
-                raise AssertionError("Previous action index must be set.")
+                msg = "Previous action index must be set."
+                raise AssertionError(msg)
             prev_action_args = [
                 "--prev-governance-action-tx-id",
                 str(prev_action_txid),
@@ -496,7 +498,8 @@ class ConwayGovActionGroup:
                 str(funds_receiving_stake_key_hash),
             ]
         else:
-            raise AssertionError("Either stake verification key or stake key hash must be set.")
+            msg = "Either stake verification key or stake key hash must be set."
+            raise AssertionError(msg)
 
         deposit_key_args = self._get_deposit_return_key_args(
             deposit_return_stake_vkey=deposit_return_stake_vkey,

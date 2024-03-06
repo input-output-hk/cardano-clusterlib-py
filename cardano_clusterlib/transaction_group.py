@@ -1,4 +1,5 @@
 """Group of methods for working with transactions."""
+
 import itertools
 import json
 import logging
@@ -43,7 +44,8 @@ class TransactionGroup:
         elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
-            raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
+            msg = "Either `tx_body_file` or `tx_file` is needed."
+            raise AssertionError(msg)
 
         return (
             self._clusterlib_obj.cli(["transaction", "txid", *cli_args])
@@ -66,7 +68,8 @@ class TransactionGroup:
         elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
-            raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
+            msg = "Either `tx_body_file` or `tx_file` is needed."
+            raise AssertionError(msg)
 
         return (
             self._clusterlib_obj.cli(["transaction", "view", *cli_args])
@@ -97,10 +100,11 @@ class TransactionGroup:
         elif script_data_value:
             cli_args = ["--script-data-value", str(script_data_value)]
         else:
-            raise AssertionError(
+            msg = (
                 "Either `script_data_file`, `script_data_cbor_file` or `script_data_value` "
                 "is needed."
             )
+            raise AssertionError(msg)
 
         return (
             self._clusterlib_obj.cli(["transaction", "hash-script-data", *cli_args])
@@ -658,15 +662,17 @@ class TransactionGroup:
             structs.Value: A tuple describing the value.
         """
         if not txouts:
-            raise AssertionError("No txout was specified.")
+            msg = "No txout was specified."
+            raise AssertionError(msg)
 
         txout_args, __, txouts_count = txtools._join_txouts(txouts=txouts)
 
         if txouts_count > 1:
-            raise AssertionError(
+            msg = (
                 "Accepts `TxOuts` only for a single transaction txout "
                 "(same address, datum, script)."
             )
+            raise AssertionError(msg)
 
         era = self._clusterlib_obj.g_query.get_era().lower()
         era_upper = era.upper()
@@ -777,7 +783,8 @@ class TransactionGroup:
         max_txout = [o for o in txouts if o.amount == -1 and o.coin in ("", consts.DEFAULT_COIN)]
         if max_txout:
             if change_address:
-                raise AssertionError("Cannot use '-1' amount and change address at the same time.")
+                msg = "Cannot use '-1' amount and change address at the same time."
+                raise AssertionError(msg)
             change_address = max_txout[0].address
         else:
             change_address = change_address or src_address
@@ -962,7 +969,8 @@ class TransactionGroup:
         elif tx_file:
             cli_args = ["--tx-file", str(tx_file)]
         else:
-            raise AssertionError("Either `tx_body_file` or `tx_file` is needed.")
+            msg = "Either `tx_body_file` or `tx_file` is needed."
+            raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -1114,13 +1122,11 @@ class TransactionGroup:
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
                 # spent, but it was either not the case, or the TX is still in mempool.
-                raise exceptions.CLIError(
-                    f"Failed to resubmit the transaction '{txid}' (from '{tx_file}')."
-                ) from err
+                msg = f"Failed to resubmit the transaction '{txid}' (from '{tx_file}')."
+                raise exceptions.CLIError(msg) from err
 
-            raise exceptions.CLIError(
-                f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
-            )
+            msg = f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
+            raise exceptions.CLIError(msg)
 
     def send_tx(
         self,

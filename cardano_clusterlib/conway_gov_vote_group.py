@@ -1,4 +1,5 @@
 """Group of methods for Conway governance vote commands."""
+
 import json
 import logging
 import pathlib as pl
@@ -29,7 +30,8 @@ class ConwayGovVoteGroup:
         elif vote == consts.Votes.ABSTAIN:
             vote_args = ["--abstain"]
         else:
-            raise AssertionError("No vote was specified.")
+            msg = "No vote was specified."
+            raise AssertionError(msg)
 
         return vote_args
 
@@ -54,7 +56,8 @@ class ConwayGovVoteGroup:
         anchor_args = []
         if anchor_url:
             if not anchor_data_hash:
-                raise AssertionError("Anchor data hash is required when anchor URL is specified.")
+                msg = "Anchor data hash is required when anchor URL is specified."
+                raise AssertionError(msg)
             anchor_args = [
                 "--anchor-url",
                 str(anchor_url),
@@ -95,7 +98,8 @@ class ConwayGovVoteGroup:
         elif cc_hot_key_hash:
             key_args = ["--cc-hot-key-hash", cc_hot_key_hash]
         else:
-            raise AssertionError("No CC key was specified.")
+            msg = "No CC key was specified."
+            raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -156,7 +160,8 @@ class ConwayGovVoteGroup:
         elif drep_key_hash:
             key_args = ["--drep-key-hash", drep_key_hash]
         else:
-            raise AssertionError("No DRep key was specified.")
+            msg = "No DRep key was specified."
+            raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -217,7 +222,8 @@ class ConwayGovVoteGroup:
         elif stake_pool_id:
             key_args = ["--stake-pool-id", stake_pool_id]
         else:
-            raise AssertionError("No key was specified.")
+            msg = "No key was specified."
+            raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
             [

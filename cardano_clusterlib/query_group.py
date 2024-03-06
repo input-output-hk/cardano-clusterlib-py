@@ -1,4 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
+
 import contextlib
 import datetime
 import functools
@@ -92,9 +93,8 @@ class QueryGroup:
             utxo_formatted = [f"{utxo_hash}#{ix}" for ix in range(num_of_txouts)]
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
         else:
-            raise AssertionError(
-                "Either `address`, `txin`, `utxo` or `tx_raw_output` need to be specified."
-            )
+            msg = "Either `address`, `txin`, `utxo` or `tx_raw_output` need to be specified."
+            raise AssertionError(msg)
 
         utxo_dict = json.loads(self.query_cli(cli_args))
         utxos = txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
@@ -349,9 +349,8 @@ class QueryGroup:
                 ]
             )
         else:
-            raise AssertionError(
-                "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
-            )
+            msg = "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
+            raise AssertionError(msg)
 
         args.append("--next" if for_next else "--current")
 
@@ -377,7 +376,7 @@ class QueryGroup:
                     slot_no=int(slot_no),
                     utc_time=datetime.datetime.strptime(
                         f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S.%f"
-                    ),
+                    ).replace(tzinfo=datetime.timezone.utc),
                 )
             )
 

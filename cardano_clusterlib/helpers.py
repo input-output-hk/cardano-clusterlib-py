@@ -46,7 +46,8 @@ def _check_outfiles(*out_files: itp.FileType) -> None:
     for out_file in out_files:
         out_file_p = pl.Path(out_file).expanduser()
         if not out_file_p.exists():
-            raise exceptions.CLIError(f"The expected file `{out_file}` doesn't exist.")
+            msg = f"The expected file `{out_file}` doesn't exist."
+            raise exceptions.CLIError(msg)
 
 
 def _maybe_path(file: tp.Optional[itp.FileType]) -> tp.Optional[pl.Path]:

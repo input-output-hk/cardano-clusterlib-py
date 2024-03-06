@@ -1,4 +1,5 @@
 """Group of methods for working with payment addresses."""
+
 import json
 import logging
 import pathlib as pl
@@ -56,9 +57,8 @@ class AddressGroup:
         elif payment_vkey:
             cli_args = ["--payment-verification-key", str(payment_vkey)]
         else:
-            raise AssertionError(
-                "Either `payment_vkey_file`, `payment_script_file` or `payment_vkey` is needed."
-            )
+            msg = "Either `payment_vkey_file`, `payment_script_file` or `payment_vkey` is needed."
+            raise AssertionError(msg)
 
         if stake_vkey:
             cli_args.extend(["--stake-verification-key", str(stake_vkey)])
@@ -138,7 +138,8 @@ class AddressGroup:
         elif payment_vkey_file:
             cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
         else:
-            raise AssertionError("Either `payment_vkey` or `payment_vkey_file` is needed.")
+            msg = "Either `payment_vkey` or `payment_vkey_file` is needed."
+            raise AssertionError(msg)
 
         return (
             self._clusterlib_obj.cli(["address", "key-hash", *cli_args])
