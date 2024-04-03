@@ -7,6 +7,8 @@ import subprocess
 import time
 import typing as tp
 
+from packaging import version
+
 from cardano_clusterlib import address_group
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
@@ -113,6 +115,8 @@ class ClusterLib:
 
         self.overwrite_outfiles = True
 
+        self._cli_version: tp.Optional[version.Version] = None
+
         # Groups of commands
         self._transaction_group: tp.Optional[transaction_group.TransactionGroup] = None
         self._query_group: tp.Optional[query_group.QueryGroup] = None
@@ -141,6 +145,17 @@ class ClusterLib:
 
         self.socket_path = socket_path
         self.socket_args = ["--socket-path", str(self.socket_path)]
+
+    @property
+    def cli_version(self) -> version.Version:
+        """Version of `cardano-cli`."""
+        if self._cli_version is None:
+            version_out = self.cli(
+                ["cardano-cli", "--version"], add_default_args=False
+            ).stdout.decode()
+            version_str = version_out.split(" ")[1]
+            self._cli_version = version.parse(version_str)
+        return self._cli_version
 
     @property
     def g_transaction(self) -> transaction_group.TransactionGroup:

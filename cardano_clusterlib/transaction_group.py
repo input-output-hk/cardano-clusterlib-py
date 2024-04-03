@@ -7,6 +7,8 @@ import pathlib as pl
 import typing as tp
 import warnings
 
+from packaging import version
+
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
 from cardano_clusterlib import exceptions
@@ -465,6 +467,7 @@ class TransactionGroup:
         txout_count: int,
         witness_count: int = 1,
         byron_witness_count: int = 0,
+        reference_script_size: int = 0,
     ) -> int:
         """Estimate the minimum fee for a transaction.
 
@@ -474,10 +477,15 @@ class TransactionGroup:
             txout_count: A number of transaction outputs.
             witness_count: A number of witnesses (optional).
             byron_witness_count: A number of Byron witnesses (optional).
+            reference_script_size: A size in bytes of transaction reference scripts (optional).
 
         Returns:
             int: An estimated fee.
         """
+        cli_args = []
+        if self._clusterlib_obj.cli_version >= version.parse("8.22.0.0"):
+            cli_args = ["--reference-script-size", str(reference_script_size)]
+
         self._clusterlib_obj.create_pparams_file()
         stdout = self._clusterlib_obj.cli(
             [
@@ -496,6 +504,7 @@ class TransactionGroup:
                 str(witness_count),
                 "--tx-body-file",
                 str(txbody_file),
+                *cli_args,
             ]
         ).stdout
         fee, *__ = stdout.decode().split()
