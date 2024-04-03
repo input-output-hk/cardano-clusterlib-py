@@ -21,6 +21,9 @@ classifiers = [
     "Intended Audience :: Developers",
 ]
 dynamic = ["version"]
+dependencies = [
+    "packaging",
+]
 
 [tool.setuptools_scm]
 
