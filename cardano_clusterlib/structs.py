@@ -379,7 +379,7 @@ class ActionUpdateCommittee:
     deposit_amt: int
     anchor_url: str
     anchor_data_hash: str
-    quorum: str
+    threshold: str
     add_cc_members: tp.List[CCMember] = dataclasses.field(default_factory=list)
     rem_cc_members: tp.List[CCMember] = dataclasses.field(default_factory=list)
     prev_action_txid: str = ""
