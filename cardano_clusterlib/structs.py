@@ -416,3 +416,18 @@ class ActionTreasuryWithdrawal:
     deposit_return_stake_vkey: str = ""
     deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
     deposit_return_stake_key_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True, order=True)
+class ActionHardfork:
+    action_file: pl.Path
+    deposit_amt: int
+    anchor_url: str
+    anchor_data_hash: str
+    protocol_major_version: int
+    protocol_minor_version: int
+    prev_action_txid: str = ""
+    prev_action_ix: int = -1
+    deposit_return_stake_vkey: str = ""
+    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_key_hash: str = ""
