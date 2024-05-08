@@ -26,6 +26,7 @@ class TransactionGroup:
         self.tx_era_arg = (
             [f"--{self._clusterlib_obj.tx_era}-era"] if self._clusterlib_obj.tx_era else []
         )
+        self.min_fee = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
 
     def calculate_tx_ttl(self) -> int:
         """Calculate ttl for a transaction."""
@@ -529,6 +530,7 @@ class TransactionGroup:
         ttl: tp.Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        deposit: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
         witness_count_add: int = 0,
@@ -564,6 +566,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
@@ -602,12 +605,12 @@ class TransactionGroup:
             complex_certs=complex_certs,
             required_signers=required_signers,
             required_signer_hashes=required_signer_hashes,
-            fee=0,
+            fee=self.min_fee,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
-            deposit=0,
+            deposit=deposit,
             join_txouts=join_txouts,
             destination_dir=destination_dir,
         )
@@ -1243,6 +1246,7 @@ class TransactionGroup:
                 required_signer_hashes=required_signer_hashes,
                 withdrawals=withdrawals,
                 script_withdrawals=script_withdrawals,
+                deposit=deposit,
                 invalid_hereafter=invalid_hereafter or ttl,
                 witness_count_add=witness_count_add,
                 join_txouts=join_txouts,
