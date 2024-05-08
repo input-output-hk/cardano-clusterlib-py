@@ -562,3 +562,77 @@ class ConwayGovActionGroup:
 
         out: tp.Dict[str, tp.Any] = json.loads(stdout_dec)
         return out
+
+    def create_hardfork(
+        self,
+        action_name: str,
+        deposit_amt: int,
+        anchor_url: str,
+        anchor_data_hash: str,
+        protocol_major_version: int,
+        protocol_minor_version: int,
+        prev_action_txid: str = "",
+        prev_action_ix: int = -1,
+        deposit_return_stake_vkey: str = "",
+        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_key_hash: str = "",
+        destination_dir: itp.FileType = ".",
+    ) -> structs.ActionHardfork:
+        """Create a hardfork initiation proposal."""
+        # pylint: disable=too-many-arguments
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{action_name}_hardfork.action"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        key_args = self._get_deposit_return_key_args(
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=deposit_return_stake_vkey_file,
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+
+        anchor_args = self._get_anchor_args(
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+        )
+
+        prev_action_args = self._get_optional_prev_action_args(
+            prev_action_txid=prev_action_txid, prev_action_ix=prev_action_ix
+        )
+
+        self._clusterlib_obj.cli(
+            [
+                "cardano-cli",
+                "conway",
+                *self._group_args,
+                "create-hardfork",
+                *self.magic_args,
+                "--governance-action-deposit",
+                str(deposit_amt),
+                *key_args,
+                *prev_action_args,
+                *anchor_args,
+                "--protocol-major-version",
+                str(protocol_major_version),
+                "--protocol-minor-version",
+                str(protocol_minor_version),
+                "--out-file",
+                str(out_file),
+            ],
+            add_default_args=False,
+        )
+        helpers._check_outfiles(out_file)
+
+        action_out = structs.ActionHardfork(
+            action_file=out_file,
+            deposit_amt=deposit_amt,
+            anchor_url=anchor_url,
+            anchor_data_hash=anchor_data_hash,
+            protocol_major_version=protocol_major_version,
+            protocol_minor_version=protocol_minor_version,
+            prev_action_txid=prev_action_txid,
+            prev_action_ix=prev_action_ix,
+            deposit_return_stake_vkey=deposit_return_stake_vkey,
+            deposit_return_stake_vkey_file=helpers._maybe_path(deposit_return_stake_vkey_file),
+            deposit_return_stake_key_hash=deposit_return_stake_key_hash,
+        )
+        return action_out

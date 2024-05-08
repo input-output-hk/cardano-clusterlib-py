@@ -20,6 +20,7 @@ from cardano_clusterlib.exceptions import CLIError
 from cardano_clusterlib.helpers import get_rand_str
 from cardano_clusterlib.helpers import read_address_from_file
 from cardano_clusterlib.structs import ActionConstitution
+from cardano_clusterlib.structs import ActionHardfork
 from cardano_clusterlib.structs import ActionInfo
 from cardano_clusterlib.structs import ActionNoConfidence
 from cardano_clusterlib.structs import ActionPParamsUpdate
