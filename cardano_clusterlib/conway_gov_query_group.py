@@ -16,12 +16,15 @@ class ConwayGovQueryGroup:
 
     def _get_key_args(
         self,
+        drep_script_hash: str = "",
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
     ) -> tp.List[str]:
-        """Get arguments for verification key."""
-        if drep_vkey:
+        """Get arguments for script or verification key."""
+        if drep_script_hash:
+            key_args = ["--drep-script-hash", str(drep_script_hash)]
+        elif drep_vkey:
             key_args = ["--drep-verification-key", str(drep_vkey)]
         elif drep_vkey_file:
             key_args = ["--drep-verification-key-file", str(drep_vkey_file)]
@@ -60,6 +63,7 @@ class ConwayGovQueryGroup:
 
     def drep_state(
         self,
+        drep_script_hash: str = "",
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
@@ -69,6 +73,7 @@ class ConwayGovQueryGroup:
         When no key is provided, query all DReps.
 
         Args:
+            drep_script_hash: DRep script hash (hex-encoded, optional).
             drep_vkey: DRep verification key (Bech32 or hex-encoded).
             drep_vkey_file: Filepath of the DRep verification key.
             drep_key_hash: DRep verification key hash (either Bech32-encoded or hex-encoded).
@@ -77,6 +82,7 @@ class ConwayGovQueryGroup:
             List[List[Dict[str, Any]]]: DRep state.
         """
         key_args = self._get_key_args(
+            drep_script_hash=drep_script_hash,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
@@ -91,6 +97,7 @@ class ConwayGovQueryGroup:
 
     def drep_stake_distribution(
         self,
+        drep_script_hash: str = "",
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
@@ -100,6 +107,7 @@ class ConwayGovQueryGroup:
         When no key is provided, query all DReps.
 
         Args:
+            drep_script_hash: DRep script hash (hex-encoded, optional).
             drep_vkey: DRep verification key (Bech32 or hex-encoded).
             drep_vkey_file: Filepath of the DRep verification key.
             drep_key_hash: DRep verification key hash (either Bech32-encoded or hex-encoded).
@@ -108,6 +116,7 @@ class ConwayGovQueryGroup:
             List[List[Dict[str, Any]]]: DRep stake distribution.
         """
         key_args = self._get_key_args(
+            drep_script_hash=drep_script_hash,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
