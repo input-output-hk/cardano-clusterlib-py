@@ -14,7 +14,7 @@ class ConwayGovQueryGroup:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = ("query",)
 
-    def _get_key_args(
+    def _get_cred_args(
         self,
         drep_script_hash: str = "",
         drep_vkey: str = "",
@@ -23,17 +23,17 @@ class ConwayGovQueryGroup:
     ) -> tp.List[str]:
         """Get arguments for script or verification key."""
         if drep_script_hash:
-            key_args = ["--drep-script-hash", str(drep_script_hash)]
+            cred_args = ["--drep-script-hash", str(drep_script_hash)]
         elif drep_vkey:
-            key_args = ["--drep-verification-key", str(drep_vkey)]
+            cred_args = ["--drep-verification-key", str(drep_vkey)]
         elif drep_vkey_file:
-            key_args = ["--drep-verification-key-file", str(drep_vkey_file)]
+            cred_args = ["--drep-verification-key-file", str(drep_vkey_file)]
         elif drep_key_hash:
-            key_args = ["--drep-key-hash", str(drep_key_hash)]
+            cred_args = ["--drep-key-hash", str(drep_key_hash)]
         else:
-            key_args = []
+            cred_args = []
 
-        return key_args
+        return cred_args
 
     def query_cli(
         self, cli_args: itp.UnpackableSequence, cli_sub_args: itp.UnpackableSequence = ()
@@ -81,17 +81,17 @@ class ConwayGovQueryGroup:
         Returns:
             List[List[Dict[str, Any]]]: DRep state.
         """
-        key_args = self._get_key_args(
+        cred_args = self._get_cred_args(
             drep_script_hash=drep_script_hash,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
         )
-        if not key_args:
-            key_args = ["--all-dreps"]
+        if not cred_args:
+            cred_args = ["--all-dreps"]
 
         out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
-            self.query_cli(["drep-state", *key_args])
+            self.query_cli(["drep-state", *cred_args])
         )
         return out
 
@@ -115,17 +115,17 @@ class ConwayGovQueryGroup:
         Returns:
             List[List[Dict[str, Any]]]: DRep stake distribution.
         """
-        key_args = self._get_key_args(
+        cred_args = self._get_cred_args(
             drep_script_hash=drep_script_hash,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
         )
-        if not key_args:
-            key_args = ["--all-dreps"]
+        if not cred_args:
+            cred_args = ["--all-dreps"]
 
         out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
-            self.query_cli(["drep-stake-distribution", *key_args])
+            self.query_cli(["drep-stake-distribution", *cred_args])
         )
         return out
 
