@@ -242,6 +242,7 @@ class ConwayGovDrepGroup:
         self,
         cert_name: str,
         deposit_amt: int,
+        drep_script_hash: str = "",
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
@@ -252,6 +253,7 @@ class ConwayGovDrepGroup:
         Args:
             cert_name: A name of the cert.
             deposit_amt: A key registration deposit amount.
+            drep_script_hash: DRep script hash (hex-encoded, optional).
             drep_vkey: DRep verification key (Bech32 or hex-encoded, optional).
             drep_vkey_file: Filepath of the DRep verification key (optional).
             drep_key_hash: DRep verification key hash
@@ -266,6 +268,7 @@ class ConwayGovDrepGroup:
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
         cred_args = self._get_cred_args(
+            drep_script_hash=drep_script_hash,
             drep_vkey=drep_vkey,
             drep_vkey_file=drep_vkey_file,
             drep_key_hash=drep_key_hash,
