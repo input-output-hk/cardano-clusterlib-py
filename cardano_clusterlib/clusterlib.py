@@ -40,6 +40,7 @@ from cardano_clusterlib.structs import Mint
 from cardano_clusterlib.structs import OptionalMint
 from cardano_clusterlib.structs import OptionalScriptCerts
 from cardano_clusterlib.structs import OptionalScriptTxIn
+from cardano_clusterlib.structs import OptionalScriptVotes
 from cardano_clusterlib.structs import OptionalScriptWithdrawals
 from cardano_clusterlib.structs import OptionalTxOuts
 from cardano_clusterlib.structs import OptionalUTXOData
@@ -48,6 +49,7 @@ from cardano_clusterlib.structs import PoolData
 from cardano_clusterlib.structs import PoolParamsTop
 from cardano_clusterlib.structs import PoolUser
 from cardano_clusterlib.structs import ScriptTxIn
+from cardano_clusterlib.structs import ScriptVote
 from cardano_clusterlib.structs import ScriptWithdrawal
 from cardano_clusterlib.structs import StakeAddrInfo
 from cardano_clusterlib.structs import TxFiles

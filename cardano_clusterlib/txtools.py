@@ -869,6 +869,7 @@ def _get_script_args(  # noqa: C901
     mint: structs.OptionalMint,
     complex_certs: structs.OptionalScriptCerts,
     script_withdrawals: structs.OptionalScriptWithdrawals,
+    script_votes: structs.OptionalScriptVotes,
     for_build: bool = True,
 ) -> tp.List[str]:
     # pylint: disable=too-many-statements,too-many-branches
@@ -1194,6 +1195,40 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(
                     ["--withdrawal-reference-tx-in-redeemer-value", str(wrec.redeemer_value)]
                 )
+
+    # voting
+    for vrec in script_votes:
+        vrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in vrec.collaterals}
+        collaterals_all.update(vrec_collaterals)
+        grouped_args.extend(
+            [
+                "--vote-file",
+                str(vrec.vote_file),
+            ]
+        )
+
+        if vrec.script_file:
+            grouped_args.extend(
+                [
+                    "--vote-script-file",
+                    str(vrec.script_file),
+                ]
+            )
+
+            if not for_build and vrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--vote-execution-units",
+                        f"({vrec.execution_units[0]},{vrec.execution_units[1]})",
+                    ]
+                )
+
+            if vrec.redeemer_file:
+                grouped_args.extend(["--vote-redeemer-file", str(vrec.redeemer_file)])
+            if vrec.redeemer_cbor_file:
+                grouped_args.extend(["--vote-redeemer-cbor-file", str(vrec.redeemer_cbor_file)])
+            if vrec.redeemer_value:
+                grouped_args.extend(["--vote-redeemer-value", str(vrec.redeemer_value)])
 
     # add unique collaterals
     grouped_args.extend(
