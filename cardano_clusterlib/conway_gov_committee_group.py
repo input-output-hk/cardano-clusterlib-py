@@ -93,11 +93,11 @@ class ConwayGovCommitteeGroup:
         )
 
         if hot_key:
-            hot_key_args = ["--hot-key", str(hot_key)]
+            hot_key_args = ["--hot-verification-key", str(hot_key)]
         elif hot_key_file:
-            hot_key_args = ["--hot-key-file", str(hot_key_file)]
+            hot_key_args = ["--hot-verification-key-file", str(hot_key_file)]
         elif hot_key_hash:
-            hot_key_args = ["--hot-key-hash", str(hot_key_hash)]
+            hot_key_args = ["--hot-verification-key-hash", str(hot_key_hash)]
         else:
             msg = "Either `hot_key`, `hot_key_file` or `hot_key_hash` is needed."
             raise AssertionError(msg)
