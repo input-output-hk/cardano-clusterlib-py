@@ -163,6 +163,7 @@ class TransactionGroup:
         ttl: tp.Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
         script_valid: bool = True,
@@ -195,6 +196,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
             script_valid: A bool indicating that the script is valid (True by default).
@@ -256,6 +258,7 @@ class TransactionGroup:
             mint=mint,
             complex_certs=complex_certs,
             script_withdrawals=script_withdrawals,
+            script_votes=script_votes,
             for_build=False,
         )
 
@@ -321,6 +324,7 @@ class TransactionGroup:
             era=self._clusterlib_obj.command_era or self._clusterlib_obj.tx_era,
             script_txins=script_txins,
             script_withdrawals=script_withdrawals,
+            script_votes=script_votes,
             complex_certs=complex_certs,
             mint=mint,
             invalid_hereafter=invalid_hereafter or ttl,
@@ -360,6 +364,7 @@ class TransactionGroup:
         ttl: tp.Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
         deposit: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
@@ -395,6 +400,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
@@ -453,6 +459,7 @@ class TransactionGroup:
             required_signer_hashes=required_signer_hashes,
             withdrawals=collected_data.withdrawals,
             script_withdrawals=collected_data.script_withdrawals,
+            script_votes=script_votes,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             join_txouts=join_txouts,
@@ -530,6 +537,7 @@ class TransactionGroup:
         ttl: tp.Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
         deposit: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
@@ -566,6 +574,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
@@ -608,6 +617,7 @@ class TransactionGroup:
             fee=self.min_fee,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
+            script_votes=script_votes,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             deposit=deposit,
@@ -735,6 +745,7 @@ class TransactionGroup:
         required_signer_hashes: tp.Optional[tp.List[str]] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
         deposit: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
@@ -774,6 +785,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
@@ -866,6 +878,7 @@ class TransactionGroup:
             mint=mint,
             complex_certs=complex_certs,
             script_withdrawals=collected_data.script_withdrawals,
+            script_votes=script_votes,
             for_build=True,
         )
 
@@ -931,6 +944,7 @@ class TransactionGroup:
             era=self._clusterlib_obj.command_era or self._clusterlib_obj.tx_era,
             script_txins=script_txins,
             script_withdrawals=collected_data.script_withdrawals,
+            script_votes=script_votes,
             complex_certs=complex_certs,
             mint=mint,
             invalid_hereafter=invalid_hereafter,
@@ -1159,6 +1173,7 @@ class TransactionGroup:
         ttl: tp.Optional[int] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
         deposit: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
@@ -1203,6 +1218,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
@@ -1274,6 +1290,7 @@ class TransactionGroup:
             required_signer_hashes=required_signer_hashes,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
+            script_votes=script_votes,
             deposit=deposit,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
@@ -1387,6 +1404,7 @@ class TransactionGroup:
         required_signer_hashes: tp.Optional[tp.List[str]] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
         deposit: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
@@ -1425,6 +1443,7 @@ class TransactionGroup:
             withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
             script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
                 data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             deposit: A deposit amount needed by the transaction (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).

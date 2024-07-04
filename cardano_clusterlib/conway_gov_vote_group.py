@@ -75,6 +75,7 @@ class ConwayGovVoteGroup:
         cc_hot_vkey: str = "",
         cc_hot_vkey_file: tp.Optional[itp.FileType] = None,
         cc_hot_key_hash: str = "",
+        cc_hot_script_hash: str = "",
         anchor_url: str = "",
         anchor_data_hash: str = "",
         destination_dir: itp.FileType = ".",
@@ -92,13 +93,15 @@ class ConwayGovVoteGroup:
         )
 
         if cc_hot_vkey:
-            key_args = ["--cc-hot-verification-key", cc_hot_vkey]
+            cred_args = ["--cc-hot-verification-key", cc_hot_vkey]
         elif cc_hot_vkey_file:
-            key_args = ["--cc-hot-verification-key-file", str(cc_hot_vkey_file)]
+            cred_args = ["--cc-hot-verification-key-file", str(cc_hot_vkey_file)]
         elif cc_hot_key_hash:
-            key_args = ["--cc-hot-key-hash", cc_hot_key_hash]
+            cred_args = ["--cc-hot-key-hash", cc_hot_key_hash]
+        elif cc_hot_script_hash:
+            cred_args = ["--cc-hot-script-hash", cc_hot_script_hash]
         else:
-            msg = "No CC key was specified."
+            msg = "No CC key or script hash was specified."
             raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
@@ -107,7 +110,7 @@ class ConwayGovVoteGroup:
                 "create",
                 *vote_args,
                 *gov_action_args,
-                *key_args,
+                *cred_args,
                 *anchor_args,
                 "--out-file",
                 str(out_file),
@@ -123,6 +126,7 @@ class ConwayGovVoteGroup:
             cc_hot_vkey=cc_hot_vkey,
             cc_hot_vkey_file=helpers._maybe_path(cc_hot_vkey_file),
             cc_hot_key_hash=cc_hot_key_hash,
+            cc_hot_script_hash=cc_hot_script_hash,
             anchor_url=anchor_url,
             anchor_data_hash=anchor_data_hash,
         )
@@ -137,6 +141,7 @@ class ConwayGovVoteGroup:
         drep_vkey: str = "",
         drep_vkey_file: tp.Optional[itp.FileType] = None,
         drep_key_hash: str = "",
+        drep_script_hash: str = "",
         anchor_url: str = "",
         anchor_data_hash: str = "",
         destination_dir: itp.FileType = ".",
@@ -154,13 +159,15 @@ class ConwayGovVoteGroup:
         )
 
         if drep_vkey:
-            key_args = ["--drep-verification-key", drep_vkey]
+            cred_args = ["--drep-verification-key", drep_vkey]
         elif drep_vkey_file:
-            key_args = ["--drep-verification-key-file", str(drep_vkey_file)]
+            cred_args = ["--drep-verification-key-file", str(drep_vkey_file)]
         elif drep_key_hash:
-            key_args = ["--drep-key-hash", drep_key_hash]
+            cred_args = ["--drep-key-hash", drep_key_hash]
+        elif drep_script_hash:
+            cred_args = ["--drep-script-hash", drep_script_hash]
         else:
-            msg = "No DRep key was specified."
+            msg = "No DRep key or script hash was specified."
             raise AssertionError(msg)
 
         self._clusterlib_obj.cli(
@@ -169,7 +176,7 @@ class ConwayGovVoteGroup:
                 "create",
                 *vote_args,
                 *gov_action_args,
-                *key_args,
+                *cred_args,
                 *anchor_args,
                 "--out-file",
                 str(out_file),
@@ -185,6 +192,7 @@ class ConwayGovVoteGroup:
             drep_vkey=drep_vkey,
             drep_vkey_file=helpers._maybe_path(drep_vkey_file),
             drep_key_hash=drep_key_hash,
+            drep_script_hash=drep_script_hash,
             anchor_url=anchor_url,
             anchor_data_hash=anchor_data_hash,
         )

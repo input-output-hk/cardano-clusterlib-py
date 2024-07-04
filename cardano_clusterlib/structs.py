@@ -139,6 +139,20 @@ class ComplexCert:
 
 
 @dataclasses.dataclass(frozen=True, order=True)
+class ScriptVote:
+    """Data structure for voting that are combined with scripts."""
+
+    vote_file: itp.FileType = ""
+    script_file: itp.FileType = ""
+    # values below needed only when working with Plutus
+    collaterals: OptionalUTXOData = ()
+    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
+    redeemer_value: str = ""
+
+
+@dataclasses.dataclass(frozen=True, order=True)
 class Mint:
     txouts: tp.List[TxOut]
     script_file: itp.FileType = ""
@@ -161,6 +175,8 @@ OptionalScriptCerts = tp.Union[tp.List[ComplexCert], tp.Tuple[()]]
 OptionalScriptWithdrawals = tp.Union[tp.List[ScriptWithdrawal], tp.Tuple[()]]
 # list of `Mint`s, empty list, or empty tuple
 OptionalMint = tp.Union[tp.List[Mint], tp.Tuple[()]]
+# list of `ScriptVote`s, empty list, or empty tuple
+OptionalScriptVotes = tp.Union[tp.List[ScriptVote], tp.Tuple[()]]
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -206,6 +222,7 @@ class TxRawOutput:
     era: str = ""  # Era used for the transaction
     script_txins: OptionalScriptTxIn = ()  # Tx inputs that are combined with scripts
     script_withdrawals: OptionalScriptWithdrawals = ()  # Withdrawals that are combined with scripts
+    script_votes: OptionalScriptVotes = ()  # Votes that are combined with scripts
     complex_certs: OptionalScriptCerts = ()  # Certificates that are combined with scripts
     mint: OptionalMint = ()  # Minting data (Tx outputs, script, etc.)
     invalid_hereafter: tp.Optional[int] = None  # Validity interval upper bound
@@ -287,6 +304,7 @@ class CCMember:
     cold_skey: str = ""
     cold_skey_file: itp.FileType = ""
     cold_skey_hash: str = ""
+    cold_script_hash: str = ""
     hot_vkey: str = ""
     hot_vkey_file: itp.FileType = ""
     hot_vkey_hash: str = ""
@@ -304,6 +322,7 @@ class VoteCC:
     cc_hot_vkey: str = ""
     cc_hot_vkey_file: tp.Optional[pl.Path] = None
     cc_hot_key_hash: str = ""
+    cc_hot_script_hash: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""
 
@@ -317,6 +336,7 @@ class VoteDrep:
     drep_vkey: str = ""
     drep_vkey_file: tp.Optional[pl.Path] = None
     drep_key_hash: str = ""
+    drep_script_hash: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""
 

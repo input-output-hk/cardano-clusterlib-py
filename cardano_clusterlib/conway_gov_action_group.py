@@ -77,6 +77,13 @@ class ConwayGovActionGroup:
                         str(cc_member.cold_vkey_hash),
                     ]
                 )
+            elif cc_member.cold_script_hash:
+                cc_members_args.extend(
+                    [
+                        f"--{arg_action}-cc-cold-script-hash",
+                        str(cc_member.cold_script_hash),
+                    ]
+                )
             else:
                 msg = f"Either {arg_action} cold verification key or its hash must be set."
                 raise AssertionError(msg)
