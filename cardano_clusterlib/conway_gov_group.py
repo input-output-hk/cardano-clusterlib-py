@@ -98,7 +98,9 @@ class ConwayGovGroup:
             raise AssertionError(msg)
 
         out_hash = (
-            self._clusterlib_obj.cli(["governance", "hash", "anchor-data", *content_args])
+            self._clusterlib_obj.cli(
+                ["cardano-cli", "hash", "anchor-data", *content_args], add_default_args=False
+            )
             .stdout.rstrip()
             .decode("ascii")
         )
@@ -117,9 +119,11 @@ class ConwayGovGroup:
         Returns:
             str: A hash string.
         """
+        # TODO: make it a top-level function to reflect `cardano-cli hash`
         out_hash = (
             self._clusterlib_obj.cli(
-                ["governance", "hash", "script", "--script-file", str(script_file)]
+                ["cardano-cli", "hash", "script", "--script-file", str(script_file)],
+                add_default_args=False,
             )
             .stdout.rstrip()
             .decode("ascii")
