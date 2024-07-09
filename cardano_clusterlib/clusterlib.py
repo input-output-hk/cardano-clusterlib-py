@@ -32,6 +32,7 @@ from cardano_clusterlib.structs import CCMember
 from cardano_clusterlib.structs import CLIOut
 from cardano_clusterlib.structs import ColdKeyPair
 from cardano_clusterlib.structs import ComplexCert
+from cardano_clusterlib.structs import ComplexProposal
 from cardano_clusterlib.structs import DataForBuild
 from cardano_clusterlib.structs import GenesisKeys
 from cardano_clusterlib.structs import KeyPair
@@ -39,6 +40,7 @@ from cardano_clusterlib.structs import LeadershipSchedule
 from cardano_clusterlib.structs import Mint
 from cardano_clusterlib.structs import OptionalMint
 from cardano_clusterlib.structs import OptionalScriptCerts
+from cardano_clusterlib.structs import OptionalScriptProposals
 from cardano_clusterlib.structs import OptionalScriptTxIn
 from cardano_clusterlib.structs import OptionalScriptVotes
 from cardano_clusterlib.structs import OptionalScriptWithdrawals

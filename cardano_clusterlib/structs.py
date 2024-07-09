@@ -139,6 +139,24 @@ class ComplexCert:
 
 
 @dataclasses.dataclass(frozen=True, order=True)
+class ComplexProposal:
+    """Data structure for proposal with optional data for Plutus scripts.
+
+    If used for one proposal, it needs to be used for all the other proposals in a given
+    transaction (instead of `TxFiles.proposal_files`). Otherwise, order of proposals
+    cannot be guaranteed.
+    """
+
+    proposal_file: itp.FileType
+    script_file: itp.FileType = ""
+    collaterals: OptionalUTXOData = ()
+    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
+    redeemer_value: str = ""
+
+
+@dataclasses.dataclass(frozen=True, order=True)
 class ScriptVote:
     """Data structure for voting that are combined with scripts."""
 
@@ -171,6 +189,8 @@ class Mint:
 OptionalScriptTxIn = tp.Union[tp.List[ScriptTxIn], tp.Tuple[()]]
 # list of `ComplexCert`s, empty list, or empty tuple
 OptionalScriptCerts = tp.Union[tp.List[ComplexCert], tp.Tuple[()]]
+# list of `ComplexProposal`s, empty list, or empty tuple
+OptionalScriptProposals = tp.Union[tp.List[ComplexProposal], tp.Tuple[()]]
 # list of `ScriptWithdrawal`s, empty list, or empty tuple
 OptionalScriptWithdrawals = tp.Union[tp.List[ScriptWithdrawal], tp.Tuple[()]]
 # list of `Mint`s, empty list, or empty tuple
@@ -224,6 +244,7 @@ class TxRawOutput:
     script_withdrawals: OptionalScriptWithdrawals = ()  # Withdrawals that are combined with scripts
     script_votes: OptionalScriptVotes = ()  # Votes that are combined with scripts
     complex_certs: OptionalScriptCerts = ()  # Certificates that are combined with scripts
+    complex_proposals: OptionalScriptProposals = ()  # Proposals that are combined with scripts
     mint: OptionalMint = ()  # Minting data (Tx outputs, script, etc.)
     invalid_hereafter: tp.Optional[int] = None  # Validity interval upper bound
     invalid_before: tp.Optional[int] = None  # Validity interval lower bound

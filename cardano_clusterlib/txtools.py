@@ -611,6 +611,7 @@ def collect_data_for_build(
     mint: structs.OptionalMint = (),
     tx_files: tp.Optional[structs.TxFiles] = None,
     complex_certs: structs.OptionalScriptCerts = (),
+    complex_proposals: structs.OptionalScriptProposals = (),
     fee: int = 0,
     withdrawals: structs.OptionalTxOuts = (),
     script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -630,6 +631,8 @@ def collect_data_for_build(
         tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
             (optional).
         complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+            (optional).
+        complex_proposals: An iterable of `ComplexProposal`, specifying proposals script data
             (optional).
         fee: A fee amount (optional).
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
@@ -671,6 +674,10 @@ def collect_data_for_build(
         certificate_files=[
             *tx_files.certificate_files,
             *[c.certificate_file for c in complex_certs],
+        ],
+        proposal_files=[
+            *tx_files.proposal_files,
+            *[p.proposal_file for p in complex_proposals],
         ],
     )
     txins_copy, txouts_copy = _get_tx_ins_outs(
@@ -868,6 +875,7 @@ def _get_script_args(  # noqa: C901
     script_txins: structs.OptionalScriptTxIn,
     mint: structs.OptionalMint,
     complex_certs: structs.OptionalScriptCerts,
+    complex_proposals: structs.OptionalScriptProposals,
     script_withdrawals: structs.OptionalScriptWithdrawals,
     script_votes: structs.OptionalScriptVotes,
     for_build: bool = True,
@@ -1121,6 +1129,40 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(
                     ["--certificate-reference-tx-in-redeemer-value", str(crec.redeemer_value)]
                 )
+
+    # proposals
+    for prec in complex_proposals:
+        prec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in prec.collaterals}
+        collaterals_all.update(prec_collaterals)
+        grouped_args.extend(
+            [
+                "--proposal-file",
+                str(prec.proposal_file),
+            ]
+        )
+
+        if prec.script_file:
+            grouped_args.extend(
+                [
+                    "--proposal-script-file",
+                    str(prec.script_file),
+                ]
+            )
+
+            if not for_build and prec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--proposal-execution-units",
+                        f"({prec.execution_units[0]},{prec.execution_units[1]})",
+                    ]
+                )
+
+            if prec.redeemer_file:
+                grouped_args.extend(["--proposal-redeemer-file", str(prec.redeemer_file)])
+            if prec.redeemer_cbor_file:
+                grouped_args.extend(["--proposal-redeemer-cbor-file", str(prec.redeemer_cbor_file)])
+            if prec.redeemer_value:
+                grouped_args.extend(["--proposal-redeemer-value", str(prec.redeemer_value)])
 
     # withdrawals
     for wrec in script_withdrawals:
