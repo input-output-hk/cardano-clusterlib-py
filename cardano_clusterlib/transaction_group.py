@@ -145,7 +145,7 @@ class TransactionGroup:
 
         return deposit
 
-    def build_raw_tx_bare(
+    def build_raw_tx_bare(  # noqa: C901
         self,
         out_file: itp.FileType,
         txouts: tp.List[structs.TxOut],
@@ -158,6 +158,7 @@ class TransactionGroup:
         total_collateral_amount: tp.Optional[int] = None,
         mint: structs.OptionalMint = (),
         complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
         required_signers: itp.OptionalFiles = (),
         required_signer_hashes: tp.Optional[tp.List[str]] = None,
         ttl: tp.Optional[int] = None,
@@ -187,6 +188,8 @@ class TransactionGroup:
             mint: An iterable of `Mint`, specifying script minting data (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposal script data
+                (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
                 are required (optional).
             required_signer_hashes: A list of hashes of the signing keys whose signatures
@@ -211,6 +214,12 @@ class TransactionGroup:
             LOGGER.warning(
                 "Mixing `tx_files.certificate_files` and `complex_certs`, "
                 "certs may come in unexpected order."
+            )
+
+        if tx_files.proposal_files and complex_proposals:
+            LOGGER.warning(
+                "Mixing `tx_files.proposal_files` and `complex_proposals`, "
+                "proposals may come in unexpected order."
             )
 
         out_file = pl.Path(out_file)
@@ -257,6 +266,7 @@ class TransactionGroup:
             script_txins=script_txins,
             mint=mint,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             script_withdrawals=script_withdrawals,
             script_votes=script_votes,
             for_build=False,
@@ -326,6 +336,7 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
             script_votes=script_votes,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             mint=mint,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
@@ -358,6 +369,7 @@ class TransactionGroup:
         mint: structs.OptionalMint = (),
         tx_files: tp.Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
         fee: int = 0,
         required_signers: itp.OptionalFiles = (),
         required_signer_hashes: tp.Optional[tp.List[str]] = None,
@@ -389,6 +401,8 @@ class TransactionGroup:
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposals script data
                 (optional).
             fee: A fee amount (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
@@ -427,6 +441,7 @@ class TransactionGroup:
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             fee=fee,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
@@ -455,6 +470,7 @@ class TransactionGroup:
             total_collateral_amount=total_collateral_amount,
             mint=mint,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             required_signers=required_signers,
             required_signer_hashes=required_signer_hashes,
             withdrawals=collected_data.withdrawals,
@@ -532,6 +548,7 @@ class TransactionGroup:
         mint: structs.OptionalMint = (),
         tx_files: tp.Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
         required_signers: itp.OptionalFiles = (),
         required_signer_hashes: tp.Optional[tp.List[str]] = None,
         ttl: tp.Optional[int] = None,
@@ -564,6 +581,8 @@ class TransactionGroup:
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposal script data
                 (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
                 are required (optional).
@@ -612,6 +631,7 @@ class TransactionGroup:
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             required_signers=required_signers,
             required_signer_hashes=required_signer_hashes,
             fee=self.min_fee,
@@ -739,6 +759,7 @@ class TransactionGroup:
         mint: structs.OptionalMint = (),
         tx_files: tp.Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
         change_address: str = "",
         fee_buffer: tp.Optional[int] = None,
         required_signers: itp.OptionalFiles = (),
@@ -774,6 +795,8 @@ class TransactionGroup:
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposal script data
                 (optional).
             change_address: A string with address where ADA in excess of the transaction fee
                 will go to (`src_address` by default).
@@ -819,6 +842,11 @@ class TransactionGroup:
                 "Mixing `tx_files.certificate_files` and `complex_certs`, "
                 "certs may come in unexpected order."
             )
+        if tx_files.proposal_files and complex_proposals:
+            LOGGER.warning(
+                "Mixing `tx_files.proposal_files` and `complex_proposals`, "
+                "proposals may come in unexpected order."
+            )
 
         destination_dir = pl.Path(destination_dir).expanduser()
 
@@ -834,6 +862,7 @@ class TransactionGroup:
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             fee=fee_buffer or 0,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
@@ -877,6 +906,7 @@ class TransactionGroup:
             script_txins=script_txins,
             mint=mint,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             script_withdrawals=collected_data.script_withdrawals,
             script_votes=script_votes,
             for_build=True,
@@ -946,6 +976,7 @@ class TransactionGroup:
             script_withdrawals=collected_data.script_withdrawals,
             script_votes=script_votes,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             mint=mint,
             invalid_hereafter=invalid_hereafter,
             invalid_before=invalid_before,
@@ -1167,6 +1198,7 @@ class TransactionGroup:
         mint: structs.OptionalMint = (),
         tx_files: tp.Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
         fee: tp.Optional[int] = None,
         required_signers: itp.OptionalFiles = (),
         required_signer_hashes: tp.Optional[tp.List[str]] = None,
@@ -1207,6 +1239,8 @@ class TransactionGroup:
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposal script data
                 (optional).
             fee: A fee amount (optional).
             required_signers: An iterable of filepaths of the signing keys whose signatures
@@ -1258,6 +1292,7 @@ class TransactionGroup:
                 mint=mint,
                 tx_files=tx_files,
                 complex_certs=complex_certs,
+                complex_proposals=complex_proposals,
                 required_signers=required_signers,
                 required_signer_hashes=required_signer_hashes,
                 withdrawals=withdrawals,
@@ -1285,6 +1320,7 @@ class TransactionGroup:
             mint=mint,
             tx_files=tx_files,
             complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
             fee=fee,
             required_signers=required_signers,
             required_signer_hashes=required_signer_hashes,
@@ -1398,6 +1434,7 @@ class TransactionGroup:
         mint: structs.OptionalMint = (),
         tx_files: tp.Optional[structs.TxFiles] = None,
         complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
         change_address: str = "",
         fee_buffer: tp.Optional[int] = None,
         required_signers: itp.OptionalFiles = (),
@@ -1432,6 +1469,8 @@ class TransactionGroup:
             tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposal script data
                 (optional).
             change_address: A string with address where ADA in excess of the transaction fee
                 will go to (`src_address` by default).

@@ -136,6 +136,7 @@ class ConwayGovActionGroup:
         anchor_data_hash: str,
         constitution_url: str,
         constitution_hash: str,
+        constitution_script_hash: str = "",
         deposit_return_stake_vkey: str = "",
         deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
         deposit_return_stake_key_hash: str = "",
@@ -170,6 +171,13 @@ class ConwayGovActionGroup:
             "--constitution-hash",
             str(constitution_hash),
         ]
+        if constitution_script_hash:
+            constitution_anchor_args.extend(
+                [
+                    "--constitution-script-hash",
+                    str(constitution_script_hash),
+                ]
+            )
 
         self._clusterlib_obj.cli(
             [
