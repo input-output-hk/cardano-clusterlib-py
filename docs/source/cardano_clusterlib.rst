@@ -44,6 +44,54 @@ cardano\_clusterlib.consts module
    :undoc-members:
    :show-inheritance:
 
+cardano\_clusterlib.conway\_gov\_action\_group module
+-----------------------------------------------------
+
+.. automodule:: cardano_clusterlib.conway_gov_action_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.conway\_gov\_committee\_group module
+--------------------------------------------------------
+
+.. automodule:: cardano_clusterlib.conway_gov_committee_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.conway\_gov\_drep\_group module
+---------------------------------------------------
+
+.. automodule:: cardano_clusterlib.conway_gov_drep_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.conway\_gov\_group module
+---------------------------------------------
+
+.. automodule:: cardano_clusterlib.conway_gov_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.conway\_gov\_query\_group module
+----------------------------------------------------
+
+.. automodule:: cardano_clusterlib.conway_gov_query_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cardano\_clusterlib.conway\_gov\_vote\_group module
+---------------------------------------------------
+
+.. automodule:: cardano_clusterlib.conway_gov_vote_group
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cardano\_clusterlib.coverage module
 -----------------------------------
 
