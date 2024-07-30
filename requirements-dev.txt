@@ -1,4 +1,4 @@
--e .
+-e . --config-settings editable_mode=compat
 
 # linting
 mypy
