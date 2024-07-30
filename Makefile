@@ -1,6 +1,4 @@
 .PHONY: install
-# TODO: for pylint and mypy, see https://github.com/PyCQA/pylint/issues/7306
-install: export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"
 install:
 	python3 -m pip install --upgrade pip
 	python3 -m pip install --upgrade wheel
@@ -8,8 +6,6 @@ install:
 	virtualenv --upgrade-embed-wheels
 
 .PHONY: .install_doc
-# TODO: for pylint and mypy, see https://github.com/PyCQA/pylint/issues/7306
-.install_doc: export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"
 .install_doc:
 	python3 -m pip install --upgrade --upgrade-strategy eager -r docs/requirements.txt
 
