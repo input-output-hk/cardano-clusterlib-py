@@ -377,7 +377,7 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> tp.List[str]:  # noqa: C901
 def get_joined_txouts(
     txouts: tp.List[structs.TxOut],
 ) -> tp.List[tp.List[structs.TxOut]]:
-    """Return list of joined `TxOut`s."""
+    """Return list of joined TxOuts."""
     txouts_by_eutxo_attrs: tp.Dict[str, tp.List[structs.TxOut]] = {}
     joined_txouts: tp.List[tp.List[structs.TxOut]] = []
 
