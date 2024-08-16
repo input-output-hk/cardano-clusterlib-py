@@ -134,5 +134,9 @@ class ConwayGovQueryGroup:
         out: tp.Dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
         return out
 
+    def treasury(self) -> int:
+        """Get the treasury value."""
+        return int(self.query_cli(["treasury"]))
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
