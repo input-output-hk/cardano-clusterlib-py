@@ -1244,6 +1244,8 @@ class TransactionGroup:
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
         deposit: tp.Optional[int] = None,
+        current_treasury_value: tp.Optional[int] = None,
+        treasury_donation: tp.Optional[int] = None,
         invalid_hereafter: tp.Optional[int] = None,
         invalid_before: tp.Optional[int] = None,
         witness_count_add: int = 0,
@@ -1291,6 +1293,8 @@ class TransactionGroup:
                 data (optional).
             script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
             deposit: A deposit amount needed by the transaction (optional).
+            current_treasury_value: The current treasury value (optional).
+            treasury_donation: A donation to the treasury to perform (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
@@ -1335,6 +1339,8 @@ class TransactionGroup:
                 withdrawals=withdrawals,
                 script_withdrawals=script_withdrawals,
                 deposit=deposit,
+                current_treasury_value=current_treasury_value,
+                treasury_donation=treasury_donation,
                 invalid_hereafter=invalid_hereafter or ttl,
                 witness_count_add=witness_count_add,
                 join_txouts=join_txouts,
@@ -1365,6 +1371,8 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
             script_votes=script_votes,
             deposit=deposit,
+            current_treasury_value=current_treasury_value,
+            treasury_donation=treasury_donation,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
             join_txouts=join_txouts,
