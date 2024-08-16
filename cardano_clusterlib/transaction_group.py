@@ -447,12 +447,6 @@ class TransactionGroup:
             structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments
-        if (treasury_donation is not None) != (current_treasury_value is not None):
-            msg = (
-                "Both `treasury_donation` and `current_treasury_value` must be specified together."
-            )
-            raise ValueError(msg)
-
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -641,12 +635,6 @@ class TransactionGroup:
             int: An estimated fee.
         """
         # pylint: disable=too-many-arguments
-        if (treasury_donation is not None) != (current_treasury_value is not None):
-            msg = (
-                "Both `treasury_donation` and `current_treasury_value` must be specified together."
-            )
-            raise ValueError(msg)
-
         tx_files = tx_files or structs.TxFiles()
         tx_name = f"{tx_name}_estimate"
 
