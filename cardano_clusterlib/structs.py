@@ -248,6 +248,8 @@ class TxRawOutput:
     mint: OptionalMint = ()  # Minting data (Tx outputs, script, etc.)
     invalid_hereafter: tp.Optional[int] = None  # Validity interval upper bound
     invalid_before: tp.Optional[int] = None  # Validity interval lower bound
+    current_treasury_value: tp.Optional[int] = None  # Current treasury value
+    treasury_donation: tp.Optional[int] = None  # Amount of funds that will be donated to treasury
     withdrawals: OptionalTxOuts = ()  # All withdrawals (including those combined with scripts)
     change_address: str = ""  # Address for change
     return_collateral_txouts: OptionalTxOuts = ()  # Tx outputs for returning collateral

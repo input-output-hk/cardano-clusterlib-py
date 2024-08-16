@@ -99,6 +99,7 @@ def _select_utxos(
     withdrawals: structs.OptionalTxOuts,
     min_change_value: int,
     deposit: int = 0,
+    treasury_donation: int = 0,
 ) -> tp.Set[str]:
     """Select UTxOs that can satisfy all outputs, deposits and fee.
 
@@ -121,7 +122,7 @@ def _select_utxos(
                 continue
 
             tx_fee = fee if fee > 1 else 1
-            funds_needed = total_output_amount + tx_fee + deposit
+            funds_needed = total_output_amount + tx_fee + deposit + treasury_donation
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
             # fee needs an input, even if withdrawal would cover all needed funds
             input_funds_needed = max(funds_needed - total_withdrawals_amount, tx_fee)
@@ -150,6 +151,7 @@ def _balance_txouts(  # noqa: C901
     fee: int,
     withdrawals: structs.OptionalTxOuts,
     deposit: int = 0,
+    treasury_donation: int = 0,
     lovelace_balanced: bool = False,
     skip_asset_balancing: bool = False,
 ) -> tp.List[structs.TxOut]:
@@ -190,7 +192,7 @@ def _balance_txouts(  # noqa: C901
             tx_fee = fee if fee > 0 else 0
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
             funds_available = total_input_amount + total_withdrawals_amount
-            funds_needed = total_output_amount + tx_fee + deposit
+            funds_needed = total_output_amount + tx_fee + deposit + treasury_donation
             change = funds_available - funds_needed
             if change < 0:
                 LOGGER.error(
@@ -492,6 +494,7 @@ def _get_tx_ins_outs(
     txouts: structs.OptionalTxOuts = (),
     fee: int = 0,
     deposit: tp.Optional[int] = None,
+    treasury_donation: tp.Optional[int] = None,
     withdrawals: structs.OptionalTxOuts = (),
     mint_txouts: structs.OptionalTxOuts = (),
     lovelace_balanced: bool = False,
@@ -507,6 +510,7 @@ def _get_tx_ins_outs(
         txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
         fee: A fee amount (optional).
         deposit: A deposit amount needed by the transaction (optional).
+        treasury_donation: A donation to the treasury to perform (optional).
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
         mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
         lovelace_balanced: A bool indicating whether Lovelace ins/outs are balanced
@@ -554,6 +558,8 @@ def _get_tx_ins_outs(
         else deposit
     )
 
+    tx_treasury_donation = treasury_donation if treasury_donation is not None else 0
+
     if txins:
         # don't touch txins that were passed to the function
         txins_filtered = txins_all
@@ -568,6 +574,7 @@ def _get_tx_ins_outs(
             withdrawals=withdrawals,
             min_change_value=clusterlib_obj._min_change_value,
             deposit=tx_deposit,
+            treasury_donation=tx_treasury_donation,
         )
         txins_by_id: tp.Dict[str, tp.List[structs.UTXOData]] = _organize_utxos_by_id(txins_all)
         _txins_filtered = [utxo for uid, utxo in txins_by_id.items() if uid in selected_utxo_ids]
@@ -595,6 +602,7 @@ def _get_tx_ins_outs(
         fee=fee,
         withdrawals=withdrawals,
         deposit=tx_deposit,
+        treasury_donation=tx_treasury_donation,
         lovelace_balanced=lovelace_balanced,
         skip_asset_balancing=skip_asset_balancing,
     )
@@ -616,6 +624,7 @@ def collect_data_for_build(
     withdrawals: structs.OptionalTxOuts = (),
     script_withdrawals: structs.OptionalScriptWithdrawals = (),
     deposit: tp.Optional[int] = None,
+    treasury_donation: tp.Optional[int] = None,
     lovelace_balanced: bool = False,
     skip_asset_balancing: bool = False,
 ) -> structs.DataForBuild:
@@ -639,6 +648,7 @@ def collect_data_for_build(
         script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
             data (optional).
         deposit: A deposit amount needed by the transaction (optional).
+        treasury_donation: A donation to the treasury to perform (optional).
         lovelace_balanced: A bool indicating whether Lovelace ins/outs are balanced
             (by `build` command).
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
@@ -688,6 +698,7 @@ def collect_data_for_build(
         txouts=txouts,
         fee=fee,
         deposit=deposit,
+        treasury_donation=treasury_donation,
         withdrawals=withdrawals_txouts,
         mint_txouts=mint_txouts,
         lovelace_balanced=lovelace_balanced,
