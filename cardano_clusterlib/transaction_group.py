@@ -899,6 +899,7 @@ class TransactionGroup:
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             deposit=deposit,
+            treasury_donation=treasury_donation,
             lovelace_balanced=True,
             skip_asset_balancing=skip_asset_balancing,
         )
