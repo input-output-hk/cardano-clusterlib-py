@@ -218,7 +218,7 @@ class TransactionGroup:
             msg = (
                 "Both `treasury_donation` and `current_treasury_value` must be specified together."
             )
-            raise ValueError(msg)
+            raise AssertionError(msg)
 
         if tx_files.certificate_files and complex_certs:
             LOGGER.warning(
