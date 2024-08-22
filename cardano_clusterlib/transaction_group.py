@@ -27,6 +27,24 @@ class TransactionGroup:
             [f"--{self._clusterlib_obj.tx_era}-era"] if self._clusterlib_obj.tx_era else []
         )
         self.min_fee = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
+        self._has_debug_prop: tp.Optional[bool] = None
+
+    @property
+    def _has_debug(self) -> bool:
+        """Check if cardano-cli has a `debug transaction` group."""
+        if self._has_debug_prop is not None:
+            return self._has_debug_prop
+
+        err = ""
+        try:
+            self._clusterlib_obj.cli(
+                ["cardano-cli", "debug", "transaction"], add_default_args=False
+            )
+        except exceptions.CLIError as excp:
+            err = str(excp)
+
+        self._has_debug_prop = "Usage:" in err
+        return self._has_debug_prop
 
     def calculate_tx_ttl(self) -> int:
         """Calculate ttl for a transaction."""
@@ -66,16 +84,21 @@ class TransactionGroup:
         Returns:
             str: A transaction.
         """
+        cli_args = ["transaction", "view"]
+
         if tx_body_file:
-            cli_args = ["--tx-body-file", str(tx_body_file)]
+            cli_args.extend(["--tx-body-file", str(tx_body_file)])
         elif tx_file:
-            cli_args = ["--tx-file", str(tx_file)]
+            cli_args.extend(["--tx-file", str(tx_file)])
         else:
             msg = "Either `tx_body_file` or `tx_file` is needed."
             raise AssertionError(msg)
 
+        if self._has_debug:
+            cli_args = ["cardano-cli", "debug", *cli_args]
+
         return (
-            self._clusterlib_obj.cli(["transaction", "view", *cli_args])
+            self._clusterlib_obj.cli(cli_args, add_default_args=not self._has_debug)
             .stdout.rstrip()
             .decode("utf-8")
         )
