@@ -328,12 +328,6 @@ class CCMember:
     cold_skey_file: itp.FileType = ""
     cold_skey_hash: str = ""
     cold_script_hash: str = ""
-    hot_vkey: str = ""
-    hot_vkey_file: itp.FileType = ""
-    hot_vkey_hash: str = ""
-    hot_skey: str = ""
-    hot_skey_file: itp.FileType = ""
-    hot_skey_hash: str = ""
 
 
 @dataclasses.dataclass(frozen=True, order=True)
