@@ -491,6 +491,7 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
             deposit=deposit,
             treasury_donation=treasury_donation,
+            skip_asset_balancing=False,
         )
 
         if (
@@ -829,7 +830,7 @@ class TransactionGroup:
         calc_script_cost_file: tp.Optional[itp.FileType] = None,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
-        skip_asset_balancing: bool = False,
+        skip_asset_balancing: bool = True,
     ) -> structs.TxRawOutput:
         """Build a transaction.
 
@@ -923,7 +924,6 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
             deposit=deposit,
             treasury_donation=treasury_donation,
-            lovelace_balanced=True,
             skip_asset_balancing=skip_asset_balancing,
         )
 
