@@ -142,7 +142,7 @@ def _select_utxos(
     return utxo_ids
 
 
-def _balance_txouts(  # noqa: C901
+def _balance_txouts(
     change_address: str,
     txouts: structs.OptionalTxOuts,
     txins_db: tp.Dict[str, tp.List[structs.UTXOData]],
@@ -155,15 +155,20 @@ def _balance_txouts(  # noqa: C901
     skip_asset_balancing: bool = False,
 ) -> tp.List[structs.TxOut]:
     """Balance the transaction by adding change output for each coin."""
-    # records for burning tokens, i.e. records with negative amount, are not allowed in `txouts`
+    # Records for burning tokens, i.e. records with negative amount, are not allowed in `txouts`
     burning_txouts = [r for r in txouts if r.amount < 0 and r.coin != consts.DEFAULT_COIN]
     if burning_txouts:
         msg = f"Token burning is not allowed in txouts: {burning_txouts}"
         raise AssertionError(msg)
 
-    txouts_result: tp.List[structs.TxOut] = list(txouts)
+    # Filter out negative amounts (-1 "max" amounts)
+    txouts_result = [r for r in txouts if r.amount > 0]
 
-    # iterate over coins both in txins and txouts
+    if skip_asset_balancing:
+        # Balancing is done elsewhere (by the `transaction build` command)
+        return txouts_result
+
+    # Iterate over coins both in txins and txouts
     for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
         max_address = None
         change = 0
@@ -171,23 +176,19 @@ def _balance_txouts(  # noqa: C901
         coin_txins = txins_db.get(coin) or []
         coin_txouts = txouts_passed_db.get(coin) or []
 
+        total_input_amount = functools.reduce(lambda x, y: x + y.amount, coin_txins, 0)
+
         if coin == consts.DEFAULT_COIN:
-            # the value "-1" means all available funds
+            # The value "-1" means all available funds
             max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
             if len(max_index) > 1:
                 msg = "Cannot send all remaining funds to more than one address."
                 raise AssertionError(msg)
             if max_index:
-                # remove the "-1" record and get its address
+                # Remove the "-1" record and get its address
                 max_address = coin_txouts.pop(max_index[0]).address
 
-        total_input_amount = functools.reduce(lambda x, y: x + y.amount, coin_txins, 0)
-        total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
-
-        if skip_asset_balancing:
-            # balancing is done elsewhere (by the `transaction build` command)
-            pass
-        elif coin == consts.DEFAULT_COIN:
+            total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
             tx_fee = fee if fee > 0 else 0
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
             funds_available = total_input_amount + total_withdrawals_amount
@@ -200,6 +201,7 @@ def _balance_txouts(  # noqa: C901
                 )
         else:
             coin_txouts_minted = txouts_mint_db.get(coin) or []
+            total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
             total_minted_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts_minted, 0)
             funds_available = total_input_amount + total_minted_amount
             change = funds_available - total_output_amount
@@ -213,9 +215,6 @@ def _balance_txouts(  # noqa: C901
             txouts_result.append(
                 structs.TxOut(address=(max_address or change_address), amount=change, coin=coin)
             )
-
-    # filter out negative amounts (-1 "max" amounts)
-    txouts_result = [r for r in txouts_result if r.amount > 0]
 
     return txouts_result
 
