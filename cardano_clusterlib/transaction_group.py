@@ -1013,13 +1013,15 @@ class TransactionGroup:
             *self._clusterlib_obj.magic_args,
             *self._clusterlib_obj.socket_args,
         ]
-        stdout = self._clusterlib_obj.cli(cli_args).stdout
+        stdout = self._clusterlib_obj.cli(cli_args).stdout.strip()
         stdout_dec = stdout.decode("utf-8") if stdout else ""
 
-        # check for the presence of fee information so compatibility with older versions
-        # of the `build` command is preserved
+        # Check for the presence of fee information. No fee information was provided in older
+        # versions of the `build` command.
         estimated_fee = -1
-        if "transaction fee" in stdout_dec:
+        if stdout_dec.endswith("Lovelace"):
+            estimated_fee = int(stdout_dec.split()[-2])
+        elif "transaction fee" in stdout_dec:
             estimated_fee = int(stdout_dec.split()[-1])
 
         return structs.TxRawOutput(
