@@ -379,27 +379,6 @@ class ClusterLib:
         msg = f"Failed to wait for slot number {slot}."
         raise exceptions.CLIError(msg)
 
-    def poll_new_epoch(self, exp_epoch: int, padding_seconds: int = 0) -> None:
-        """Wait for new epoch(s) by polling current epoch every 3 sec.
-
-        Can be used only for waiting up to 3000 sec + padding seconds.
-
-        Args:
-            exp_epoch: An epoch number to wait for.
-            padding_seconds: A number of additional seconds to wait for (optional).
-        """
-        for check_no in range(1000):
-            wakeup_epoch = self.g_query.get_epoch()
-            if wakeup_epoch != exp_epoch:
-                time.sleep(3)
-                continue
-            # we are in the expected epoch right from the beginning, we'll skip padding seconds
-            if check_no == 0:
-                break
-            if padding_seconds:
-                time.sleep(padding_seconds)
-                break
-
     def wait_for_new_epoch(self, new_epochs: int = 1, padding_seconds: int = 0) -> int:
         """Wait for new epoch(s).
 
@@ -410,40 +389,38 @@ class ClusterLib:
         Returns:
             int: The current epoch.
         """
-        start_epoch = self.g_query.get_epoch()
+        start_tip = self.g_query.get_tip()
+        start_epoch = int(start_tip["epoch"])
 
         if new_epochs < 1:
             return start_epoch
 
-        exp_epoch = start_epoch + new_epochs
-        LOGGER.debug(
-            f"Current epoch: {start_epoch}; Waiting for the beginning of epoch: {exp_epoch}"
+        epoch_no = start_epoch + new_epochs
+        return clusterlib_helpers.wait_for_epoch(
+            clusterlib_obj=self, tip=start_tip, epoch_no=epoch_no, padding_seconds=padding_seconds
         )
 
-        # calculate and wait for the expected slot
-        boundary_slot = int((start_epoch + new_epochs) * self.epoch_length - self.slots_offset)
-        padding_slots = int(padding_seconds / self.slot_length) if padding_seconds else 5
-        exp_slot = boundary_slot + padding_slots
-        self.wait_for_slot(slot=exp_slot)
+    def wait_for_epoch(
+        self, epoch_no: int, padding_seconds: int = 0, future_is_ok: bool = True
+    ) -> int:
+        """Wait for epoch no.
 
-        this_epoch = self.g_query.get_epoch()
-        if this_epoch != exp_epoch:
-            LOGGER.error(
-                f"Waited for epoch number {exp_epoch} and current epoch is "
-                f"number {this_epoch}, wrong `slots_offset` ({self.slots_offset})?"
-            )
-            # attempt to get the epoch boundary as precisely as possible failed, now just
-            # query epoch number and wait
-            self.poll_new_epoch(exp_epoch=exp_epoch, padding_seconds=padding_seconds)
+        Args:
+            epoch_no: A number of epoch to wait for.
+            padding_seconds: A number of additional seconds to wait for (optional).
+            future_is_ok: A bool indicating whether current epoch > `epoch_no` is acceptable
+                (default: True).
 
-        # Still not in the correct epoch? Something is wrong.
-        this_epoch = self.g_query.get_epoch()
-        if this_epoch != exp_epoch:
-            msg = f"Waited for epoch number {exp_epoch} and current epoch is number {this_epoch}."
-            raise exceptions.CLIError(msg)
-
-        LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
-        return this_epoch
+        Returns:
+            int: The current epoch.
+        """
+        return clusterlib_helpers.wait_for_epoch(
+            clusterlib_obj=self,
+            tip=self.g_query.get_tip(),
+            epoch_no=epoch_no,
+            padding_seconds=padding_seconds,
+            future_is_ok=future_is_ok,
+        )
 
     def time_to_epoch_end(self, tip: tp.Optional[dict] = None) -> float:
         """How many seconds to go to start of a new epoch."""

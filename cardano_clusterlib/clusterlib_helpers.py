@@ -254,3 +254,93 @@ def wait_for_block(
 
     LOGGER.debug(f"New block(s) were created; block number: {this_block}")
     return this_block
+
+
+def poll_new_epoch(
+    clusterlib_obj: "itp.ClusterLib",
+    exp_epoch: int,
+    padding_seconds: int = 0,
+) -> None:
+    """Wait for new epoch(s) by polling current epoch every 3 sec.
+
+    Can be used only for waiting up to 3000 sec + padding seconds.
+
+    Args:
+        clusterlib_obj: An instance of `ClusterLib`.
+        tip: Current tip - last block successfully applied to the ledger.
+        exp_epoch: An epoch number to wait for.
+        padding_seconds: A number of additional seconds to wait for (optional).
+    """
+    for check_no in range(1000):
+        wakeup_epoch = clusterlib_obj.g_query.get_epoch()
+        if wakeup_epoch != exp_epoch:
+            time.sleep(3)
+            continue
+        # We are in the expected epoch right from the beginning, we'll skip padding seconds
+        if check_no == 0:
+            break
+        if padding_seconds:
+            time.sleep(padding_seconds)
+            break
+
+
+def wait_for_epoch(
+    clusterlib_obj: "itp.ClusterLib",
+    tip: tp.Dict[str, tp.Any],
+    epoch_no: int,
+    padding_seconds: int = 0,
+    future_is_ok: bool = True,
+) -> int:
+    """Wait for epoch no.
+
+    Args:
+        clusterlib_obj: An instance of `ClusterLib`.
+        tip: Current tip - last block successfully applied to the ledger.
+        epoch_no: A number of epoch to wait for.
+        padding_seconds: A number of additional seconds to wait for (optional).
+        future_is_ok: A bool indicating whether current epoch > `epoch_no` is acceptable
+            (default: True).
+
+    Returns:
+        int: The current epoch.
+    """
+    start_epoch = int(tip["epoch"])
+
+    if epoch_no < start_epoch:
+        if not future_is_ok:
+            msg = f"Current epoch is {start_epoch}. The requested epoch {epoch_no} is in the past."
+            raise exceptions.CLIError(msg)
+        return start_epoch
+
+    LOGGER.debug(f"Current epoch: {start_epoch}; Waiting for the beginning of epoch: {epoch_no}")
+
+    new_epochs = epoch_no - start_epoch
+
+    # Calculate and wait for the expected slot
+    boundary_slot = int(
+        (start_epoch + new_epochs) * clusterlib_obj.epoch_length - clusterlib_obj.slots_offset
+    )
+    padding_slots = int(padding_seconds / clusterlib_obj.slot_length) if padding_seconds else 5
+    exp_slot = boundary_slot + padding_slots
+    clusterlib_obj.wait_for_slot(slot=exp_slot)
+
+    this_epoch = clusterlib_obj.g_query.get_epoch()
+    if this_epoch != epoch_no:
+        LOGGER.error(
+            f"Waited for epoch number {epoch_no} and current epoch is "
+            f"number {this_epoch}, wrong `slots_offset` ({clusterlib_obj.slots_offset})?"
+        )
+        # attempt to get the epoch boundary as precisely as possible failed, now just
+        # query epoch number and wait
+        poll_new_epoch(
+            clusterlib_obj=clusterlib_obj, exp_epoch=epoch_no, padding_seconds=padding_seconds
+        )
+
+    # Still not in the correct epoch? Something is wrong.
+    this_epoch = clusterlib_obj.g_query.get_epoch()
+    if this_epoch != epoch_no:
+        msg = f"Waited for epoch number {epoch_no} and current epoch is number {this_epoch}."
+        raise exceptions.CLIError(msg)
+
+    LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
+    return this_epoch
