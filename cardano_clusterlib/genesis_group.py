@@ -19,6 +19,7 @@ class GenesisGroup:
 
         self._genesis_keys: tp.Optional[structs.GenesisKeys] = None
         self._genesis_utxo_addr: str = ""
+        self._cli_args = ("cardano-cli", "legacy", "genesis")
 
     @property
     def genesis_keys(self) -> structs.GenesisKeys:
@@ -94,14 +95,15 @@ class GenesisGroup:
 
         self._clusterlib_obj.cli(
             [
-                "genesis",
+                *self._cli_args,
                 "initial-addr",
                 *self._clusterlib_obj.magic_args,
                 "--verification-key-file",
                 str(vkey_file),
                 "--out-file",
                 str(out_file),
-            ]
+            ],
+            add_default_args=False,
         )
 
         helpers._check_outfiles(out_file)
@@ -118,11 +120,12 @@ class GenesisGroup:
         """
         cli_out = self._clusterlib_obj.cli(
             [
-                "genesis",
+                *self._cli_args,
                 "key-hash",
                 "--verification-key-file",
                 str(vkey_file),
-            ]
+            ],
+            add_default_args=False,
         )
 
         return cli_out.stdout.rstrip().decode("ascii")
