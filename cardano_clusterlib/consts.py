@@ -33,8 +33,8 @@ class Eras(enum.Enum):
     ALONZO: int = 6
     BABBAGE: int = 8
     CONWAY: int = 9
-    DEFAULT: int = BABBAGE
-    LATEST: int = BABBAGE
+    DEFAULT: int = CONWAY
+    LATEST: int = CONWAY
 
 
 class MultiSigTypeArgs:

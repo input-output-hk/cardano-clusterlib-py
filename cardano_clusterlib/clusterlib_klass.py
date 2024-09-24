@@ -41,8 +41,6 @@ class ClusterLib:
         socket_path: A path to socket file for communication with the node. This overrides the
             `CARDANO_NODE_SOCKET_PATH` environment variable.
         command_era: An era used for CLI commands, by default same as the latest network Era.
-        tx_era: An era used for transactions, by default same as network Era. Deprecated - use
-            `command_era` instead.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -53,8 +51,7 @@ class ClusterLib:
         protocol: str = consts.Protocols.CARDANO,
         slots_offset: int = 0,
         socket_path: itp.FileType = "",
-        command_era: str = "",
-        tx_era: str = "",  # deprecated - use `command_era` instead
+        command_era: str = "latest",
     ):
         # pylint: disable=too-many-statements
         self.cluster_id = 0  # can be used for identifying cluster instance
@@ -63,6 +60,9 @@ class ClusterLib:
         self._cli_log = ""
         self.protocol = protocol
         self.command_era = command_era.lower()
+        self.era_in_use = (
+            consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
+        ).name.lower()
 
         self.state_dir = pl.Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
@@ -97,15 +97,10 @@ class ClusterLib:
         # TODO: proper calculation based on `utxoCostPerWord` needed
         self._min_change_value = 1800_000
 
-        # Ignore the `tx_era` if `command_era` is set
-        self.tx_era = "" if self.command_era else tx_era.lower()
-
         # Conway+ era
         self.conway_genesis_json: tp.Optional[pl.Path] = None
         self.conway_genesis: dict = {}
-        if consts.Eras[(self.command_era or "DEFAULT").upper()].value >= consts.Eras.CONWAY.value:
-            # Ignore the `tx_era`
-            self.tx_era = ""
+        if consts.Eras[self.era_in_use.upper()].value >= consts.Eras.CONWAY.value:
             # Conway genesis
             self.conway_genesis_json = clusterlib_helpers._find_conway_genesis_json(
                 clusterlib_obj=self

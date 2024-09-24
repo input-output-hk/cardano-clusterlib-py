@@ -82,7 +82,7 @@ cluster.g_query.get_utxo(dst_addr.address)
 from cardano_clusterlib import clusterlib
 
 # instantiate `ClusterLib`
-cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir", tx_era="babbage")
+cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir")
 
 # source address - for funding
 src_address = "addr_test1vpst87uzwafqkxumyf446zr2jsyn44cfpu9fe8yqanyuh6glj2hkl"
