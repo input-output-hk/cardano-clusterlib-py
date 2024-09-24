@@ -23,9 +23,6 @@ LOGGER = logging.getLogger(__name__)
 class TransactionGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
-        self.tx_era_arg = (
-            [f"--{self._clusterlib_obj.tx_era}-era"] if self._clusterlib_obj.tx_era else []
-        )
         self.min_fee = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
         self._has_debug_prop: tp.Optional[bool] = None
 
@@ -356,7 +353,6 @@ class TransactionGroup:
             *helpers._prepend_flag("--withdrawal", withdrawal_strings),
             *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
             *misc_args,
-            *self.tx_era_arg,
         ]
 
         self._clusterlib_obj.cli(cli_args)
@@ -369,7 +365,7 @@ class TransactionGroup:
             out_file=out_file,
             fee=fee,
             build_args=cli_args,
-            era=self._clusterlib_obj.command_era or self._clusterlib_obj.tx_era,
+            era=self._clusterlib_obj.era_in_use,
             script_txins=script_txins,
             script_withdrawals=script_withdrawals,
             script_votes=script_votes,
@@ -497,10 +493,7 @@ class TransactionGroup:
         if (
             ttl is None
             and invalid_hereafter is None
-            and (
-                consts.Eras.SHELLEY.name.lower()
-                in (self._clusterlib_obj.tx_era, self._clusterlib_obj.command_era)
-            )
+            and (self._clusterlib_obj.era_in_use == consts.Eras.SHELLEY.name.lower())
         ):
             invalid_hereafter = self.calculate_tx_ttl()
 
@@ -772,7 +765,6 @@ class TransactionGroup:
 
         era = self._clusterlib_obj.g_query.get_era().lower()
         era_upper = era.upper()
-        tx_era_args = []
         command_era_args = []
         if (
             self._clusterlib_obj.command_era
@@ -780,8 +772,6 @@ class TransactionGroup:
             or consts.Eras[era_upper].value >= consts.Eras.CONWAY.value
         ):
             command_era_args = [era]
-        else:
-            tx_era_args = [f"--{era}-era"]
 
         self._clusterlib_obj.create_pparams_file()
         stdout = self._clusterlib_obj.cli(
@@ -792,7 +782,6 @@ class TransactionGroup:
                 "calculate-min-required-utxo",
                 "--protocol-params-file",
                 str(self._clusterlib_obj.pparams_file),
-                *tx_era_args,
                 *txout_args,
             ],
             add_default_args=False,
@@ -1009,7 +998,6 @@ class TransactionGroup:
             *helpers._prepend_flag("--withdrawal", withdrawal_strings),
             *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
             *misc_args,
-            *self.tx_era_arg,
             *self._clusterlib_obj.magic_args,
             *self._clusterlib_obj.socket_args,
         ]
@@ -1032,7 +1020,7 @@ class TransactionGroup:
             out_file=out_file,
             fee=estimated_fee,
             build_args=cli_args,
-            era=self._clusterlib_obj.command_era or self._clusterlib_obj.tx_era,
+            era=self._clusterlib_obj.era_in_use,
             script_txins=script_txins,
             script_withdrawals=collected_data.script_withdrawals,
             script_votes=script_votes,
