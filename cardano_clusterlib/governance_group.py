@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 class GovernanceGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
+        self._cli_args = ("cardano-cli", "legacy", "governance")
 
     def gen_update_proposal(
         self,
@@ -40,7 +41,7 @@ class GovernanceGroup:
 
         self._clusterlib_obj.cli(
             [
-                "governance",
+                *self._cli_args,
                 "create-update-proposal",
                 *cli_args,
                 "--out-file",
@@ -51,7 +52,8 @@ class GovernanceGroup:
                     "--genesis-verification-key-file",
                     self._clusterlib_obj.g_genesis.genesis_keys.genesis_vkeys,
                 ),
-            ]
+            ],
+            add_default_args=False,
         )
 
         helpers._check_outfiles(out_file)
@@ -79,14 +81,15 @@ class GovernanceGroup:
 
         self._clusterlib_obj.cli(
             [
-                "governance",
+                *self._cli_args,
                 "create-mir-certificate",
                 "transfer-to-treasury",
                 "--transfer",
                 str(transfer),
                 "--out-file",
                 str(out_file),
-            ]
+            ],
+            add_default_args=False,
         )
 
         helpers._check_outfiles(out_file)
@@ -114,14 +117,15 @@ class GovernanceGroup:
 
         self._clusterlib_obj.cli(
             [
-                "governance",
+                *self._cli_args,
                 "create-mir-certificate",
                 "transfer-to-rewards",
                 "--transfer",
                 str(transfer),
                 "--out-file",
                 str(out_file),
-            ]
+            ],
+            add_default_args=False,
         )
 
         helpers._check_outfiles(out_file)
@@ -154,7 +158,7 @@ class GovernanceGroup:
 
         self._clusterlib_obj.cli(
             [
-                "governance",
+                *self._cli_args,
                 "create-mir-certificate",
                 "stake-addresses",
                 f"--{funds_src}",
@@ -164,7 +168,8 @@ class GovernanceGroup:
                 str(reward),
                 "--out-file",
                 str(out_file),
-            ]
+            ],
+            add_default_args=False,
         )
 
         helpers._check_outfiles(out_file)
