@@ -4,7 +4,6 @@ import json
 import logging
 import pathlib as pl
 import typing as tp
-import warnings
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -165,26 +164,6 @@ class AddressGroup:
             .decode("utf-8")
         )
         return structs.AddressInfo(**addr_dict)
-
-    def gen_script_addr(
-        self, addr_name: str, script_file: itp.FileType, destination_dir: itp.FileType = "."
-    ) -> str:
-        """Generate a script address.
-
-        Args:
-            addr_name: A name of payment address.
-            script_file: A path to corresponding script file.
-            destination_dir: A path to directory for storing artifacts (optional).
-
-        Returns:
-            str: A generated script address.
-        """
-        warnings.warn(
-            "`gen_script_addr` deprecated by `gen_payment_addr`", DeprecationWarning, stacklevel=2
-        )
-        return self.gen_payment_addr(
-            addr_name=addr_name, payment_script_file=script_file, destination_dir=destination_dir
-        )
 
     def gen_payment_addr_and_keys(
         self,
