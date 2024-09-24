@@ -328,7 +328,7 @@ class TransactionGroup:
             misc_args.append("--json-metadata-detailed-schema")
 
         proposal_file_argname = txtools.get_proposal_file_argname(
-            command_era=self._clusterlib_obj.command_era
+            era_in_use=self._clusterlib_obj.era_in_use
         )
 
         cli_args = [
@@ -726,28 +726,15 @@ class TransactionGroup:
             )
             raise AssertionError(msg)
 
-        era = self._clusterlib_obj.g_query.get_era().lower()
-        era_upper = era.upper()
-        command_era_args = []
-        if (
-            self._clusterlib_obj.command_era
-            or (era_upper not in consts.Eras.__members__)
-            or consts.Eras[era_upper].value >= consts.Eras.CONWAY.value
-        ):
-            command_era_args = [era]
-
         self._clusterlib_obj.create_pparams_file()
         stdout = self._clusterlib_obj.cli(
             [
-                "cardano-cli",
-                *command_era_args,
                 "transaction",
                 "calculate-min-required-utxo",
                 "--protocol-params-file",
                 str(self._clusterlib_obj.pparams_file),
                 *txout_args,
-            ],
-            add_default_args=False,
+            ]
         ).stdout
         coin, value = stdout.decode().split()
         return structs.Value(value=int(value), coin=coin)
@@ -941,7 +928,7 @@ class TransactionGroup:
             misc_args.append("--json-metadata-detailed-schema")
 
         proposal_file_argname = txtools.get_proposal_file_argname(
-            command_era=self._clusterlib_obj.command_era
+            era_in_use=self._clusterlib_obj.era_in_use
         )
 
         cli_args = [

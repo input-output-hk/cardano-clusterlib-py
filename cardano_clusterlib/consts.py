@@ -20,6 +20,16 @@ SLOTS_OFFSETS: tp.Final[tp.Dict[int, int]] = {
 SUBCOMMAND_MARK: tp.Final[str] = "SUBCOMMAND"
 
 
+class CommandEras:
+    SHELLEY: tp.Final[str] = "shelley"
+    ALLEGRA: tp.Final[str] = "allegra"
+    MARY: tp.Final[str] = "mary"
+    ALONZO: tp.Final[str] = "alonzo"
+    BABBAGE: tp.Final[str] = "babbage"
+    CONWAY: tp.Final[str] = "conway"
+    LATEST: tp.Final[str] = "latest"
+
+
 class Protocols:
     CARDANO: tp.Final[str] = "cardano"
     SHELLEY: tp.Final[str] = "shelley"

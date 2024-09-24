@@ -1283,11 +1283,11 @@ def _get_script_args(  # noqa: C901
     return grouped_args
 
 
-def get_proposal_file_argname(command_era: str = "") -> str:
+def get_proposal_file_argname(era_in_use: str = "") -> str:
     """Return the name of the proposal file argument."""
     proposal_file_argname = (
         "--proposal-file"
-        if (consts.Eras[(command_era or "DEFAULT").upper()].value >= consts.Eras.CONWAY.value)
+        if (consts.Eras[era_in_use.upper()].value >= consts.Eras.CONWAY.value)
         else "--update-proposal-file"
     )
     return proposal_file_argname

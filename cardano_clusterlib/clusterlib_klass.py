@@ -51,15 +51,20 @@ class ClusterLib:
         protocol: str = consts.Protocols.CARDANO,
         slots_offset: int = 0,
         socket_path: itp.FileType = "",
-        command_era: str = "latest",
+        command_era: str = consts.CommandEras.LATEST,
     ):
         # pylint: disable=too-many-statements
+        try:
+            self.command_era = getattr(consts.CommandEras, command_era.upper())
+        except AttributeError as excp:
+            msg = f"Unknown command era `{command_era}`."
+            raise exceptions.CLIError(msg) from excp
+
         self.cluster_id = 0  # can be used for identifying cluster instance
         self.cli_coverage: dict = {}
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
         self.protocol = protocol
-        self.command_era = command_era.lower()
         self.era_in_use = (
             consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
         ).name.lower()
@@ -248,8 +253,7 @@ class ClusterLib:
 
         if add_default_args:
             cli_args_strs_all.insert(0, "cardano-cli")
-            if self.command_era:
-                cli_args_strs_all.insert(1, self.command_era)
+            cli_args_strs_all.insert(1, self.command_era)
 
         cli_args_strs = [arg for arg in cli_args_strs_all if arg != consts.SUBCOMMAND_MARK]
 
