@@ -5,7 +5,6 @@ import json
 import logging
 import pathlib as pl
 import typing as tp
-import warnings
 
 from packaging import version
 
@@ -701,42 +700,6 @@ class TransactionGroup:
         )
 
         return fee
-
-    def calculate_min_value(
-        self,
-        multi_assets: tp.List[structs.TxOut],
-    ) -> structs.Value:
-        """Calculate the minimum value in for a transaction.
-
-        This was replaced by `calculate_min_req_utxo` for node 1.29.0+.
-
-        Args:
-            multi_assets: A list of `TxOuts`, specifying multi-assets.
-
-        Returns:
-            structs.Value: A tuple describing the value.
-        """
-        warnings.warn(
-            "deprecated by `calculate_min_req_utxo` for node 1.29.0+",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        ma_records = [f"{m.amount} {m.coin}" for m in multi_assets]
-        ma_args = ["--multi-asset", "+".join(ma_records)] if ma_records else []
-
-        self._clusterlib_obj.create_pparams_file()
-        stdout = self._clusterlib_obj.cli(
-            [
-                "transaction",
-                "calculate-min-value",
-                "--protocol-params-file",
-                str(self._clusterlib_obj.pparams_file),
-                *ma_args,
-            ]
-        ).stdout
-        coin, value = stdout.decode().split()
-        return structs.Value(value=int(value), coin=coin)
 
     def calculate_min_req_utxo(
         self,
