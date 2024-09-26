@@ -12,7 +12,6 @@ from cardano_clusterlib.consts import Eras
 from cardano_clusterlib.consts import MAINNET_MAGIC
 from cardano_clusterlib.consts import MultiSigTypeArgs
 from cardano_clusterlib.consts import MultiSlotTypeArgs
-from cardano_clusterlib.consts import Protocols
 from cardano_clusterlib.consts import SLOTS_OFFSETS
 from cardano_clusterlib.consts import ScriptTypes
 from cardano_clusterlib.consts import Votes

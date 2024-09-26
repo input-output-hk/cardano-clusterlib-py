@@ -62,17 +62,6 @@ def _find_conway_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
     return genesis_json
 
 
-def _check_protocol(clusterlib_obj: "itp.ClusterLib") -> None:
-    """Check that the cluster is running with the expected protocol."""
-    try:
-        clusterlib_obj.create_pparams_file()
-    except exceptions.CLIError as exc:
-        if "SingleEraInfo" not in str(exc):
-            raise
-        msg = f"The cluster is running with protocol different from '{clusterlib_obj.protocol}'."
-        raise exceptions.CLIError(msg) from exc
-
-
 def _check_files_exist(*out_files: itp.FileType, clusterlib_obj: "itp.ClusterLib") -> None:
     """Check that the output files don't already exist.
 
