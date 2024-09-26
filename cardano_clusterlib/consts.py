@@ -4,14 +4,6 @@ import typing as tp
 DEFAULT_COIN: tp.Final[str] = "lovelace"
 MAINNET_MAGIC: tp.Final[int] = 764824073
 
-# offset of slots from Byron configuration vs current era configuration
-SLOTS_OFFSETS: tp.Final[tp.Dict[int, int]] = {
-    764824073: 85363200,  # mainnet
-    1097911063: 30369600,  # testnet
-    1: 1641600,  # preprod
-}
-
-
 # The SUBCOMMAND_MARK is used to mark the beginning of a subcommand. It is used to differentiate
 # between options and subcommands. That is needed for CLI coverage recording.
 # For example, the command `cardano-cli query tx-mempool --cardano-mode info`
