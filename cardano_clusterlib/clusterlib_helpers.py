@@ -333,3 +333,17 @@ def wait_for_epoch(
 
     LOGGER.debug(f"Expected epoch started; epoch number: {this_epoch}")
     return this_epoch
+
+
+def get_slots_offset(clusterlib_obj: "itp.ClusterLib") -> int:
+    """Get offset of slots from Byron era vs current configuration."""
+    tip = clusterlib_obj.g_query.get_tip()
+    slot = int(tip["slot"])
+    slots_ep_end = int(tip["slotsToEpochEnd"])
+    epoch = int(tip["epoch"])
+
+    slots_total = slot + slots_ep_end
+    slots_shelley = int(clusterlib_obj.epoch_length) * (epoch + 1)
+
+    offset = slots_shelley - slots_total
+    return offset

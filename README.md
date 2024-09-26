@@ -29,21 +29,6 @@ The library needs working `cardano-cli` (the command is available on `PATH`, `ca
 cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir")
 ```
 
-On custom testnets that were started in Byron era, you might need to specify a slots offset between Byron epochs and Shelley epochs.
-The "slots_offset" is a difference between number of slots in Byron epochs and in the same number of Shelley epochs.
-
-E.g. for a testnet with parameters
-
-* 100 slots per epoch in Byron era
-* 1000 slots per epoch in Shelley era
-* two epochs in Byron era before forking to Shelley
-
-The offset will be `2 * (1000 - 100) = 1800`.
-
-```python
-cluster = clusterlib.ClusterLib(state_dir="path/to/cluster/state_dir", slots_offset=1800)
-```
-
 ### Transfer funds
 
 ```python

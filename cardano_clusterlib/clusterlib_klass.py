@@ -36,8 +36,8 @@ class ClusterLib:
     Attributes:
         state_dir: A directory with cluster state files (keys, config files, logs, ...).
         protocol: A cluster protocol - full cardano mode by default.
-        slots_offset: Difference in slots between cluster's start era and current era
-            (e.g. Byron->Mary)
+        slots_offset: Difference in slots between cluster's start era and Shelley era
+            (Byron vs Shelley)
         socket_path: A path to socket file for communication with the node. This overrides the
             `CARDANO_NODE_SOCKET_PATH` environment variable.
         command_era: An era used for CLI commands, by default same as the latest network Era.
@@ -48,7 +48,7 @@ class ClusterLib:
     def __init__(
         self,
         state_dir: itp.FileType,
-        slots_offset: int = 0,
+        slots_offset: tp.Optional[int] = None,
         socket_path: itp.FileType = "",
         command_era: str = consts.CommandEras.LATEST,
     ):
@@ -95,7 +95,8 @@ class ClusterLib:
         else:
             self.magic_args = ["--testnet-magic", str(self.network_magic)]
 
-        self.slots_offset = slots_offset or consts.SLOTS_OFFSETS.get(self.network_magic) or 0
+        self._slots_offset = slots_offset if slots_offset is not None else None
+
         self.ttl_length = 1000
         # TODO: proper calculation based on `utxoCostPerWord` needed
         self._min_change_value = 1800_000
@@ -152,6 +153,13 @@ class ClusterLib:
             version_str = version_out.split(" ")[1]
             self._cli_version = version.parse(version_str)
         return self._cli_version
+
+    @property
+    def slots_offset(self) -> int:
+        """Get offset of slots from Byron era vs current configuration."""
+        if self._slots_offset is None:
+            self._slots_offset = clusterlib_helpers.get_slots_offset(clusterlib_obj=self)
+        return self._slots_offset
 
     @property
     def g_transaction(self) -> transaction_group.TransactionGroup:
