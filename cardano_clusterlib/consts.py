@@ -30,11 +30,6 @@ class CommandEras:
     LATEST: tp.Final[str] = "latest"
 
 
-class Protocols:
-    CARDANO: tp.Final[str] = "cardano"
-    SHELLEY: tp.Final[str] = "shelley"
-
-
 class Eras(enum.Enum):
     BYRON: int = 1
     SHELLEY: int = 2

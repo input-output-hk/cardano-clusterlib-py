@@ -35,7 +35,6 @@ class QueryGroup:
                 *cli_args,
                 *self._clusterlib_obj.magic_args,
                 *self._clusterlib_obj.socket_args,
-                f"--{self._clusterlib_obj.protocol}-mode",
                 *cli_sub_args,
             ]
         ).stdout

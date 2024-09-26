@@ -48,7 +48,6 @@ class ClusterLib:
     def __init__(
         self,
         state_dir: itp.FileType,
-        protocol: str = consts.Protocols.CARDANO,
         slots_offset: int = 0,
         socket_path: itp.FileType = "",
         command_era: str = consts.CommandEras.LATEST,
@@ -64,7 +63,6 @@ class ClusterLib:
         self.cli_coverage: dict = {}
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
-        self.protocol = protocol
         self.era_in_use = (
             consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
         ).name.lower()
@@ -128,8 +126,6 @@ class ClusterLib:
         self._genesis_group: tp.Optional[genesis_group.GenesisGroup] = None
         self._governance_group: tp.Optional[governance_group.GovernanceGroup] = None
         self._conway_gov_group: tp.Optional[conway_gov_group.ConwayGovGroup] = None
-
-        clusterlib_helpers._check_protocol(clusterlib_obj=self)
 
     def set_socket_path(self, socket_path: tp.Optional[itp.FileType]) -> None:
         """Set a path to socket file for communication with the node."""
@@ -435,6 +431,4 @@ class ClusterLib:
         return float(self.epoch_length_sec - s_to_epoch_stop)
 
     def __repr__(self) -> str:
-        return (
-            f"<{self.__class__.__name__}: protocol={self.protocol}, command_era={self.command_era}>"
-        )
+        return f"<{self.__class__.__name__}: command_era={self.command_era}>"

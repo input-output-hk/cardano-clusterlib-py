@@ -1133,7 +1133,6 @@ class TransactionGroup:
                 *self._clusterlib_obj.socket_args,
                 "--tx-file",
                 str(tx_file),
-                f"--{self._clusterlib_obj.protocol}-mode",
             ]
         )
 
