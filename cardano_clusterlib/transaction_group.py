@@ -149,18 +149,26 @@ class TransactionGroup:
         pparams = self._clusterlib_obj.g_query.get_protocol_params()
         key_deposit = pparams.get("stakeAddressDeposit") or 0
         pool_deposit = pparams.get("stakePoolDeposit") or 0
+        drep_deposit = pparams.get("dRepDeposit") or 0
 
         deposit = 0
         for cert in tx_files.certificate_files:
             with open(cert, encoding="utf-8") as in_json:
                 content = json.load(in_json)
             description = content.get("description", "")
-            if "Stake Address Registration" in description:
+            if (
+                "Stake Address Registration" in description
+                or "Stake address registration and" in description
+            ):
                 deposit += key_deposit
-            elif "Stake Pool Registration" in description:
-                deposit += pool_deposit
             elif "Stake Address Deregistration" in description:
                 deposit -= key_deposit
+            elif "Stake Pool Registration" in description:
+                deposit += pool_deposit
+            elif "DRep Key Registration" in description:
+                deposit += drep_deposit
+            elif "DRep Retirement" in description:
+                deposit -= drep_deposit
 
         return deposit
 
