@@ -1,5 +1,7 @@
-# Local temporary files
-tmp/
+# Local files
+/tmp*/
+/.bin*/
+/.patches/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -8,6 +10,13 @@ __pycache__/
 
 # mypy
 .mypy_cache/
+.dmypy.json
+
+# Exuberant Ctags tag file
+/tags
+
+# Env variables
+/.source*
 
 # Distribution / packaging
 .Python
