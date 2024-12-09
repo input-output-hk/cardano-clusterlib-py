@@ -5,6 +5,7 @@ import json
 import logging
 import pathlib as pl
 import typing as tp
+import warnings
 
 from packaging import version
 
@@ -1563,6 +1564,11 @@ class TransactionGroup:
             structs.TxRawOutput: A tuple with transaction output details.
         """
         # pylint: disable=too-many-arguments
+        warnings.warn(
+            "`send_funds` is deprecated, use `send_tx` instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.send_tx(
             src_address=src_address,
             tx_name=tx_name,
