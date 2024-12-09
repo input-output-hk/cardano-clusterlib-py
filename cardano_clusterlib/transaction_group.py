@@ -1128,13 +1128,16 @@ class TransactionGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
-    def submit_tx_bare(self, tx_file: itp.FileType) -> None:
+    def submit_tx_bare(self, tx_file: itp.FileType) -> str:
         """Submit a transaction, don't do any verification that it made it to the chain.
 
         Args:
             tx_file: A path to signed transaction file.
+
+        Returns:
+            str: A transaction ID.
         """
-        self._clusterlib_obj.cli(
+        out = self._clusterlib_obj.cli(
             [
                 "transaction",
                 "submit",
@@ -1145,22 +1148,30 @@ class TransactionGroup:
             ]
         )
 
+        stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
+        txhash_maybe = stdout_dec.split("\n")[-1]
+        txhash = (json.loads(txhash_maybe).get("txhash") or "") if "txhash" in txhash_maybe else ""
+        return txhash
+
     def submit_tx(
         self, tx_file: itp.FileType, txins: tp.List[structs.UTXOData], wait_blocks: int = 2
-    ) -> None:
+    ) -> str:
         """Submit a transaction, resubmit if the transaction didn't make it to the chain.
 
         Args:
             tx_file: A path to signed transaction file.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs.
             wait_blocks: A number of new blocks to wait for (default = 2).
+
+        Returns:
+            str: A transaction ID.
         """
         txid = ""
         for r in range(20):
             err = None
 
             if r == 0:
-                self.submit_tx_bare(tx_file)
+                txid = self.submit_tx_bare(tx_file)
             else:
                 txid = txid or self.get_txid(tx_file=tx_file)
                 LOGGER.warning(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
@@ -1192,6 +1203,8 @@ class TransactionGroup:
 
             msg = f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
             raise exceptions.CLIError(msg)
+
+        return txid
 
     def send_tx(
         self,
