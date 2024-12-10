@@ -203,7 +203,7 @@ class QueryGroup:
             self.query_cli(["pool-params", "--stake-pool-id", stake_pool_id])
         )
 
-        # in node 1.35.1+ the information is nested under hex encoded stake pool ID
+        # In node 1.35.1+ the information is nested under hex encoded stake pool ID
         if pool_params and "poolParams" not in pool_params:
             pool_params = next(iter(pool_params.values()))
 
@@ -231,7 +231,7 @@ class QueryGroup:
             self.query_cli(["pool-state", "--stake-pool-id", stake_pool_id])
         )
 
-        # the information is nested under hex encoded stake pool ID
+        # The information is nested under hex encoded stake pool ID
         if pool_state:
             pool_state = next(iter(pool_state.values()))
 
@@ -289,7 +289,7 @@ class QueryGroup:
 
     def get_stake_distribution(self) -> tp.Dict[str, float]:
         """Return current aggregated stake distribution per stake pool."""
-        # stake pool values are displayed starting with line 2 of the command output
+        # Stake pool values are displayed starting with line 2 of the command output
         result = self.query_cli(["stake-distribution"]).splitlines()[2:]
         stake_distribution: tp.Dict[str, float] = {}
         for pool in result:
@@ -362,13 +362,13 @@ class QueryGroup:
                 str(vrf_skey_file),
                 *args,
             ]
-            # schedule values are displayed starting with line 2 of the command output
+            # Schedule values are displayed starting with line 2 of the command output
         ).splitlines()[2:]
 
         schedule = []
         for rec in unparsed:
             slot_no, date_str, time_str, *__ = rec.split()
-            # add milliseconds component of a time string if it is missing
+            # Add milliseconds component of a time string if it is missing
             time_str = time_str if "." in time_str else f"{time_str}.0"
             schedule.append(
                 structs.LeadershipSchedule(

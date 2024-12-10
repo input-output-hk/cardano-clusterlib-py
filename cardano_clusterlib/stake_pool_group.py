@@ -192,21 +192,21 @@ class StakePoolGroup:
         Returns:
             structs.PoolCreationOutput: A tuple containing pool creation output.
         """
-        # create the KES key pair
+        # Create the KES key pair
         node_kes = self._clusterlib_obj.g_node.gen_kes_key_pair(
             node_name=pool_data.pool_name,
             destination_dir=destination_dir,
         )
         LOGGER.debug(f"KES keys created - {node_kes.vkey_file}; {node_kes.skey_file}")
 
-        # create the VRF key pair
+        # Create the VRF key pair
         node_vrf = self._clusterlib_obj.g_node.gen_vrf_key_pair(
             node_name=pool_data.pool_name,
             destination_dir=destination_dir,
         )
         LOGGER.debug(f"VRF keys created - {node_vrf.vkey_file}; {node_vrf.skey_file}")
 
-        # create the cold key pair and node operational certificate counter
+        # Create the cold key pair and node operational certificate counter
         node_cold = self._clusterlib_obj.g_node.gen_cold_key_pair_and_counter(
             node_name=pool_data.pool_name,
             destination_dir=destination_dir,
@@ -274,7 +274,7 @@ class StakePoolGroup:
             destination_dir=destination_dir,
         )
 
-        # submit the pool registration certificate through a tx
+        # Submit the pool registration certificate through a tx
         tx_files = structs.TxFiles(
             certificate_files=[pool_reg_cert_file],
             signing_key_files=[
@@ -330,7 +330,7 @@ class StakePoolGroup:
             destination_dir=destination_dir,
         )
 
-        # submit the pool deregistration certificate through a tx
+        # Submit the pool deregistration certificate through a tx
         tx_files = structs.TxFiles(
             certificate_files=[pool_dereg_cert_file],
             signing_key_files=[

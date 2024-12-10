@@ -77,9 +77,9 @@ class TxOut:
     reference_script_file: itp.FileType = ""
 
 
-# list of `TxOut`s, empty list, or empty tuple
+# List of `TxOut`s, empty list, or empty tuple
 OptionalTxOuts = tp.Union[tp.List[TxOut], tp.Tuple[()]]
-# list of `UTXOData`s, empty list, or empty tuple
+# List of `UTXOData`s, empty list, or empty tuple
 OptionalUTXOData = tp.Union[tp.List[UTXOData], tp.Tuple[()]]  # pylint: disable=invalid-name
 
 
@@ -91,7 +91,7 @@ class ScriptTxIn:
     script_file: itp.FileType = ""
     reference_txin: tp.Optional[UTXOData] = None
     reference_type: str = ""
-    # values below needed only when working with Plutus
+    # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
     datum_file: itp.FileType = ""
@@ -162,7 +162,7 @@ class ScriptVote:
 
     vote_file: itp.FileType = ""
     script_file: itp.FileType = ""
-    # values below needed only when working with Plutus
+    # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
@@ -177,7 +177,7 @@ class Mint:
     reference_txin: tp.Optional[UTXOData] = None
     reference_type: str = ""
     policyid: str = ""
-    # values below needed only when working with Plutus
+    # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
     execution_units: tp.Optional[tp.Tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
@@ -185,17 +185,17 @@ class Mint:
     redeemer_value: str = ""
 
 
-# list of `ScriptTxIn`s, empty list, or empty tuple
+# List of `ScriptTxIn`s, empty list, or empty tuple
 OptionalScriptTxIn = tp.Union[tp.List[ScriptTxIn], tp.Tuple[()]]
-# list of `ComplexCert`s, empty list, or empty tuple
+# List of `ComplexCert`s, empty list, or empty tuple
 OptionalScriptCerts = tp.Union[tp.List[ComplexCert], tp.Tuple[()]]
-# list of `ComplexProposal`s, empty list, or empty tuple
+# List of `ComplexProposal`s, empty list, or empty tuple
 OptionalScriptProposals = tp.Union[tp.List[ComplexProposal], tp.Tuple[()]]
-# list of `ScriptWithdrawal`s, empty list, or empty tuple
+# List of `ScriptWithdrawal`s, empty list, or empty tuple
 OptionalScriptWithdrawals = tp.Union[tp.List[ScriptWithdrawal], tp.Tuple[()]]
-# list of `Mint`s, empty list, or empty tuple
+# List of `Mint`s, empty list, or empty tuple
 OptionalMint = tp.Union[tp.List[Mint], tp.Tuple[()]]
-# list of `ScriptVote`s, empty list, or empty tuple
+# List of `ScriptVote`s, empty list, or empty tuple
 OptionalScriptVotes = tp.Union[tp.List[ScriptVote], tp.Tuple[()]]
 
 
