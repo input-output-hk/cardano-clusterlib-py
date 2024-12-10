@@ -54,7 +54,7 @@ def _get_usable_utxos(
     for rec in address_utxos:
         utxo_id = f"{rec.utxo_hash}#{rec.utxo_ix}"
         if rec.coin in coins and utxo_id not in seen_ids:
-            # don't select UTxOs with datum
+            # Don't select UTxOs with datum
             if rec.datum_hash or rec.inline_datum_hash:
                 matching_with_datum = True
                 continue
@@ -79,10 +79,10 @@ def _collect_utxos_amount(
         amount + min_change_value if utxos and utxos[0].coin == consts.DEFAULT_COIN else amount
     )
     for utxo in utxos:
-        # if we were able to collect exact amount, no change is needed
+        # If we were able to collect exact amount, no change is needed
         if collected_amount == amount:
             break
-        # make sure the change is higher than `_min_change_value`
+        # Make sure the change is higher than `_min_change_value`
         if collected_amount >= amount_plus_change:
             break
         collected_utxos.append(utxo)
@@ -107,7 +107,7 @@ def _select_utxos(
     """
     utxo_ids: tp.Set[str] = set()
 
-    # iterate over coins both in txins and txouts
+    # Iterate over coins both in txins and txouts
     for coin in set(txins_db).union(txouts_passed_db).union(txouts_mint_db):
         coin_txins = txins_db.get(coin) or []
         coin_txouts = txouts_passed_db.get(coin) or []
@@ -115,7 +115,7 @@ def _select_utxos(
         total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
 
         if coin == consts.DEFAULT_COIN:
-            # the value "-1" means all available funds
+            # The value "-1" means all available funds
             max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
             if max_index:
                 utxo_ids.update(f"{rec.utxo_hash}#{rec.utxo_ix}" for rec in coin_txins)
@@ -124,7 +124,7 @@ def _select_utxos(
             tx_fee = fee if fee > 1 else 1
             funds_needed = total_output_amount + tx_fee + deposit + treasury_donation
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
-            # fee needs an input, even if withdrawal would cover all needed funds
+            # Fee needs an input, even if withdrawal would cover all needed funds
             input_funds_needed = max(funds_needed - total_withdrawals_amount, tx_fee)
         else:
             coin_txouts_minted = txouts_mint_db.get(coin) or []
@@ -235,7 +235,7 @@ def _resolve_withdrawals(
     """
     resolved_withdrawals = []
     for rec in withdrawals:
-        # the amount with value "-1" means all available balance
+        # The amount with value "-1" means all available balance
         if rec.amount == -1:
             balance = clusterlib_obj.g_query.get_stake_addr_info(rec.address).reward_account_balance
             resolved_withdrawals.append(structs.TxOut(address=rec.address, amount=balance))
@@ -293,15 +293,15 @@ def _get_txin_strings(
     txins: structs.OptionalUTXOData, script_txins: structs.OptionalScriptTxIn
 ) -> tp.Set[str]:
     """Get list of txin strings for normal (non-script) inputs."""
-    # filter out duplicate txins
+    # Filter out duplicate txins
     txins_utxos = {f"{x.utxo_hash}#{x.utxo_ix}" for x in txins}
 
-    # assume that all plutus txin records are for the same UTxO and use the first one
+    # Assume that all plutus txin records are for the same UTxO and use the first one
     plutus_txins_utxos = {
         f"{x.txins[0].utxo_hash}#{x.txins[0].utxo_ix}" for x in script_txins if x.txins
     }
 
-    # remove plutus txin records from normal txins
+    # Remove plutus txin records from normal txins
     txins_combined = txins_utxos.difference(plutus_txins_utxos)
 
     return txins_combined
@@ -310,7 +310,7 @@ def _get_txin_strings(
 def _get_txout_plutus_args(txout: structs.TxOut) -> tp.List[str]:  # noqa: C901
     txout_args = []
 
-    # add datum arguments
+    # Add datum arguments
     if txout.datum_hash:
         txout_args = [
             "--tx-out-datum-hash",
@@ -362,7 +362,7 @@ def _get_txout_plutus_args(txout: structs.TxOut) -> tp.List[str]:  # noqa: C901
             str(txout.inline_datum_value),
         ]
 
-    # add reference script arguments
+    # Add reference script arguments
     if txout.reference_script_file:
         txout_args.extend(
             [
@@ -381,7 +381,7 @@ def get_joined_txouts(
     txouts_by_eutxo_attrs: tp.Dict[str, tp.List[structs.TxOut]] = {}
     joined_txouts: tp.List[tp.List[structs.TxOut]] = []
 
-    # aggregate TX outputs by address, datum and reference script
+    # Aggregate TX outputs by address, datum and reference script
     for rec in txouts:
         datum_src = str(
             rec.datum_hash
@@ -403,9 +403,9 @@ def get_joined_txouts(
             txouts_by_eutxo_attrs[eutxo_attrs] = []
         txouts_by_eutxo_attrs[eutxo_attrs].append(rec)
 
-    # join txouts with the same address, datum and reference script
+    # Join txouts with the same address, datum and reference script
     for txouts_list in txouts_by_eutxo_attrs.values():
-        # create single `TxOut` record with sum of amounts per coin
+        # Create single `TxOut` record with sum of amounts per coin
         txouts_by_coin: tp.Dict[str, tp.Tuple[structs.TxOut, tp.List[int]]] = {}
         for ar in txouts_list:
             if ar.coin in txouts_by_coin:
@@ -528,7 +528,7 @@ def _get_tx_ins_outs(
 
     txins_all = list(txins)
     if not txins_all:
-        # no txins were provided, so we'll select them from the source address
+        # No txins were provided, so we'll select them from the source address
         address_utxos = clusterlib_obj.g_query.get_utxo(address=src_address)
         if not address_utxos:
             msg = f"No UTxO returned for '{src_address}'."
@@ -541,7 +541,7 @@ def _get_tx_ins_outs(
 
     txins_db_all: tp.Dict[str, tp.List[structs.UTXOData]] = _organize_tx_ins_outs_by_coin(txins_all)
 
-    # all output coins, except those minted by this transaction, need to be present in
+    # All output coins, except those minted by this transaction, need to be present in
     # transaction inputs
     if not set(outcoins_passed).difference(txouts_mint_db).issubset(txins_db_all):
         msg = "Not all output coins are present in input UTxOs."
@@ -556,11 +556,11 @@ def _get_tx_ins_outs(
     tx_treasury_donation = treasury_donation if treasury_donation is not None else 0
 
     if txins:
-        # don't touch txins that were passed to the function
+        # Don't touch txins that were passed to the function
         txins_filtered = txins_all
         txins_db_filtered = txins_db_all
     else:
-        # select only UTxOs that are needed to satisfy all outputs, deposits and fee
+        # Select only UTxOs that are needed to satisfy all outputs, deposits and fee
         selected_utxo_ids = _select_utxos(
             txins_db=txins_db_all,
             txouts_passed_db=txouts_passed_db,
@@ -581,7 +581,7 @@ def _get_tx_ins_outs(
         msg = "Cannot build transaction, empty `txins`."
         raise exceptions.CLIError(msg)
 
-    # balance the transaction
+    # Balance the transaction
     txouts_balanced = _balance_txouts(
         # Return change to `src_address`.
         # When using `build_tx`, Lovelace change is returned to `change_address` (this is handled
@@ -664,7 +664,7 @@ def collect_data_for_build(
         msg = "Source address cannot be a script address."
         raise AssertionError(msg)
 
-    # combine txins and make sure we have enough funds to satisfy all txouts
+    # Combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [
         *txins,
         *script_txins_records,
@@ -696,7 +696,7 @@ def collect_data_for_build(
     )
 
     payment_txins = txins or txins_copy
-    # don't include script txins in list of payment txins
+    # Don't include script txins in list of payment txins
     if script_txins_records:
         payment_txins = txins or []
 
@@ -750,7 +750,7 @@ def get_utxo(
                 )
                 continue
 
-            # coin data used to be a dict, now it is a list
+            # Coin data used to be a dict, now it is a list
             try:
                 coin_iter = coin_data.items()
             except AttributeError:
@@ -885,13 +885,13 @@ def _get_script_args(  # noqa: C901
     grouped_args: tp.List[str] = []
     collaterals_all = set()
 
-    # spending
+    # Spending
     for tin in script_txins:
         if tin.txins:
             grouped_args.extend(
                 [
                     "--tx-in",
-                    # assume that all txin records are for the same UTxO and use the first one
+                    # Assume that all txin records are for the same UTxO and use the first one
                     f"{tin.txins[0].utxo_hash}#{tin.txins[0].utxo_ix}",
                 ]
             )
@@ -986,7 +986,7 @@ def _get_script_args(  # noqa: C901
                     ["--spending-reference-tx-in-redeemer-value", str(tin.redeemer_value)]
                 )
 
-    # minting
+    # Minting
     for mrec in mint:
         mrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in mrec.collaterals}
         collaterals_all.update(mrec_collaterals)
@@ -1062,7 +1062,7 @@ def _get_script_args(  # noqa: C901
             if mrec.policyid:
                 grouped_args.extend(["--policy-id", str(mrec.policyid)])
 
-    # certificates
+    # Certificates
     for crec in complex_certs:
         crec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in crec.collaterals}
         collaterals_all.update(crec_collaterals)
@@ -1131,7 +1131,7 @@ def _get_script_args(  # noqa: C901
                     ["--certificate-reference-tx-in-redeemer-value", str(crec.redeemer_value)]
                 )
 
-    # proposals
+    # Proposals
     for prec in complex_proposals:
         prec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in prec.collaterals}
         collaterals_all.update(prec_collaterals)
@@ -1165,7 +1165,7 @@ def _get_script_args(  # noqa: C901
             if prec.redeemer_value:
                 grouped_args.extend(["--proposal-redeemer-value", str(prec.redeemer_value)])
 
-    # withdrawals
+    # Withdrawals
     for wrec in script_withdrawals:
         wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
         collaterals_all.update(wrec_collaterals)
@@ -1239,7 +1239,7 @@ def _get_script_args(  # noqa: C901
                     ["--withdrawal-reference-tx-in-redeemer-value", str(wrec.redeemer_value)]
                 )
 
-    # voting
+    # Voting
     for vrec in script_votes:
         vrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in vrec.collaterals}
         collaterals_all.update(vrec_collaterals)
@@ -1273,7 +1273,7 @@ def _get_script_args(  # noqa: C901
             if vrec.redeemer_value:
                 grouped_args.extend(["--vote-redeemer-value", str(vrec.redeemer_value)])
 
-    # add unique collaterals
+    # Add unique collaterals
     grouped_args.extend(
         [
             *helpers._prepend_flag("--tx-in-collateral", collaterals_all),

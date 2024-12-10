@@ -138,7 +138,7 @@ def _get_kes_period_info(kes_info: str) -> tp.Dict[str, tp.Any]:
             elif "correct KES period interval" in out_message:
                 valid_kes_period = True
 
-    # get output metrics
+    # Get output metrics
     metrics_str = kes_info.split("{")[-1]
     metrics_dict = {}
 
@@ -171,12 +171,12 @@ def get_epoch_for_slot(cluster_obj: "itp.ClusterLib", slot_no: int) -> EpochInfo
     num_byron_epochs = cluster_obj.slots_offset // slots_per_epoch_diff
     slots_in_byron = num_byron_epochs * slots_in_byron_epoch
 
-    # slot is in Byron era
+    # Slot is in Byron era
     if slot_no < slots_in_byron:
         epoch_no = slot_no // slots_in_byron_epoch
         first_slot_in_epoch = epoch_no * slots_in_byron_epoch
         last_slot_in_epoch = first_slot_in_epoch + slots_in_byron_epoch - 1
-    # slot is in Shelley-based era
+    # Slot is in Shelley-based era
     else:
         slot_no_shelley = slot_no + cluster_obj.slots_offset
         epoch_no = slot_no_shelley // cluster_obj.epoch_length
@@ -217,7 +217,7 @@ def wait_for_block(
     this_block = initial_block
     timeout_slot = initial_slot + next_block_timeout
     blocks_to_go = new_blocks
-    # limit calls to `query tip`
+    # Limit calls to `query tip`
     tip_throttle = 0
 
     while this_slot < timeout_slot:
@@ -231,7 +231,7 @@ def wait_for_block(
         if this_block >= block_no:
             break
         if this_block > prev_block:
-            # new block was created, reset timeout slot
+            # New block was created, reset timeout slot
             timeout_slot = this_slot + next_block_timeout
 
         blocks_to_go = block_no - this_block
@@ -319,7 +319,7 @@ def wait_for_epoch(
             f"Waited for epoch number {epoch_no} and current epoch is "
             f"number {this_epoch}, wrong `slots_offset` ({clusterlib_obj.slots_offset})?"
         )
-        # attempt to get the epoch boundary as precisely as possible failed, now just
+        # Attempt to get the epoch boundary as precisely as possible failed, now just
         # query epoch number and wait
         poll_new_epoch(
             clusterlib_obj=clusterlib_obj, exp_epoch=epoch_no, padding_seconds=padding_seconds

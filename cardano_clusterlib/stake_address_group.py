@@ -562,7 +562,7 @@ class StakeAddressGroup:
         if not verify:
             return tx_raw_withdrawal_output
 
-        # check that reward is 0
+        # Check that reward is 0
         if (
             self._clusterlib_obj.g_query.get_stake_addr_info(
                 stake_addr_record.address
@@ -572,7 +572,7 @@ class StakeAddressGroup:
             msg = "Not all rewards were transferred."
             raise exceptions.CLIError(msg)
 
-        # check that rewards were transferred
+        # Check that rewards were transferred
         src_reward_balance = self._clusterlib_obj.g_query.get_address_balance(dst_address)
         if (
             src_reward_balance

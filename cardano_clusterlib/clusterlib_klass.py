@@ -267,7 +267,7 @@ class ClusterLib:
 
         coverage.record_cli_coverage(cli_args=cli_args_strs_all, coverage_dict=self.cli_coverage)
 
-        # re-run the command when running into
+        # Re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
         # or
         # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"

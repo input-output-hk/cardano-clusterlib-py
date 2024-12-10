@@ -298,7 +298,7 @@ class TransactionGroup:
         if not script_valid:
             misc_args.append("--script-invalid")
 
-        # only single `--mint` argument is allowed, let's aggregate all the outputs
+        # Only single `--mint` argument is allowed, let's aggregate all the outputs
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         misc_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
@@ -902,7 +902,7 @@ class TransactionGroup:
         if not script_valid:
             misc_args.append("--script-invalid")
 
-        # there's allowed just single `--mint` argument, let's aggregate all the outputs
+        # There's allowed just single `--mint` argument, let's aggregate all the outputs
         mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
         misc_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
 
@@ -1295,7 +1295,7 @@ class TransactionGroup:
         # pylint: disable=too-many-arguments
         tx_files = tx_files or structs.TxFiles()
 
-        # resolve withdrawal amounts here (where -1 for total rewards amount is used) so the
+        # Resolve withdrawal amounts here (where -1 for total rewards amount is used) so the
         # resolved values can be passed around, and it is not needed to resolve them again
         # every time `_get_withdrawals` is called
         withdrawals, script_withdrawals, *__ = txtools._get_withdrawals(
@@ -1331,7 +1331,7 @@ class TransactionGroup:
                 destination_dir=destination_dir,
             )
 
-            # add 10% to the estimated fee, as the estimation is not precise enough, and there
+            # Add 10% to the estimated fee, as the estimation is not precise enough, and there
             # might be another txin in the final tx once fee is added to the total needed amount
             fee = int(fee * 1.1)
 
@@ -1528,11 +1528,11 @@ class TransactionGroup:
             List[dict]: A Plutus scripts cost data.
         """
         # pylint: disable=too-many-arguments,unused-argument
-        # collect all arguments that will be passed to `build_tx`
+        # Collect all arguments that will be passed to `build_tx`
         kwargs = locals()
         kwargs.pop("self", None)
         kwargs.pop("kwargs", None)
-        # this would be a duplicate if already present
+        # This would be a duplicate if already present
         kwargs.pop("calc_script_cost_file", None)
 
         destination_dir = pl.Path(destination_dir).expanduser()
