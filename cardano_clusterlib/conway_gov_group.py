@@ -1,7 +1,6 @@
 """Group of subgroups for governance in Conway+ eras."""
 
 import logging
-import typing as tp
 
 from cardano_clusterlib import conway_gov_action_group
 from cardano_clusterlib import conway_gov_committee_group
@@ -18,13 +17,11 @@ class ConwayGovGroup:
         self._clusterlib_obj = clusterlib_obj
 
         # Groups of commands
-        self._action_group: tp.Optional[conway_gov_action_group.ConwayGovActionGroup] = None
-        self._committee_group: tp.Optional[conway_gov_committee_group.ConwayGovCommitteeGroup] = (
-            None
-        )
-        self._drep_group: tp.Optional[conway_gov_drep_group.ConwayGovDrepGroup] = None
-        self._query_group: tp.Optional[conway_gov_query_group.ConwayGovQueryGroup] = None
-        self._vote_group: tp.Optional[conway_gov_vote_group.ConwayGovVoteGroup] = None
+        self._action_group: conway_gov_action_group.ConwayGovActionGroup | None = None
+        self._committee_group: conway_gov_committee_group.ConwayGovCommitteeGroup | None = None
+        self._drep_group: conway_gov_drep_group.ConwayGovDrepGroup | None = None
+        self._query_group: conway_gov_query_group.ConwayGovQueryGroup | None = None
+        self._vote_group: conway_gov_vote_group.ConwayGovVoteGroup | None = None
 
     @property
     def action(self) -> conway_gov_action_group.ConwayGovActionGroup:
@@ -74,8 +71,8 @@ class ConwayGovGroup:
     def get_anchor_data_hash(
         self,
         text: str = "",
-        file_binary: tp.Optional[itp.FileType] = None,
-        file_text: tp.Optional[itp.FileType] = None,
+        file_binary: itp.FileType | None = None,
+        file_text: itp.FileType | None = None,
     ) -> str:
         """Compute the hash of some anchor data.
 
@@ -109,7 +106,7 @@ class ConwayGovGroup:
 
     def get_script_hash(
         self,
-        script_file: tp.Optional[itp.FileType] = None,
+        script_file: itp.FileType | None = None,
     ) -> str:
         """Compute the hash of a script.
 

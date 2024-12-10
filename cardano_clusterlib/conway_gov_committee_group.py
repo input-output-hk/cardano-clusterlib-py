@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -22,7 +21,7 @@ class ConwayGovCommitteeGroup:
         cold_vkey: str = "",
         cold_vkey_file: itp.FileType = "",
         cold_vkey_hash: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for cold verification key."""
         if cold_vkey:
             key_args = ["--cold-verification-key", str(cold_vkey)]

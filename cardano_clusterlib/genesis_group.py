@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import exceptions
@@ -17,7 +16,7 @@ class GenesisGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
-        self._genesis_keys: tp.Optional[structs.GenesisKeys] = None
+        self._genesis_keys: structs.GenesisKeys | None = None
         self._genesis_utxo_addr: str = ""
         self._cli_args = ("cardano-cli", "legacy", "genesis")
 

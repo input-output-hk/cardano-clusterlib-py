@@ -22,7 +22,7 @@ class ConwayGovVoteGroup:
     def _get_vote_args(
         self,
         vote: consts.Votes,
-    ) -> tp.List[str]:
+    ) -> list[str]:
         if vote == consts.Votes.YES:
             vote_args = ["--yes"]
         elif vote == consts.Votes.NO:
@@ -39,7 +39,7 @@ class ConwayGovVoteGroup:
         self,
         action_txid: str,
         action_ix: int,
-    ) -> tp.List[str]:
+    ) -> list[str]:
         gov_action_args = [
             "--governance-action-tx-id",
             str(action_txid),
@@ -52,7 +52,7 @@ class ConwayGovVoteGroup:
         self,
         anchor_url: str = "",
         anchor_data_hash: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         anchor_args = []
         if anchor_url:
             if not anchor_data_hash:
@@ -73,7 +73,7 @@ class ConwayGovVoteGroup:
         action_ix: int,
         vote: consts.Votes,
         cc_hot_vkey: str = "",
-        cc_hot_vkey_file: tp.Optional[itp.FileType] = None,
+        cc_hot_vkey_file: itp.FileType | None = None,
         cc_hot_key_hash: str = "",
         cc_hot_script_hash: str = "",
         anchor_url: str = "",
@@ -139,7 +139,7 @@ class ConwayGovVoteGroup:
         action_ix: int,
         vote: consts.Votes,
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         drep_script_hash: str = "",
         anchor_url: str = "",
@@ -205,7 +205,7 @@ class ConwayGovVoteGroup:
         action_ix: int,
         vote: consts.Votes,
         stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        cold_vkey_file: itp.FileType | None = None,
         stake_pool_id: str = "",
         anchor_url: str = "",
         anchor_data_hash: str = "",
@@ -260,7 +260,7 @@ class ConwayGovVoteGroup:
         )
         return vote_drep
 
-    def view(self, vote_file: itp.FileType) -> tp.Dict[str, tp.Any]:
+    def view(self, vote_file: itp.FileType) -> dict[str, tp.Any]:
         """View a governance action vote."""
         vote_file = pl.Path(vote_file).expanduser()
         clusterlib_helpers._check_files_exist(vote_file, clusterlib_obj=self._clusterlib_obj)
@@ -275,5 +275,5 @@ class ConwayGovVoteGroup:
         ).stdout.strip()
         stdout_dec = stdout.decode("utf-8") if stdout else ""
 
-        out: tp.Dict[str, tp.Any] = json.loads(stdout_dec)
+        out: dict[str, tp.Any] = json.loads(stdout_dec)
         return out

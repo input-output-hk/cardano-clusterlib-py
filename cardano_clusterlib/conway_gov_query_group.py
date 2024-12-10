@@ -18,9 +18,9 @@ class ConwayGovQueryGroup:
         self,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for script or verification key."""
         if drep_script_hash:
             cred_args = ["--drep-script-hash", str(drep_script_hash)]
@@ -51,23 +51,23 @@ class ConwayGovQueryGroup:
         stdout_dec = stdout.decode("utf-8") if stdout else ""
         return stdout_dec
 
-    def constitution(self) -> tp.Dict[str, tp.Any]:
+    def constitution(self) -> dict[str, tp.Any]:
         """Get the constitution."""
-        out: tp.Dict[str, tp.Any] = json.loads(self.query_cli(["constitution"]))
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["constitution"]))
         return out
 
-    def gov_state(self) -> tp.Dict[str, tp.Any]:
+    def gov_state(self) -> dict[str, tp.Any]:
         """Get the governance state."""
-        out: tp.Dict[str, tp.Any] = json.loads(self.query_cli(["gov-state"]))
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["gov-state"]))
         return out
 
     def drep_state(
         self,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
-    ) -> tp.List[tp.List[tp.Dict[str, tp.Any]]]:
+    ) -> list[list[dict[str, tp.Any]]]:
         """Get the DRep state.
 
         When no key is provided, query all DReps.
@@ -90,18 +90,16 @@ class ConwayGovQueryGroup:
         if not cred_args:
             cred_args = ["--all-dreps"]
 
-        out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
-            self.query_cli(["drep-state", *cred_args])
-        )
+        out: list[list[dict[str, tp.Any]]] = json.loads(self.query_cli(["drep-state", *cred_args]))
         return out
 
     def drep_stake_distribution(
         self,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
-    ) -> tp.List[list]:
+    ) -> list[list]:
         """Get the DRep stake distribution.
 
         When no key is provided, query all DReps.
@@ -124,14 +122,14 @@ class ConwayGovQueryGroup:
         if not cred_args:
             cred_args = ["--all-dreps"]
 
-        out: tp.List[tp.List[tp.Dict[str, tp.Any]]] = json.loads(
+        out: list[list[dict[str, tp.Any]]] = json.loads(
             self.query_cli(["drep-stake-distribution", *cred_args])
         )
         return out
 
-    def committee_state(self) -> tp.Dict[str, tp.Any]:
+    def committee_state(self) -> dict[str, tp.Any]:
         """Get the committee state."""
-        out: tp.Dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
         return out
 
     def treasury(self) -> int:

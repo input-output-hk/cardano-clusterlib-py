@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -120,7 +119,7 @@ class NodeGroup:
         kes_vkey_file: itp.FileType,
         cold_skey_file: itp.FileType,
         cold_counter_file: itp.FileType,
-        kes_period: tp.Optional[int] = None,
+        kes_period: int | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a node operational certificate.

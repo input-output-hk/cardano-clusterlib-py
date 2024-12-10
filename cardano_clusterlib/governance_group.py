@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -181,7 +180,7 @@ class GovernanceGroup:
         src_address: str,
         src_skey_file: itp.FileType,
         tx_name: str,
-        epoch: tp.Optional[int] = None,
+        epoch: int | None = None,
         destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
         """Submit an update proposal.

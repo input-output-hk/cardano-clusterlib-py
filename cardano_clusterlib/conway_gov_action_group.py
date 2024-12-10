@@ -27,9 +27,9 @@ class ConwayGovActionGroup:
     def _get_deposit_return_key_args(
         self,
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for verification key."""
         if deposit_return_stake_vkey:
             key_args = ["--deposit-return-stake-verification-key", str(deposit_return_stake_vkey)]
@@ -48,9 +48,9 @@ class ConwayGovActionGroup:
 
     def _get_cc_members_args(
         self,
-        cc_members: tp.List[structs.CCMember],
+        cc_members: list[structs.CCMember],
         remove: bool = False,
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for committee members."""
         arg_action = "remove" if remove else "add"
         cc_members_args = []
@@ -97,7 +97,7 @@ class ConwayGovActionGroup:
         self,
         prev_action_txid: str = "",
         prev_action_ix: int = -1,
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for previous action."""
         prev_action_args = []
         if prev_action_txid:
@@ -117,7 +117,7 @@ class ConwayGovActionGroup:
         self,
         anchor_url: str,
         anchor_data_hash: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for anchor."""
         anchor_args = [
             "--anchor-url",
@@ -138,7 +138,7 @@ class ConwayGovActionGroup:
         constitution_hash: str,
         constitution_script_hash: str = "",
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         prev_action_txid: str = "",
         prev_action_ix: int = -1,
@@ -219,7 +219,7 @@ class ConwayGovActionGroup:
         anchor_url: str,
         anchor_data_hash: str,
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionInfo:
@@ -275,7 +275,7 @@ class ConwayGovActionGroup:
         prev_action_txid: str,
         prev_action_ix: int,
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionNoConfidence:
@@ -339,12 +339,12 @@ class ConwayGovActionGroup:
         anchor_url: str,
         anchor_data_hash: str,
         threshold: str,
-        add_cc_members: tp.Optional[tp.List[structs.CCMember]] = None,
-        rem_cc_members: tp.Optional[tp.List[structs.CCMember]] = None,
+        add_cc_members: tp.Optional[list[structs.CCMember]] = None,
+        rem_cc_members: tp.Optional[list[structs.CCMember]] = None,
         prev_action_txid: str = "",
         prev_action_ix: int = -1,
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionUpdateCommittee:
@@ -420,7 +420,7 @@ class ConwayGovActionGroup:
         prev_action_txid: str = "",
         prev_action_ix: int = -1,
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionPParamsUpdate:
@@ -484,10 +484,10 @@ class ConwayGovActionGroup:
         anchor_url: str,
         anchor_data_hash: str,
         funds_receiving_stake_vkey: str = "",
-        funds_receiving_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        funds_receiving_stake_vkey_file: itp.FileType | None = None,
         funds_receiving_stake_key_hash: str = "",
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionTreasuryWithdrawal:
@@ -560,7 +560,7 @@ class ConwayGovActionGroup:
         )
         return action_out
 
-    def view(self, action_file: itp.FileType) -> tp.Dict[str, tp.Any]:
+    def view(self, action_file: itp.FileType) -> dict[str, tp.Any]:
         """View a governance action vote."""
         action_file = pl.Path(action_file).expanduser()
         clusterlib_helpers._check_files_exist(action_file, clusterlib_obj=self._clusterlib_obj)
@@ -575,7 +575,7 @@ class ConwayGovActionGroup:
         ).stdout.strip()
         stdout_dec = stdout.decode("utf-8") if stdout else ""
 
-        out: tp.Dict[str, tp.Any] = json.loads(stdout_dec)
+        out: dict[str, tp.Any] = json.loads(stdout_dec)
         return out
 
     def create_hardfork(
@@ -589,7 +589,7 @@ class ConwayGovActionGroup:
         prev_action_txid: str = "",
         prev_action_ix: int = -1,
         deposit_return_stake_vkey: str = "",
-        deposit_return_stake_vkey_file: tp.Optional[itp.FileType] = None,
+        deposit_return_stake_vkey_file: itp.FileType | None = None,
         deposit_return_stake_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionHardfork:

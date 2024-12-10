@@ -3,7 +3,6 @@
 import json
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -20,13 +19,13 @@ class AddressGroup:
     def gen_payment_addr(
         self,
         addr_name: str,
-        payment_vkey: tp.Optional[str] = None,
-        payment_vkey_file: tp.Optional[itp.FileType] = None,
-        payment_script_file: tp.Optional[itp.FileType] = None,
-        stake_vkey: tp.Optional[str] = None,
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
+        payment_vkey: str | None = None,
+        payment_vkey_file: itp.FileType | None = None,
+        payment_script_file: itp.FileType | None = None,
+        stake_vkey: str | None = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
         destination_dir: itp.FileType = ".",
     ) -> str:
         """Generate a payment address, with optional delegation to a stake address.
@@ -120,8 +119,8 @@ class AddressGroup:
 
     def get_payment_vkey_hash(
         self,
-        payment_vkey_file: tp.Optional[itp.FileType] = None,
-        payment_vkey: tp.Optional[str] = None,
+        payment_vkey_file: itp.FileType | None = None,
+        payment_vkey: str | None = None,
     ) -> str:
         """Return the hash of an address key.
 
@@ -158,7 +157,7 @@ class AddressGroup:
         Returns:
             structs.AddressInfo: A tuple containing address info.
         """
-        addr_dict: tp.Dict[str, str] = json.loads(
+        addr_dict: dict[str, str] = json.loads(
             self._clusterlib_obj.cli(["address", "info", "--address", str(address)])
             .stdout.rstrip()
             .decode("utf-8")
@@ -168,8 +167,8 @@ class AddressGroup:
     def gen_payment_addr_and_keys(
         self,
         name: str,
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> structs.AddressRecord:
         """Generate payment address and key pair.

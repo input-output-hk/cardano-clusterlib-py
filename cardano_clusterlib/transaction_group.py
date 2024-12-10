@@ -24,7 +24,7 @@ class TransactionGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
         self.min_fee = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
-        self._has_debug_prop: tp.Optional[bool] = None
+        self._has_debug_prop: bool | None = None
 
     @property
     def _has_debug(self) -> bool:
@@ -102,8 +102,8 @@ class TransactionGroup:
 
     def get_hash_script_data(
         self,
-        script_data_file: tp.Optional[itp.FileType] = None,
-        script_data_cbor_file: tp.Optional[itp.FileType] = None,
+        script_data_file: itp.FileType | None = None,
+        script_data_cbor_file: itp.FileType | None = None,
         script_data_value: str = "",
     ) -> str:
         """Return the hash of script data.
@@ -176,27 +176,27 @@ class TransactionGroup:
     def build_raw_tx_bare(  # noqa: C901
         self,
         out_file: itp.FileType,
-        txouts: tp.List[structs.TxOut],
+        txouts: list[structs.TxOut],
         tx_files: structs.TxFiles,
         fee: int,
         txins: structs.OptionalUTXOData = (),
         readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
-        total_collateral_amount: tp.Optional[int] = None,
+        total_collateral_amount: int | None = None,
         mint: structs.OptionalMint = (),
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,
-        ttl: tp.Optional[int] = None,
+        required_signer_hashes: tp.Optional[list[str]] = None,
+        ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
-        invalid_hereafter: tp.Optional[int] = None,
-        invalid_before: tp.Optional[int] = None,
-        current_treasury_value: tp.Optional[int] = None,
-        treasury_donation: tp.Optional[int] = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
+        current_treasury_value: int | None = None,
+        treasury_donation: int | None = None,
         script_valid: bool = True,
         join_txouts: bool = True,
     ) -> structs.TxRawOutput:
@@ -409,23 +409,23 @@ class TransactionGroup:
         readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
-        total_collateral_amount: tp.Optional[int] = None,
+        total_collateral_amount: int | None = None,
         mint: structs.OptionalMint = (),
-        tx_files: tp.Optional[structs.TxFiles] = None,
+        tx_files: structs.TxFiles | None = None,
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         fee: int = 0,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,
-        ttl: tp.Optional[int] = None,
+        required_signer_hashes: tp.Optional[list[str]] = None,
+        ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
-        deposit: tp.Optional[int] = None,
-        current_treasury_value: tp.Optional[int] = None,
-        treasury_donation: tp.Optional[int] = None,
-        invalid_hereafter: tp.Optional[int] = None,
-        invalid_before: tp.Optional[int] = None,
+        deposit: int | None = None,
+        current_treasury_value: int | None = None,
+        treasury_donation: int | None = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
@@ -587,28 +587,28 @@ class TransactionGroup:
         self,
         src_address: str,
         tx_name: str,
-        dst_addresses: tp.Optional[tp.List[str]] = None,
+        dst_addresses: tp.Optional[list[str]] = None,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
-        total_collateral_amount: tp.Optional[int] = None,
+        total_collateral_amount: int | None = None,
         mint: structs.OptionalMint = (),
-        tx_files: tp.Optional[structs.TxFiles] = None,
+        tx_files: structs.TxFiles | None = None,
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,
-        ttl: tp.Optional[int] = None,
+        required_signer_hashes: tp.Optional[list[str]] = None,
+        ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
-        deposit: tp.Optional[int] = None,
-        current_treasury_value: tp.Optional[int] = None,
-        treasury_donation: tp.Optional[int] = None,
-        invalid_hereafter: tp.Optional[int] = None,
-        invalid_before: tp.Optional[int] = None,
+        deposit: int | None = None,
+        current_treasury_value: int | None = None,
+        treasury_donation: int | None = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
         witness_count_add: int = 0,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
@@ -712,7 +712,7 @@ class TransactionGroup:
 
     def calculate_min_req_utxo(
         self,
-        txouts: tp.List[structs.TxOut],
+        txouts: list[structs.TxOut],
     ) -> structs.Value:
         """Calculate the minimum required UTxO for a single transaction output.
 
@@ -757,25 +757,25 @@ class TransactionGroup:
         readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
-        total_collateral_amount: tp.Optional[int] = None,
+        total_collateral_amount: int | None = None,
         mint: structs.OptionalMint = (),
-        tx_files: tp.Optional[structs.TxFiles] = None,
+        tx_files: structs.TxFiles | None = None,
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         change_address: str = "",
-        fee_buffer: tp.Optional[int] = None,
+        fee_buffer: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,
+        required_signer_hashes: tp.Optional[list[str]] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
-        deposit: tp.Optional[int] = None,
-        treasury_donation: tp.Optional[int] = None,
-        invalid_hereafter: tp.Optional[int] = None,
-        invalid_before: tp.Optional[int] = None,
-        witness_override: tp.Optional[int] = None,
+        deposit: int | None = None,
+        treasury_donation: int | None = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
+        witness_override: int | None = None,
         script_valid: bool = True,
-        calc_script_cost_file: tp.Optional[itp.FileType] = None,
+        calc_script_cost_file: itp.FileType | None = None,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
         skip_asset_balancing: bool = True,
@@ -1010,8 +1010,8 @@ class TransactionGroup:
         self,
         signing_key_files: itp.OptionalFiles,
         tx_name: str,
-        tx_body_file: tp.Optional[itp.FileType] = None,
-        tx_file: tp.Optional[itp.FileType] = None,
+        tx_body_file: itp.FileType | None = None,
+        tx_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Sign a transaction.
@@ -1154,7 +1154,7 @@ class TransactionGroup:
         return txhash
 
     def submit_tx(
-        self, tx_file: itp.FileType, txins: tp.List[structs.UTXOData], wait_blocks: int = 2
+        self, tx_file: itp.FileType, txins: list[structs.UTXOData], wait_blocks: int = 2
     ) -> str:
         """Submit a transaction, resubmit if the transaction didn't make it to the chain.
 
@@ -1215,23 +1215,23 @@ class TransactionGroup:
         readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
-        total_collateral_amount: tp.Optional[int] = None,
+        total_collateral_amount: int | None = None,
         mint: structs.OptionalMint = (),
-        tx_files: tp.Optional[structs.TxFiles] = None,
+        tx_files: structs.TxFiles | None = None,
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
-        fee: tp.Optional[int] = None,
+        fee: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,
-        ttl: tp.Optional[int] = None,
+        required_signer_hashes: tp.Optional[list[str]] = None,
+        ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
-        deposit: tp.Optional[int] = None,
-        current_treasury_value: tp.Optional[int] = None,
-        treasury_donation: tp.Optional[int] = None,
-        invalid_hereafter: tp.Optional[int] = None,
-        invalid_before: tp.Optional[int] = None,
+        deposit: int | None = None,
+        current_treasury_value: int | None = None,
+        treasury_donation: int | None = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
         witness_count_add: int = 0,
         join_txouts: bool = True,
         verify_tx: bool = True,
@@ -1407,7 +1407,7 @@ class TransactionGroup:
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{script_name}_multisig.script"
 
-        scripts_l: tp.List[dict] = [
+        scripts_l: list[dict] = [
             {
                 "keyHash": self._clusterlib_obj.g_address.get_payment_vkey_hash(
                     payment_vkey_file=f
@@ -1459,27 +1459,27 @@ class TransactionGroup:
         readonly_reference_txins: structs.OptionalUTXOData = (),
         script_txins: structs.OptionalScriptTxIn = (),
         return_collateral_txouts: structs.OptionalTxOuts = (),
-        total_collateral_amount: tp.Optional[int] = None,
+        total_collateral_amount: int | None = None,
         mint: structs.OptionalMint = (),
-        tx_files: tp.Optional[structs.TxFiles] = None,
+        tx_files: structs.TxFiles | None = None,
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         change_address: str = "",
-        fee_buffer: tp.Optional[int] = None,
+        fee_buffer: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[tp.List[str]] = None,
+        required_signer_hashes: tp.Optional[list[str]] = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
-        deposit: tp.Optional[int] = None,
-        invalid_hereafter: tp.Optional[int] = None,
-        invalid_before: tp.Optional[int] = None,
-        witness_override: tp.Optional[int] = None,
+        deposit: int | None = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
+        witness_override: int | None = None,
         script_valid: bool = True,
-        calc_script_cost_file: tp.Optional[itp.FileType] = None,
+        calc_script_cost_file: itp.FileType | None = None,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
-    ) -> tp.List[dict]:
+    ) -> list[dict]:
         """Calculate cost of Plutus scripts. Accepts the same arguments as `build_tx`.
 
         Args:
@@ -1540,19 +1540,19 @@ class TransactionGroup:
 
         self.build_tx(**kwargs, calc_script_cost_file=out_file)
         with open(out_file, encoding="utf-8") as fp_out:
-            cost: tp.List[dict] = json.load(fp_out)
+            cost: list[dict] = json.load(fp_out)
         return cost
 
     def send_funds(
         self,
         src_address: str,
-        destinations: tp.List[structs.TxOut],
+        destinations: list[structs.TxOut],
         tx_name: str,
-        tx_files: tp.Optional[structs.TxFiles] = None,
-        fee: tp.Optional[int] = None,
-        ttl: tp.Optional[int] = None,
-        deposit: tp.Optional[int] = None,
-        invalid_hereafter: tp.Optional[int] = None,
+        tx_files: structs.TxFiles | None = None,
+        fee: int | None = None,
+        ttl: int | None = None,
+        deposit: int | None = None,
+        invalid_hereafter: int | None = None,
         verify_tx: bool = True,
         destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:

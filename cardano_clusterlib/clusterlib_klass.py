@@ -5,7 +5,6 @@ import logging
 import pathlib as pl
 import subprocess
 import time
-import typing as tp
 
 from packaging import version
 
@@ -48,7 +47,7 @@ class ClusterLib:
     def __init__(
         self,
         state_dir: itp.FileType,
-        slots_offset: tp.Optional[int] = None,
+        slots_offset: int | None = None,
         socket_path: itp.FileType = "",
         command_era: str = consts.CommandEras.LATEST,
     ):
@@ -73,8 +72,8 @@ class ClusterLib:
             raise exceptions.CLIError(msg)
 
         self._init_socket_path = socket_path
-        self.socket_path: tp.Optional[pl.Path] = None
-        self.socket_args: tp.List[str] = []
+        self.socket_path: pl.Path | None = None
+        self.socket_args: list[str] = []
         self.set_socket_path(socket_path=socket_path)
 
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
@@ -102,7 +101,7 @@ class ClusterLib:
         self._min_change_value = 1800_000
 
         # Conway+ era
-        self.conway_genesis_json: tp.Optional[pl.Path] = None
+        self.conway_genesis_json: pl.Path | None = None
         self.conway_genesis: dict = {}
         if consts.Eras[self.era_in_use.upper()].value >= consts.Eras.CONWAY.value:
             # Conway genesis
@@ -114,21 +113,21 @@ class ClusterLib:
 
         self.overwrite_outfiles = True
 
-        self._cli_version: tp.Optional[version.Version] = None
+        self._cli_version: version.Version | None = None
 
         # Groups of commands
-        self._transaction_group: tp.Optional[transaction_group.TransactionGroup] = None
-        self._query_group: tp.Optional[query_group.QueryGroup] = None
-        self._address_group: tp.Optional[address_group.AddressGroup] = None
-        self._stake_address_group: tp.Optional[stake_address_group.StakeAddressGroup] = None
-        self._stake_pool_group: tp.Optional[stake_pool_group.StakePoolGroup] = None
-        self._node_group: tp.Optional[node_group.NodeGroup] = None
-        self._key_group: tp.Optional[key_group.KeyGroup] = None
-        self._genesis_group: tp.Optional[genesis_group.GenesisGroup] = None
-        self._governance_group: tp.Optional[governance_group.GovernanceGroup] = None
-        self._conway_gov_group: tp.Optional[conway_gov_group.ConwayGovGroup] = None
+        self._transaction_group: transaction_group.TransactionGroup | None = None
+        self._query_group: query_group.QueryGroup | None = None
+        self._address_group: address_group.AddressGroup | None = None
+        self._stake_address_group: stake_address_group.StakeAddressGroup | None = None
+        self._stake_pool_group: stake_pool_group.StakePoolGroup | None = None
+        self._node_group: node_group.NodeGroup | None = None
+        self._key_group: key_group.KeyGroup | None = None
+        self._genesis_group: genesis_group.GenesisGroup | None = None
+        self._governance_group: governance_group.GovernanceGroup | None = None
+        self._conway_gov_group: conway_gov_group.ConwayGovGroup | None = None
 
-    def set_socket_path(self, socket_path: tp.Optional[itp.FileType]) -> None:
+    def set_socket_path(self, socket_path: itp.FileType | None) -> None:
         """Set a path to socket file for communication with the node."""
         if not socket_path:
             self.socket_path = None
@@ -239,8 +238,8 @@ class ClusterLib:
 
     def cli(
         self,
-        cli_args: tp.List[str],
-        timeout: tp.Optional[float] = None,
+        cli_args: list[str],
+        timeout: float | None = None,
         add_default_args: bool = True,
     ) -> structs.CLIOut:
         """Run the `cardano-cli` command.
@@ -425,7 +424,7 @@ class ClusterLib:
             future_is_ok=future_is_ok,
         )
 
-    def time_to_epoch_end(self, tip: tp.Optional[dict] = None) -> float:
+    def time_to_epoch_end(self, tip: dict | None = None) -> float:
         """How many seconds to go to start of a new epoch."""
         tip = tip or self.g_query.get_tip()
         epoch = int(tip["epoch"])
@@ -433,7 +432,7 @@ class ClusterLib:
         slots_to_go = (epoch + 1) * self.epoch_length - (slot + self.slots_offset - 1)
         return float(slots_to_go * self.slot_length)
 
-    def time_from_epoch_start(self, tip: tp.Optional[dict] = None) -> float:
+    def time_from_epoch_start(self, tip: dict | None = None) -> float:
         """How many seconds passed from start of the current epoch."""
         s_to_epoch_stop = self.time_to_epoch_end(tip=tip)
         return float(self.epoch_length_sec - s_to_epoch_stop)

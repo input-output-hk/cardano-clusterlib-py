@@ -2,7 +2,6 @@ import itertools
 import pathlib as pl
 import random
 import string
-import typing as tp
 
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types as itp
@@ -21,7 +20,7 @@ def read_address_from_file(addr_file: itp.FileType) -> str:
         return in_file.read().strip()
 
 
-def _prepend_flag(flag: str, contents: itp.UnpackableSequence) -> tp.List[str]:
+def _prepend_flag(flag: str, contents: itp.UnpackableSequence) -> list[str]:
     """Prepend flag to every item of the sequence.
 
     Args:
@@ -50,6 +49,6 @@ def _check_outfiles(*out_files: itp.FileType) -> None:
             raise exceptions.CLIError(msg)
 
 
-def _maybe_path(file: tp.Optional[itp.FileType]) -> tp.Optional[pl.Path]:
+def _maybe_path(file: itp.FileType | None) -> pl.Path | None:
     """Return `Path` if `file` is thruthy."""
     return pl.Path(file) if file else None
