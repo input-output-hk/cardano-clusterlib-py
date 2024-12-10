@@ -79,7 +79,7 @@ def _check_files_exist(*out_files: itp.FileType, clusterlib_obj: "itp.ClusterLib
             raise exceptions.CLIError(msg)
 
 
-def _format_cli_args(cli_args: tp.List[str]) -> str:
+def _format_cli_args(cli_args: list[str]) -> str:
     """Format CLI arguments for logging.
 
     Quote arguments with spaces and other "special" characters in them.
@@ -102,7 +102,7 @@ def _write_cli_log(clusterlib_obj: "itp.ClusterLib", command: str) -> None:
         logfile.write(f"{datetime.datetime.now(tz=datetime.timezone.utc)}: {command}\n")
 
 
-def _get_kes_period_info(kes_info: str) -> tp.Dict[str, tp.Any]:
+def _get_kes_period_info(kes_info: str) -> dict[str, tp.Any]:
     """Process the output of the `kes-period-info` command.
 
     Args:
@@ -186,9 +186,7 @@ def get_epoch_for_slot(cluster_obj: "itp.ClusterLib", slot_no: int) -> EpochInfo
     return EpochInfo(epoch=epoch_no, first_slot=first_slot_in_epoch, last_slot=last_slot_in_epoch)
 
 
-def wait_for_block(
-    clusterlib_obj: "itp.ClusterLib", tip: tp.Dict[str, tp.Any], block_no: int
-) -> int:
+def wait_for_block(clusterlib_obj: "itp.ClusterLib", tip: dict[str, tp.Any], block_no: int) -> int:
     """Wait for block number.
 
     Args:
@@ -275,7 +273,7 @@ def poll_new_epoch(
 
 def wait_for_epoch(
     clusterlib_obj: "itp.ClusterLib",
-    tip: tp.Dict[str, tp.Any],
+    tip: dict[str, tp.Any],
     epoch_no: int,
     padding_seconds: int = 0,
     future_is_ok: bool = True,

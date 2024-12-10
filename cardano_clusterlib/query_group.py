@@ -43,12 +43,12 @@ class QueryGroup:
 
     def get_utxo(
         self,
-        address: tp.Union[str, tp.List[str]] = "",
-        txin: tp.Union[str, tp.List[str]] = "",
-        utxo: tp.Union[structs.UTXOData, structs.OptionalUTXOData] = (),
-        tx_raw_output: tp.Optional[structs.TxRawOutput] = None,
+        address: str | list[str] = "",
+        txin: str | list[str] = "",
+        utxo: structs.UTXOData | structs.OptionalUTXOData = (),
+        tx_raw_output: structs.TxRawOutput | None = None,
         coins: itp.UnpackableSequence = (),
-    ) -> tp.List[structs.UTXOData]:
+    ) -> list[structs.UTXOData]:
         """Return UTxO info for payment address.
 
         Args:
@@ -101,9 +101,9 @@ class QueryGroup:
             utxos = sorted(utxos, key=lambda u: u.utxo_ix)
         return utxos
 
-    def get_tip(self) -> tp.Dict[str, tp.Any]:
+    def get_tip(self) -> dict[str, tp.Any]:
         """Return current tip - last block successfully applied to the ledger."""
-        tip: tp.Dict[str, tp.Any] = json.loads(self.query_cli(["tip"]))
+        tip: dict[str, tp.Any] = json.loads(self.query_cli(["tip"]))
 
         # "syncProgress" is returned as string
         sync_progress = tip.get("syncProgress")
@@ -160,8 +160,8 @@ class QueryGroup:
         return registered_pools_details
 
     def get_stake_snapshot(
-        self, stake_pool_ids: tp.Optional[tp.List[str]] = None, all_stake_pools: bool = False
-    ) -> tp.Dict[str, tp.Any]:
+        self, stake_pool_ids: tp.Optional[list[str]] = None, all_stake_pools: bool = False
+    ) -> dict[str, tp.Any]:
         """Return the three stake snapshots, plus the total active stake.
 
         Args:
@@ -178,7 +178,7 @@ class QueryGroup:
         elif stake_pool_ids:
             query_args.extend(helpers._prepend_flag("--stake-pool-id", stake_pool_ids))
 
-        stake_snapshot: tp.Dict[str, tp.Any] = json.loads(self.query_cli(query_args))
+        stake_snapshot: dict[str, tp.Any] = json.loads(self.query_cli(query_args))
         return stake_snapshot
 
     def get_pool_params(
@@ -287,17 +287,17 @@ class QueryGroup:
         pparams = self.get_protocol_params()
         return pparams.get("stakePoolDeposit") or 0
 
-    def get_stake_distribution(self) -> tp.Dict[str, float]:
+    def get_stake_distribution(self) -> dict[str, float]:
         """Return current aggregated stake distribution per stake pool."""
         # Stake pool values are displayed starting with line 2 of the command output
         result = self.query_cli(["stake-distribution"]).splitlines()[2:]
-        stake_distribution: tp.Dict[str, float] = {}
+        stake_distribution: dict[str, float] = {}
         for pool in result:
             pool_id, stake = pool.split()
             stake_distribution[pool_id] = float(stake)
         return stake_distribution
 
-    def get_stake_pools(self) -> tp.List[str]:
+    def get_stake_pools(self) -> list[str]:
         """Return the node's current set of stake pool ids."""
         stake_pools = self.query_cli(["stake-pools"]).splitlines()
         return stake_pools
@@ -306,10 +306,10 @@ class QueryGroup:
         self,
         vrf_skey_file: itp.FileType,
         stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        cold_vkey_file: itp.FileType | None = None,
         stake_pool_id: str = "",
         for_next: bool = False,
-    ) -> tp.List[structs.LeadershipSchedule]:
+    ) -> list[structs.LeadershipSchedule]:
         """Get the slots the node is expected to mint a block in.
 
         Args:
@@ -443,7 +443,7 @@ class QueryGroup:
         """Return last block KES period."""
         return int(self.get_slot_no() // self._clusterlib_obj.slots_per_kes_period)
 
-    def get_kes_period_info(self, opcert_file: itp.FileType) -> tp.Dict[str, tp.Any]:
+    def get_kes_period_info(self, opcert_file: itp.FileType) -> dict[str, tp.Any]:
         """Get information about the current KES period and node's operational certificate.
 
         Args:
@@ -455,29 +455,29 @@ class QueryGroup:
         command_output = self.query_cli(["kes-period-info", "--op-cert-file", str(opcert_file)])
         return clusterlib_helpers._get_kes_period_info(kes_info=command_output)
 
-    def get_mempool_info(self) -> tp.Dict[str, tp.Any]:
+    def get_mempool_info(self) -> dict[str, tp.Any]:
         """Return info about the current mempool's capacity and sizes.
 
         Returns:
             dict: A dictionary containing mempool information.
         """
-        tx_mempool: tp.Dict[str, tp.Any] = json.loads(
+        tx_mempool: dict[str, tp.Any] = json.loads(
             self.query_cli(["tx-mempool"], cli_sub_args=[consts.SUBCOMMAND_MARK, "info"])
         )
         return tx_mempool
 
-    def get_mempool_next_tx(self) -> tp.Dict[str, tp.Any]:
+    def get_mempool_next_tx(self) -> dict[str, tp.Any]:
         """Return info about the next transaction in the mempool's current list.
 
         Returns:
             dict: A dictionary containing mempool information.
         """
-        tx_mempool: tp.Dict[str, tp.Any] = json.loads(
+        tx_mempool: dict[str, tp.Any] = json.loads(
             self.query_cli(["tx-mempool"], cli_sub_args=[consts.SUBCOMMAND_MARK, "next-tx"])
         )
         return tx_mempool
 
-    def get_mempool_tx_exists(self, txid: str) -> tp.Dict[str, tp.Any]:
+    def get_mempool_tx_exists(self, txid: str) -> dict[str, tp.Any]:
         """Query if a particular transaction exists in the mempool.
 
         Args:
@@ -486,7 +486,7 @@ class QueryGroup:
         Returns:
             dict: A dictionary containing mempool information.
         """
-        tx_mempool: tp.Dict[str, tp.Any] = json.loads(
+        tx_mempool: dict[str, tp.Any] = json.loads(
             self.query_cli(["tx-mempool"], cli_sub_args=[consts.SUBCOMMAND_MARK, "tx-exists", txid])
         )
         return tx_mempool

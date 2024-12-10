@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import exceptions
@@ -20,10 +19,10 @@ class StakeAddressGroup:
     def _get_stake_vkey_args(
         self,
         stake_vkey: str = "",
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
-    ) -> tp.List[str]:
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
+    ) -> list[str]:
         """Return CLI args for stake vkey."""
         if stake_vkey:
             stake_args = ["--stake-verification-key", stake_vkey]
@@ -43,11 +42,11 @@ class StakeAddressGroup:
         self,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         always_abstain: bool = False,
         always_no_confidence: bool = False,
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Return CLI args for DRep identification."""
         if always_abstain:
             drep_args = ["--always-abstain"]
@@ -70,9 +69,9 @@ class StakeAddressGroup:
     def _get_pool_key_args(
         self,
         stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        cold_vkey_file: itp.FileType | None = None,
         stake_pool_id: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Return CLI args for pool key."""
         if stake_pool_vkey:
             pool_key_args = ["--stake-pool-verification-key", stake_pool_vkey]
@@ -89,8 +88,8 @@ class StakeAddressGroup:
     def gen_stake_addr(
         self,
         addr_name: str,
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> str:
         """Generate a stake address.
@@ -166,9 +165,9 @@ class StakeAddressGroup:
         addr_name: str,
         deposit_amt: int = -1,
         stake_vkey: str = "",
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address registration certificate.
@@ -216,9 +215,9 @@ class StakeAddressGroup:
         self,
         addr_name: str,
         deposit_amt: int = -1,
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake address deregistration certificate.
@@ -264,11 +263,11 @@ class StakeAddressGroup:
         self,
         addr_name: str,
         stake_vkey: str = "",
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
         stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        cold_vkey_file: itp.FileType | None = None,
         stake_pool_id: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
@@ -322,12 +321,12 @@ class StakeAddressGroup:
         self,
         addr_name: str,
         stake_vkey: str = "",
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         always_abstain: bool = False,
         always_no_confidence: bool = False,
@@ -396,15 +395,15 @@ class StakeAddressGroup:
         self,
         addr_name: str,
         stake_vkey: str = "",
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_script_file: tp.Optional[itp.FileType] = None,
-        stake_address: tp.Optional[str] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_script_file: itp.FileType | None = None,
+        stake_address: str | None = None,
         stake_pool_vkey: str = "",
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        cold_vkey_file: itp.FileType | None = None,
         stake_pool_id: str = "",
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         always_abstain: bool = False,
         always_no_confidence: bool = False,
@@ -501,8 +500,8 @@ class StakeAddressGroup:
 
     def get_stake_vkey_hash(
         self,
-        stake_vkey_file: tp.Optional[itp.FileType] = None,
-        stake_vkey: tp.Optional[str] = None,
+        stake_vkey_file: itp.FileType | None = None,
+        stake_vkey: str | None = None,
     ) -> str:
         """Return the hash of a stake address key.
 

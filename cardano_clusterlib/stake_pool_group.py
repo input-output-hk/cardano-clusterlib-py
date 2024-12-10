@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -39,7 +38,7 @@ class StakePoolGroup:
         vrf_vkey_file: itp.FileType,
         cold_vkey_file: itp.FileType,
         owner_stake_vkey_files: itp.FileTypeList,
-        reward_account_vkey_file: tp.Optional[itp.FileType] = None,
+        reward_account_vkey_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool registration certificate.
@@ -148,7 +147,7 @@ class StakePoolGroup:
 
     def get_stake_pool_id(
         self,
-        cold_vkey_file: tp.Optional[itp.FileType] = None,
+        cold_vkey_file: itp.FileType | None = None,
         stake_pool_vkey: str = "",
     ) -> str:
         """Return pool ID from the offline key.
@@ -176,7 +175,7 @@ class StakePoolGroup:
     def create_stake_pool(
         self,
         pool_data: structs.PoolData,
-        pool_owners: tp.List[structs.PoolUser],
+        pool_owners: list[structs.PoolUser],
         tx_name: str,
         destination_dir: itp.FileType = ".",
     ) -> structs.PoolCreationOutput:
@@ -239,14 +238,14 @@ class StakePoolGroup:
     def register_stake_pool(
         self,
         pool_data: structs.PoolData,
-        pool_owners: tp.List[structs.PoolUser],
+        pool_owners: list[structs.PoolUser],
         vrf_vkey_file: itp.FileType,
         cold_key_pair: structs.ColdKeyPair,
         tx_name: str,
-        reward_account_vkey_file: tp.Optional[itp.FileType] = None,
-        deposit: tp.Optional[int] = None,
+        reward_account_vkey_file: itp.FileType | None = None,
+        deposit: int | None = None,
         destination_dir: itp.FileType = ".",
-    ) -> tp.Tuple[pl.Path, structs.TxRawOutput]:
+    ) -> tuple[pl.Path, structs.TxRawOutput]:
         """Register a stake pool.
 
         Args:
@@ -296,13 +295,13 @@ class StakePoolGroup:
 
     def deregister_stake_pool(
         self,
-        pool_owners: tp.List[structs.PoolUser],
+        pool_owners: list[structs.PoolUser],
         cold_key_pair: structs.ColdKeyPair,
         epoch: int,
         pool_name: str,
         tx_name: str,
         destination_dir: itp.FileType = ".",
-    ) -> tp.Tuple[pl.Path, structs.TxRawOutput]:
+    ) -> tuple[pl.Path, structs.TxRawOutput]:
         """Deregister a stake pool.
 
         Args:

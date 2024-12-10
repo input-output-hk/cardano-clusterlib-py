@@ -55,8 +55,8 @@ class UTXOData:
     decoded_coin: str = ""
     datum_hash: str = ""
     inline_datum_hash: str = ""
-    inline_datum: tp.Optional[tp.Union[str, dict]] = None
-    reference_script: tp.Optional[dict] = None
+    inline_datum: str | dict | None = None
+    reference_script: dict | None = None
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -78,22 +78,22 @@ class TxOut:
 
 
 # List of `TxOut`s, empty list, or empty tuple
-OptionalTxOuts = tp.Union[tp.List[TxOut], tp.Tuple[()]]
+OptionalTxOuts = list[TxOut] | tuple[()]
 # List of `UTXOData`s, empty list, or empty tuple
-OptionalUTXOData = tp.Union[tp.List[UTXOData], tp.Tuple[()]]  # pylint: disable=invalid-name
+OptionalUTXOData = list[UTXOData] | tuple[()]  # pylint: disable=invalid-name
 
 
 @dataclasses.dataclass(frozen=True, order=True)
 class ScriptTxIn:
     """Data structure for Tx inputs that are combined with scripts (simple or Plutus)."""
 
-    txins: tp.List[UTXOData]
+    txins: list[UTXOData]
     script_file: itp.FileType = ""
-    reference_txin: tp.Optional[UTXOData] = None
+    reference_txin: UTXOData | None = None
     reference_type: str = ""
     # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    execution_units: tp.Optional[tuple[int, int]] = None
     datum_file: itp.FileType = ""
     datum_cbor_file: itp.FileType = ""
     datum_value: str = ""
@@ -109,10 +109,10 @@ class ScriptWithdrawal:
 
     txout: TxOut
     script_file: itp.FileType = ""
-    reference_txin: tp.Optional[UTXOData] = None
+    reference_txin: UTXOData | None = None
     reference_type: str = ""
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    execution_units: tp.Optional[tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -129,10 +129,10 @@ class ComplexCert:
 
     certificate_file: itp.FileType
     script_file: itp.FileType = ""
-    reference_txin: tp.Optional[UTXOData] = None
+    reference_txin: UTXOData | None = None
     reference_type: str = ""
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    execution_units: tp.Optional[tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -150,7 +150,7 @@ class ComplexProposal:
     proposal_file: itp.FileType
     script_file: itp.FileType = ""
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    execution_units: tp.Optional[tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -164,7 +164,7 @@ class ScriptVote:
     script_file: itp.FileType = ""
     # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    execution_units: tp.Optional[tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -172,31 +172,31 @@ class ScriptVote:
 
 @dataclasses.dataclass(frozen=True, order=True)
 class Mint:
-    txouts: tp.List[TxOut]
+    txouts: list[TxOut]
     script_file: itp.FileType = ""
-    reference_txin: tp.Optional[UTXOData] = None
+    reference_txin: UTXOData | None = None
     reference_type: str = ""
     policyid: str = ""
     # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tp.Tuple[int, int]] = None
+    execution_units: tp.Optional[tuple[int, int]] = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
 
 
 # List of `ScriptTxIn`s, empty list, or empty tuple
-OptionalScriptTxIn = tp.Union[tp.List[ScriptTxIn], tp.Tuple[()]]
+OptionalScriptTxIn = list[ScriptTxIn] | tuple[()]
 # List of `ComplexCert`s, empty list, or empty tuple
-OptionalScriptCerts = tp.Union[tp.List[ComplexCert], tp.Tuple[()]]
+OptionalScriptCerts = list[ComplexCert] | tuple[()]
 # List of `ComplexProposal`s, empty list, or empty tuple
-OptionalScriptProposals = tp.Union[tp.List[ComplexProposal], tp.Tuple[()]]
+OptionalScriptProposals = list[ComplexProposal] | tuple[()]
 # List of `ScriptWithdrawal`s, empty list, or empty tuple
-OptionalScriptWithdrawals = tp.Union[tp.List[ScriptWithdrawal], tp.Tuple[()]]
+OptionalScriptWithdrawals = list[ScriptWithdrawal] | tuple[()]
 # List of `Mint`s, empty list, or empty tuple
-OptionalMint = tp.Union[tp.List[Mint], tp.Tuple[()]]
+OptionalMint = list[Mint] | tuple[()]
 # List of `ScriptVote`s, empty list, or empty tuple
-OptionalScriptVotes = tp.Union[tp.List[ScriptVote], tp.Tuple[()]]
+OptionalScriptVotes = list[ScriptVote] | tuple[()]
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -232,13 +232,13 @@ class PoolData:
 
 @dataclasses.dataclass(frozen=True, order=True)
 class TxRawOutput:
-    txins: tp.List[UTXOData]  # UTXOs used as inputs
-    txouts: tp.List[TxOut]  # Tx outputs
+    txins: list[UTXOData]  # UTXOs used as inputs
+    txouts: list[TxOut]  # Tx outputs
     txouts_count: int  # Final number of tx outputs after adding change address and joining outputs
     tx_files: TxFiles  # Files needed for transaction building (certificates, signing keys, etc.)
     out_file: pl.Path  # Output file path for the transaction body
     fee: int  # Tx fee
-    build_args: tp.List[str]  # Arguments that were passed to `cardano-cli transaction build*`
+    build_args: list[str]  # Arguments that were passed to `cardano-cli transaction build*`
     era: str = ""  # Era used for the transaction
     script_txins: OptionalScriptTxIn = ()  # Tx inputs that are combined with scripts
     script_withdrawals: OptionalScriptWithdrawals = ()  # Withdrawals that are combined with scripts
@@ -246,19 +246,19 @@ class TxRawOutput:
     complex_certs: OptionalScriptCerts = ()  # Certificates that are combined with scripts
     complex_proposals: OptionalScriptProposals = ()  # Proposals that are combined with scripts
     mint: OptionalMint = ()  # Minting data (Tx outputs, script, etc.)
-    invalid_hereafter: tp.Optional[int] = None  # Validity interval upper bound
-    invalid_before: tp.Optional[int] = None  # Validity interval lower bound
-    current_treasury_value: tp.Optional[int] = None  # Current treasury value
-    treasury_donation: tp.Optional[int] = None  # Amount of funds that will be donated to treasury
+    invalid_hereafter: int | None = None  # Validity interval upper bound
+    invalid_before: int | None = None  # Validity interval lower bound
+    current_treasury_value: int | None = None  # Current treasury value
+    treasury_donation: int | None = None  # Amount of funds that will be donated to treasury
     withdrawals: OptionalTxOuts = ()  # All withdrawals (including those combined with scripts)
     change_address: str = ""  # Address for change
     return_collateral_txouts: OptionalTxOuts = ()  # Tx outputs for returning collateral
-    total_collateral_amount: tp.Optional[int] = None  # Total collateral amount
+    total_collateral_amount: int | None = None  # Total collateral amount
     readonly_reference_txins: OptionalUTXOData = ()  # Tx inputs for plutus script context
     script_valid: bool = True  # Whether the plutus script is valid
     required_signers: itp.OptionalFiles = ()  # Signing keys required for the transaction
     # Hashes of signing keys that are required for the transaction
-    required_signer_hashes: tp.Union[tp.List[str], tp.Tuple[()]] = ()
+    required_signer_hashes: list[str] | tuple[()] = ()
     combined_reference_txins: OptionalUTXOData = ()  # All reference tx inputs
 
 
@@ -269,24 +269,24 @@ class PoolCreationOutput:
     cold_key_pair: ColdKeyPair
     pool_reg_cert_file: pl.Path
     pool_data: PoolData
-    pool_owners: tp.List[PoolUser]
+    pool_owners: list[PoolUser]
     tx_raw_output: TxRawOutput
-    kes_key_pair: tp.Optional[KeyPair] = None
+    kes_key_pair: KeyPair | None = None
 
 
 @dataclasses.dataclass(frozen=True, order=True)
 class GenesisKeys:
     genesis_utxo_vkey: pl.Path
     genesis_utxo_skey: pl.Path
-    genesis_vkeys: tp.List[pl.Path]
-    delegate_skeys: tp.List[pl.Path]
+    genesis_vkeys: list[pl.Path]
+    delegate_skeys: list[pl.Path]
 
 
 @dataclasses.dataclass(frozen=True, order=True)
 class PoolParamsTop:
     pool_params: dict
     future_pool_params: dict
-    retiring: tp.Optional[int]
+    retiring: int | None
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -312,8 +312,8 @@ class LeadershipSchedule:
 
 @dataclasses.dataclass(frozen=True, order=True)
 class DataForBuild:
-    txins: tp.List[UTXOData]
-    txouts: tp.List[TxOut]
+    txins: list[UTXOData]
+    txouts: list[TxOut]
     withdrawals: OptionalTxOuts
     script_withdrawals: OptionalScriptWithdrawals
 
@@ -337,7 +337,7 @@ class VoteCC:
     vote: consts.Votes
     vote_file: pl.Path
     cc_hot_vkey: str = ""
-    cc_hot_vkey_file: tp.Optional[pl.Path] = None
+    cc_hot_vkey_file: pl.Path | None = None
     cc_hot_key_hash: str = ""
     cc_hot_script_hash: str = ""
     anchor_url: str = ""
@@ -351,7 +351,7 @@ class VoteDrep:
     vote: consts.Votes
     vote_file: pl.Path
     drep_vkey: str = ""
-    drep_vkey_file: tp.Optional[pl.Path] = None
+    drep_vkey_file: pl.Path | None = None
     drep_key_hash: str = ""
     drep_script_hash: str = ""
     anchor_url: str = ""
@@ -365,7 +365,7 @@ class VoteSPO:
     vote: consts.Votes
     vote_file: pl.Path
     stake_pool_vkey: str = ""
-    cold_vkey_file: tp.Optional[pl.Path] = None
+    cold_vkey_file: pl.Path | None = None
     stake_pool_id: str = ""
     anchor_url: str = ""
     anchor_data_hash: str = ""
@@ -380,7 +380,7 @@ class ActionConstitution:
     constitution_url: str
     constitution_hash: str
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
     prev_action_txid: str = ""
     prev_action_ix: int = -1
@@ -393,7 +393,7 @@ class ActionInfo:
     anchor_url: str
     anchor_data_hash: str
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
 
 
@@ -406,7 +406,7 @@ class ActionNoConfidence:
     prev_action_txid: str
     prev_action_ix: int
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
 
 
@@ -417,12 +417,12 @@ class ActionUpdateCommittee:
     anchor_url: str
     anchor_data_hash: str
     threshold: str
-    add_cc_members: tp.List[CCMember] = dataclasses.field(default_factory=list)
-    rem_cc_members: tp.List[CCMember] = dataclasses.field(default_factory=list)
+    add_cc_members: list[CCMember] = dataclasses.field(default_factory=list)
+    rem_cc_members: list[CCMember] = dataclasses.field(default_factory=list)
     prev_action_txid: str = ""
     prev_action_ix: int = -1
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
 
 
@@ -436,7 +436,7 @@ class ActionPParamsUpdate:
     prev_action_txid: str = ""
     prev_action_ix: int = -1
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
 
 
@@ -448,10 +448,10 @@ class ActionTreasuryWithdrawal:
     anchor_url: str
     anchor_data_hash: str
     funds_receiving_stake_vkey: str = ""
-    funds_receiving_stake_vkey_file: tp.Optional[pl.Path] = None
+    funds_receiving_stake_vkey_file: pl.Path | None = None
     funds_receiving_stake_key_hash: str = ""
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
 
 
@@ -466,5 +466,5 @@ class ActionHardfork:
     prev_action_txid: str = ""
     prev_action_ix: int = -1
     deposit_return_stake_vkey: str = ""
-    deposit_return_stake_vkey_file: tp.Optional[pl.Path] = None
+    deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""

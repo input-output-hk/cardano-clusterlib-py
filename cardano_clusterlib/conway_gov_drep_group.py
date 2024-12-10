@@ -2,7 +2,6 @@
 
 import logging
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -21,9 +20,9 @@ class ConwayGovDrepGroup:
         self,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
-    ) -> tp.List[str]:
+    ) -> list[str]:
         """Get arguments for script or vkey credentials."""
         if drep_script_hash:
             cred_args = ["--drep-script-hash", str(drep_script_hash)]
@@ -73,7 +72,7 @@ class ConwayGovDrepGroup:
     def get_id(
         self,
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         out_format: str = "",
     ) -> str:
         """Return a DRep id.
@@ -117,7 +116,7 @@ class ConwayGovDrepGroup:
         deposit_amt: int,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         drep_metadata_url: str = "",
         drep_metadata_hash: str = "",
@@ -181,7 +180,7 @@ class ConwayGovDrepGroup:
         cert_name: str,
         deposit_amt: int,
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         drep_metadata_url: str = "",
         drep_metadata_hash: str = "",
@@ -244,7 +243,7 @@ class ConwayGovDrepGroup:
         deposit_amt: int,
         drep_script_hash: str = "",
         drep_vkey: str = "",
-        drep_vkey_file: tp.Optional[itp.FileType] = None,
+        drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
