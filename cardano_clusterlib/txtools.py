@@ -120,7 +120,7 @@ def _select_utxos(
                 utxo_ids.update(f"{rec.utxo_hash}#{rec.utxo_ix}" for rec in coin_txins)
                 continue
 
-            tx_fee = fee if fee > 1 else 1
+            tx_fee = max(1, fee)
             funds_needed = total_output_amount + tx_fee + deposit + treasury_donation
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
             # Fee needs an input, even if withdrawal would cover all needed funds
@@ -188,7 +188,7 @@ def _balance_txouts(
                 max_address = coin_txouts.pop(max_index[0]).address
 
             total_output_amount = functools.reduce(lambda x, y: x + y.amount, coin_txouts, 0)
-            tx_fee = fee if fee > 0 else 0
+            tx_fee = max(0, fee)
             total_withdrawals_amount = functools.reduce(lambda x, y: x + y.amount, withdrawals, 0)
             funds_available = total_input_amount + total_withdrawals_amount
             funds_needed = total_output_amount + tx_fee + deposit + treasury_donation
