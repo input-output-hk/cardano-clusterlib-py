@@ -1154,7 +1154,7 @@ class TransactionGroup:
         return txhash
 
     def submit_tx(
-        self, tx_file: itp.FileType, txins: list[structs.UTXOData], wait_blocks: int = 2
+        self, tx_file: itp.FileType, txins: list[structs.UTXOData], wait_blocks: int | None = None
     ) -> str:
         """Submit a transaction, resubmit if the transaction didn't make it to the chain.
 
@@ -1166,6 +1166,11 @@ class TransactionGroup:
         Returns:
             str: A transaction ID.
         """
+        wait_blocks = (
+            self._clusterlib_obj.confirm_blocks
+            if wait_blocks is None or wait_blocks < 1
+            else wait_blocks
+        )
         txid = ""
         for r in range(20):
             err = None
