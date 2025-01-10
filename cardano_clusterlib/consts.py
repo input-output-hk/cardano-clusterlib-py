@@ -24,15 +24,15 @@ class CommandEras:
 
 
 class Eras(enum.Enum):
-    BYRON: int = 1
-    SHELLEY: int = 2
-    ALLEGRA: int = 3
-    MARY: int = 4
-    ALONZO: int = 6
-    BABBAGE: int = 8
-    CONWAY: int = 9
-    DEFAULT: int = CONWAY
-    LATEST: int = CONWAY
+    BYRON = 1
+    SHELLEY = 2
+    ALLEGRA = 3
+    MARY = 4
+    ALONZO = 6
+    BABBAGE = 8
+    CONWAY = 9
+    DEFAULT = CONWAY
+    LATEST = CONWAY  # noqa: PIE796
 
 
 class MultiSigTypeArgs:
@@ -55,6 +55,6 @@ class ScriptTypes:
 
 
 class Votes(enum.Enum):
-    YES: int = 1
-    NO: int = 2
-    ABSTAIN: int = 3
+    YES = 1
+    NO = 2
+    ABSTAIN = 3
