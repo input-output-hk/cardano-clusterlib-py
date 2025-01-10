@@ -18,7 +18,6 @@ lint:
 # build package
 .PHONY: build
 build:
-	if ! python3 -c "import build" >/dev/null 2>&1; then python3 -m pip install --upgrade build; fi
 	python3 -m build
 
 # upload package to PyPI
