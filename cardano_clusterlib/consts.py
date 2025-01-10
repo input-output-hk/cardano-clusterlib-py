@@ -3,6 +3,7 @@ import typing as tp
 
 DEFAULT_COIN: tp.Final[str] = "lovelace"
 MAINNET_MAGIC: tp.Final[int] = 764824073
+CONFIRM_BLOCKS_NUM: tp.Final[int] = 2
 
 # The SUBCOMMAND_MARK is used to mark the beginning of a subcommand. It is used to differentiate
 # between options and subcommands. That is needed for CLI coverage recording.

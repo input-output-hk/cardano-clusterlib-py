@@ -58,7 +58,9 @@ class ClusterLib:
             msg = f"Unknown command era `{command_era}`."
             raise exceptions.CLIError(msg) from excp
 
-        self.cluster_id = 0  # can be used for identifying cluster instance
+        self.cluster_id = 0  # Can be used for identifying cluster instance
+        # Number of new blocks before the Tx is considered confirmed
+        self.confirm_blocks = consts.CONFIRM_BLOCKS_NUM
         self.cli_coverage: dict = {}
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
