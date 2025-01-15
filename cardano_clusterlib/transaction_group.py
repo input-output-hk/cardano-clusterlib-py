@@ -426,6 +426,7 @@ class TransactionGroup:
         treasury_donation: int | None = None,
         invalid_hereafter: int | None = None,
         invalid_before: int | None = None,
+        src_addr_utxos: list[structs.UTXOData] | None = None,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
@@ -466,6 +467,7 @@ class TransactionGroup:
             treasury_donation: A donation to the treasury to perform (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
+            src_addr_utxos: A list of UTxOs for the source address (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -495,6 +497,7 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
             deposit=deposit,
             treasury_donation=treasury_donation,
+            src_addr_utxos=src_addr_utxos,
             skip_asset_balancing=False,
         )
 
@@ -609,6 +612,7 @@ class TransactionGroup:
         treasury_donation: int | None = None,
         invalid_hereafter: int | None = None,
         invalid_before: int | None = None,
+        src_addr_utxos: list[structs.UTXOData] | None = None,
         witness_count_add: int = 0,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
@@ -650,6 +654,7 @@ class TransactionGroup:
             treasury_donation: A donation to the treasury to perform (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
+            src_addr_utxos: A list of UTxOs for the source address (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
                 calculation more precise.
             join_txouts: A bool indicating whether to aggregate transaction outputs
@@ -693,6 +698,7 @@ class TransactionGroup:
             script_votes=script_votes,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
+            src_addr_utxos=src_addr_utxos,
             deposit=deposit,
             current_treasury_value=current_treasury_value,
             treasury_donation=treasury_donation,
@@ -1309,6 +1315,15 @@ class TransactionGroup:
             script_withdrawals=script_withdrawals,
         )
 
+        # Get UTxOs for src address here so the records can be passed around, and it is
+        # not necessary to get them once for fee calculation and again for the final transaction
+        # building.
+        src_addr_utxos = (
+            self._clusterlib_obj.g_query.get_utxo(address=src_address)
+            if fee is None and not txins
+            else None
+        )
+
         if fee is None:
             fee = self.calculate_tx_fee(
                 src_address=src_address,
@@ -1331,6 +1346,7 @@ class TransactionGroup:
                 current_treasury_value=current_treasury_value,
                 treasury_donation=treasury_donation,
                 invalid_hereafter=invalid_hereafter or ttl,
+                src_addr_utxos=src_addr_utxos,
                 witness_count_add=witness_count_add,
                 join_txouts=join_txouts,
                 destination_dir=destination_dir,
@@ -1364,6 +1380,7 @@ class TransactionGroup:
             treasury_donation=treasury_donation,
             invalid_hereafter=invalid_hereafter or ttl,
             invalid_before=invalid_before,
+            src_addr_utxos=src_addr_utxos,
             join_txouts=join_txouts,
             destination_dir=destination_dir,
         )

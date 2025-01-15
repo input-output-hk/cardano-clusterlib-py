@@ -638,6 +638,7 @@ def _get_tx_ins_outs(
     treasury_donation: int | None = None,
     withdrawals: structs.OptionalTxOuts = (),
     mint_txouts: structs.OptionalTxOuts = (),
+    src_addr_utxos: list[structs.UTXOData] | None = None,
     skip_asset_balancing: bool = False,
 ) -> tuple[list[structs.UTXOData], list[structs.TxOut]]:
     """Return list of transaction's inputs and outputs.
@@ -653,6 +654,7 @@ def _get_tx_ins_outs(
         treasury_donation: A donation to the treasury to perform (optional).
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
         mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
+        src_addr_utxos: A list of UTxOs for the source address (optional).
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
             (`build` command balance the assets automatically in newer versions).
 
@@ -670,7 +672,7 @@ def _get_tx_ins_outs(
     txins_all = list(txins)
     if not txins_all:
         # No txins were provided, so we'll select them from the source address
-        address_utxos = clusterlib_obj.g_query.get_utxo(address=src_address)
+        address_utxos = src_addr_utxos or clusterlib_obj.g_query.get_utxo(address=src_address)
         if not address_utxos:
             msg = f"No UTxO returned for '{src_address}'."
             raise exceptions.CLIError(msg)
@@ -760,6 +762,7 @@ def collect_data_for_build(
     script_withdrawals: structs.OptionalScriptWithdrawals = (),
     deposit: int | None = None,
     treasury_donation: int | None = None,
+    src_addr_utxos: list[structs.UTXOData] | None = None,
     skip_asset_balancing: bool = False,
 ) -> structs.DataForBuild:
     """Collect data (txins, txouts, withdrawals) needed for building a transaction.
@@ -783,6 +786,7 @@ def collect_data_for_build(
             data (optional).
         deposit: A deposit amount needed by the transaction (optional).
         treasury_donation: A donation to the treasury to perform (optional).
+        src_addr_utxos: A list of UTxOs for the source address (optional).
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
             (`build` command balance the assets automatically in newer versions).
 
@@ -833,6 +837,7 @@ def collect_data_for_build(
         treasury_donation=treasury_donation,
         withdrawals=withdrawals_txouts,
         mint_txouts=mint_txouts,
+        src_addr_utxos=src_addr_utxos,
         skip_asset_balancing=skip_asset_balancing,
     )
 
