@@ -4,6 +4,7 @@ import logging
 import pathlib as pl
 
 from cardano_clusterlib import clusterlib_helpers
+from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import types as itp
@@ -15,6 +16,25 @@ class ConwayGovDrepGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = ("governance", "drep")
+        self._has_output_hex_prop: bool | None = None
+
+    @property
+    def _has_output_hex(self) -> bool:
+        """Check if `drep id` has a `--output-hex` option."""
+        if self._has_output_hex_prop is not None:
+            return self._has_output_hex_prop
+
+        err = ""
+        try:
+            self._clusterlib_obj.cli(
+                ["cardano-cli", "conway", "governance", "drep", "id", "--output-hex"],
+                add_default_args=False,
+            )
+        except exceptions.CLIError as excp:
+            err = str(excp)
+
+        self._has_output_hex_prop = "Invalid option" not in err
+        return self._has_output_hex_prop
 
     def _get_cred_args(
         self,
@@ -94,7 +114,13 @@ class ConwayGovDrepGroup:
             raise AssertionError(msg)
 
         if out_format:
-            cli_args.extend(["--output-format", str(out_format)])
+            if out_format not in ("hex", "bech32"):
+                msg = f"Invalid output format: {out_format} (expected 'hex' or 'bech32')."
+                raise AssertionError(msg)
+            if self._has_output_hex:
+                cli_args.append(f"--output-{out_format}")
+            else:
+                cli_args.extend(["--output-format", str(out_format)])
 
         drep_id = (
             self._clusterlib_obj.cli(
