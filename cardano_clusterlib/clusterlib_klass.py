@@ -42,8 +42,6 @@ class ClusterLib:
         command_era: An era used for CLI commands, by default same as the latest network Era.
     """
 
-    # pylint: disable=too-many-instance-attributes
-
     def __init__(
         self,
         state_dir: itp.FileType,
@@ -51,7 +49,6 @@ class ClusterLib:
         socket_path: itp.FileType = "",
         command_era: str = consts.CommandEras.LATEST,
     ):
-        # pylint: disable=too-many-statements
         try:
             self.command_era = getattr(consts.CommandEras, command_era.upper())
         except AttributeError as excp:

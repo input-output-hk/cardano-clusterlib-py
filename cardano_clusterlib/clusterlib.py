@@ -3,7 +3,6 @@
 Import everything that used to be available here for backwards compatibility.
 """
 
-# pylint: disable=unused-import
 # flake8: noqa
 from cardano_clusterlib.clusterlib_klass import ClusterLib
 from cardano_clusterlib.consts import CommandEras

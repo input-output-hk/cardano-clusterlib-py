@@ -80,7 +80,7 @@ class TxOut:
 # List of `TxOut`s, empty list, or empty tuple
 OptionalTxOuts = list[TxOut] | tuple[()]
 # List of `UTXOData`s, empty list, or empty tuple
-OptionalUTXOData = list[UTXOData] | tuple[()]  # pylint: disable=invalid-name
+OptionalUTXOData = list[UTXOData] | tuple[()]
 
 
 @dataclasses.dataclass(frozen=True, order=True)

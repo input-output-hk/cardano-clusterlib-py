@@ -20,8 +20,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class QueryGroup:
-    # pylint: disable=too-many-public-methods
-
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 

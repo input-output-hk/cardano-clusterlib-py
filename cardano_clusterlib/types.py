@@ -2,7 +2,6 @@ import pathlib as pl
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    # pylint: disable=unused-import
     from cardano_clusterlib.clusterlib_klass import ClusterLib  # noqa: F401
 
 FileType = str | pl.Path

@@ -612,7 +612,6 @@ def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> list[st
     txout_records = [
         f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
     ]
-    # pylint: disable=consider-using-f-string
     address_value = "{}+{}".format(txouts[0].address, "+".join(txout_records))
     txout_args = ["--tx-out-return-collateral", address_value]
 
@@ -662,8 +661,6 @@ def _get_tx_ins_outs(
         Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
             outputs.
     """
-    # pylint: disable=too-many-arguments
-
     txouts_passed_db: dict[str, list[structs.TxOut]] = _organize_tx_ins_outs_by_coin(txouts)
     txouts_mint_db: dict[str, list[structs.TxOut]] = _organize_tx_ins_outs_by_coin(mint_txouts)
     outcoins_all = {consts.DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
@@ -793,7 +790,6 @@ def collect_data_for_build(
     Returns:
         structs.DataForBuild: A tuple with data for build(-raw) commands.
     """
-    # pylint: disable=too-many-arguments
     tx_files = tx_files or structs.TxFiles()
 
     withdrawals, script_withdrawals, withdrawals_txouts = _get_withdrawals(
@@ -1027,7 +1023,6 @@ def _get_script_args(  # noqa: C901
     script_votes: structs.OptionalScriptVotes,
     for_build: bool = True,
 ) -> list[str]:
-    # pylint: disable=too-many-statements,too-many-branches
     grouped_args: list[str] = []
     collaterals_all = set()
 

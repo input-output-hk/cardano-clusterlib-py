@@ -145,7 +145,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionConstitution:
         """Create a constitution."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_constitution.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -224,7 +223,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionInfo:
         """Create an info action."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_info.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -280,7 +278,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionNoConfidence:
         """Create a no confidence proposal."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_confidence.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -349,7 +346,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionUpdateCommittee:
         """Create or update a new committee proposal."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_update_committee.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -425,7 +421,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionPParamsUpdate:
         """Create a protocol parameters update proposal."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_pparams_update.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -492,7 +487,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionTreasuryWithdrawal:
         """Create a treasury withdrawal."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_info.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -594,7 +588,6 @@ class ConwayGovActionGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.ActionHardfork:
         """Create a hardfork initiation proposal."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{action_name}_hardfork.action"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)

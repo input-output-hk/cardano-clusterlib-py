@@ -81,7 +81,6 @@ class ConwayGovVoteGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.VoteCC:
         """Create a governance action vote for a commitee member."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{vote_name}_cc.vote"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -147,7 +146,6 @@ class ConwayGovVoteGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.VoteDrep:
         """Create a governance action vote for a DRep."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{vote_name}_drep.vote"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -212,7 +210,6 @@ class ConwayGovVoteGroup:
         destination_dir: itp.FileType = ".",
     ) -> structs.VoteSPO:
         """Create a governance action vote for an SPO."""
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{vote_name}_spo.vote"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
