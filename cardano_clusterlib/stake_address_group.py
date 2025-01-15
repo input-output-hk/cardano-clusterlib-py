@@ -353,7 +353,6 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        # pylint: disable=too-many-arguments
         if not self._clusterlib_obj.conway_genesis:
             msg = "Conway governance can be used only with Command era >= Conway."
             raise exceptions.CLIError(msg)
@@ -433,7 +432,6 @@ class StakeAddressGroup:
         Returns:
             Path: A path to the generated certificate.
         """
-        # pylint: disable=too-many-arguments
         if not self._clusterlib_obj.conway_genesis:
             msg = "Conway governance can be used only with Command era >= Conway."
             raise exceptions.CLIError(msg)

@@ -241,7 +241,6 @@ class TransactionGroup:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-branches,too-many-locals,too-many-statements
         if (treasury_donation is not None) != (current_treasury_value is not None):
             msg = (
                 "Both `treasury_donation` and `current_treasury_value` must be specified together."
@@ -475,7 +474,6 @@ class TransactionGroup:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
@@ -664,7 +662,6 @@ class TransactionGroup:
         Returns:
             int: An estimated fee.
         """
-        # pylint: disable=too-many-arguments
         tx_files = tx_files or structs.TxFiles()
         tx_name = f"{tx_name}_estimate"
 
@@ -836,7 +833,6 @@ class TransactionGroup:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
         max_txout = [o for o in txouts if o.amount == -1 and o.coin in ("", consts.DEFAULT_COIN)]
         if max_txout:
             if change_address:
@@ -1303,7 +1299,6 @@ class TransactionGroup:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments
         tx_files = tx_files or structs.TxFiles()
 
         # Resolve withdrawal amounts here (where -1 for total rewards amount is used) so the
@@ -1549,7 +1544,6 @@ class TransactionGroup:
         Returns:
             List[dict]: A Plutus scripts cost data.
         """
-        # pylint: disable=too-many-arguments,unused-argument
         # Collect all arguments that will be passed to `build_tx`
         kwargs = locals()
         kwargs.pop("self", None)
@@ -1598,7 +1592,6 @@ class TransactionGroup:
         Returns:
             structs.TxRawOutput: A tuple with transaction output details.
         """
-        # pylint: disable=too-many-arguments
         warnings.warn(
             "`send_funds` is deprecated, use `send_tx` instead",
             DeprecationWarning,
