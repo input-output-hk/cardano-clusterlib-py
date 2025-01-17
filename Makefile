@@ -13,7 +13,7 @@ install:
 .PHONY: lint
 lint:
 	pre-commit run -a
-	if type pytype >/dev/null 2>&1; then pytype cardano_clusterlib; fi
+	if command -v pytype >/dev/null 2>&1; then pytype -k -j auto cardano_clusterlib; fi
 
 # build package
 .PHONY: build
