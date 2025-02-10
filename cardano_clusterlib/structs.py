@@ -38,7 +38,7 @@ class StakeAddrInfo:
     address: str
     delegation: str
     reward_account_balance: int
-    delegation_deposit: int
+    registration_deposit: int
     vote_delegation: str
 
     def __bool__(self) -> bool:

@@ -256,7 +256,7 @@ class QueryGroup:
                 address="",
                 delegation="",
                 reward_account_balance=0,
-                delegation_deposit=-1,
+                registration_deposit=-1,
                 vote_delegation="",
             )
 
@@ -264,14 +264,16 @@ class QueryGroup:
         address = address_rec.get("address") or ""
         delegation = address_rec.get("delegation") or address_rec.get("stakeDelegation") or ""
         reward_account_balance = address_rec.get("rewardAccountBalance") or 0
-        _delegation_deposit = address_rec.get("delegationDeposit")
-        delegation_deposit = -1 if _delegation_deposit is None else _delegation_deposit
+        tmp_deposit = address_rec.get("stakeRegistrationDeposit") or address_rec.get(
+            "delegationDeposit"
+        )
+        registration_deposit = -1 if tmp_deposit is None else tmp_deposit
         vote_delegation = address_rec.get("voteDelegation") or ""
         return structs.StakeAddrInfo(
             address=address,
             delegation=delegation,
             reward_account_balance=reward_account_balance,
-            delegation_deposit=delegation_deposit,
+            registration_deposit=registration_deposit,
             vote_delegation=vote_delegation,
         )
 
