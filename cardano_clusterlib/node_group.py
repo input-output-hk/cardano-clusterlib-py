@@ -25,7 +25,7 @@ class NodeGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A data container containing the key pair.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_kes.vkey"
@@ -56,7 +56,7 @@ class NodeGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A data container containing the key pair.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_vrf.vkey"
@@ -87,7 +87,7 @@ class NodeGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.ColdKeyPair: A tuple containing the key pair and the counter.
+            structs.ColdKeyPair: A data container containing the key pair and the counter.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{node_name}_cold.vkey"

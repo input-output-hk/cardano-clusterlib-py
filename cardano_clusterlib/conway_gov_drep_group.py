@@ -68,7 +68,7 @@ class ConwayGovDrepGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A data container containing the key pair.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_drep.vkey"

@@ -44,7 +44,7 @@ class StakePoolGroup:
         """Generate a stake pool registration certificate.
 
         Args:
-            pool_data: A `structs.PoolData` tuple containing info about the stake pool.
+            pool_data: A `structs.PoolData` data container containing info about the stake pool.
             vrf_vkey_file: A path to node VRF vkey file.
             cold_vkey_file: A path to pool cold vkey file.
             owner_stake_vkey_files: A list of paths to pool owner stake vkey files.
@@ -182,14 +182,14 @@ class StakePoolGroup:
         """Create and register a stake pool.
 
         Args:
-            pool_data: A `structs.PoolData` tuple containing info about the stake pool.
+            pool_data: A `structs.PoolData` data container containing info about the stake pool.
             pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
                 and keys.
             tx_name: A name of the transaction.
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.PoolCreationOutput: A tuple containing pool creation output.
+            structs.PoolCreationOutput: A data container containing pool creation output.
         """
         # Create the KES key pair
         node_kes = self._clusterlib_obj.g_node.gen_kes_key_pair(
@@ -249,11 +249,12 @@ class StakePoolGroup:
         """Register a stake pool.
 
         Args:
-            pool_data: A `structs.PoolData` tuple containing info about the stake pool.
+            pool_data: A `structs.PoolData` data container containing info about the stake pool.
             pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
                 and keys.
             vrf_vkey_file: A path to node VRF vkey file.
-            cold_key_pair: A `structs.ColdKeyPair` tuple containing the key pair and the counter.
+            cold_key_pair: A `structs.ColdKeyPair` data container containing the key pair
+                and the counter.
             tx_name: A name of the transaction.
             reward_account_vkey_file: A path to reward account vkey file (optional).
             deposit: A deposit amount needed by the transaction (optional).
@@ -307,14 +308,15 @@ class StakePoolGroup:
         Args:
             pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
                 and keys.
-            cold_key_pair: A `structs.ColdKeyPair` tuple containing the key pair and the counter.
+            cold_key_pair: A `structs.ColdKeyPair` data container containing the key pair
+                and the counter.
             epoch: An epoch where the update proposal will take effect (optional).
             pool_name: A name of the stake pool.
             tx_name: A name of the transaction.
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
+            Tuple[Path, structs.TxRawOutput]: A data container with pool registration cert file and
                 transaction output details.
         """
         tx_name = f"{tx_name}_dereg_pool"

@@ -93,7 +93,7 @@ class AddressGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A data container containing the key pair.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}.vkey"
@@ -155,7 +155,7 @@ class AddressGroup:
             address: A Cardano address.
 
         Returns:
-            structs.AddressInfo: A tuple containing address info.
+            structs.AddressInfo: A data container containing address info.
         """
         addr_dict: dict[str, str] = json.loads(
             self._clusterlib_obj.cli(["address", "info", "--address", str(address)])
@@ -180,7 +180,8 @@ class AddressGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.AddressRecord: A tuple containing the address and key pair / script file.
+            structs.AddressRecord: A data container containing the address and
+                key pair / script file.
         """
         key_pair = self.gen_payment_key_pair(key_name=name, destination_dir=destination_dir)
         addr = self.gen_payment_addr(

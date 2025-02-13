@@ -139,7 +139,8 @@ class TransactionGroup:
         """Get deposit amount for a transaction (based on certificates used for the TX).
 
         Args:
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
+            tx_files: A `structs.TxFiles` data container containing files needed
+                for the transaction.
 
         Returns:
             int: A total deposit amount needed for the transaction.
@@ -205,7 +206,8 @@ class TransactionGroup:
         Args:
             out_file: An output file.
             txouts: A list (iterable) of `TxOuts`, specifying transaction outputs.
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
+            tx_files: A `structs.TxFiles` data container containing files needed
+                for the transaction.
             fee: A fee amount.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
             readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
@@ -239,7 +241,7 @@ class TransactionGroup:
                 by payment address (True by default).
 
         Returns:
-            structs.TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A data container with transaction output details.
         """
         if (treasury_donation is not None) != (current_treasury_value is not None):
             msg = (
@@ -444,7 +446,7 @@ class TransactionGroup:
             total_collateral_amount: An integer indicating the total amount of collateral
                 (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -472,7 +474,7 @@ class TransactionGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A data container with transaction output details.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         out_file = destination_dir / f"{tx_name}_tx.body"
@@ -631,7 +633,7 @@ class TransactionGroup:
             total_collateral_amount: An integer indicating the total amount of collateral
                 (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -723,7 +725,7 @@ class TransactionGroup:
             txouts: A list of `TxOut` records that correspond to a single transaction output (UTxO).
 
         Returns:
-            structs.Value: A tuple describing the value.
+            structs.Value: A data container describing the value.
         """
         if not txouts:
             msg = "No txout was specified."
@@ -798,7 +800,7 @@ class TransactionGroup:
             total_collateral_amount: An integer indicating the total amount of collateral
                 (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -831,7 +833,7 @@ class TransactionGroup:
                 (`build` command balance the assets automatically in newer versions).
 
         Returns:
-            structs.TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A data container with transaction output details.
         """
         max_txout = [o for o in txouts if o.amount == -1 and o.coin in ("", consts.DEFAULT_COIN)]
         if max_txout:
@@ -1266,7 +1268,7 @@ class TransactionGroup:
             total_collateral_amount: An integer indicating the total amount of collateral
                 (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -1297,7 +1299,7 @@ class TransactionGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A data container with transaction output details.
         """
         tx_files = tx_files or structs.TxFiles()
 
@@ -1512,7 +1514,7 @@ class TransactionGroup:
             total_collateral_amount: An integer indicating the total amount of collateral
                 (optional).
             mint: An iterable of `Mint`, specifying script minting data (optional).
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
                 (optional).
             complex_certs: An iterable of `ComplexCert`, specifying certificates script data
                 (optional).
@@ -1578,7 +1580,7 @@ class TransactionGroup:
             src_address: An address used for fee and inputs.
             destinations: A list (iterable) of `TxOuts`, specifying transaction outputs.
             tx_name: A name of the transaction.
-            tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
                 (optional).
             fee: A fee amount (optional).
             ttl: A last block when the transaction is still valid
@@ -1590,7 +1592,7 @@ class TransactionGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A data container with transaction output details.
         """
         warnings.warn(
             "`send_funds` is deprecated, use `send_tx` instead",
