@@ -131,7 +131,7 @@ def _pick_utxos_with_defragmentation(
     """Pick UTxOs to meet or exceed the target amount while prioritizing defragmentation.
 
     Args:
-        utxos (list of tuple): A list of tuples (utxo_id, coin_amount).
+        utxos (list of tuples): A list of tuples (utxo_id, coin_amount).
         target_amount (int): The desired amount.
         target_with_change (int): The desired amount with minimal change.
         accumulated_amount (int): The accumulated amount.
@@ -645,7 +645,7 @@ def _get_tx_ins_outs(
     Args:
         clusterlib_obj: An instance of `ClusterLib`.
         src_address: An address used for fee and inputs (if inputs not specified by `txins`).
-        tx_files: A `structs.TxFiles` tuple containing files needed for the transaction.
+        tx_files: A `structs.TxFiles` data container containing files needed for the transaction.
         txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
         txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
         fee: A fee amount (optional).
@@ -771,7 +771,7 @@ def collect_data_for_build(
         txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
         script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
         mint: An iterable of `Mint`, specifying script minting data (optional).
-        tx_files: A `structs.TxFiles` tuple containing files needed for the transaction
+        tx_files: A `structs.TxFiles` data container containing files needed for the transaction
             (optional).
         complex_certs: An iterable of `ComplexCert`, specifying certificates script data
             (optional).
@@ -788,7 +788,7 @@ def collect_data_for_build(
             (`build` command balance the assets automatically in newer versions).
 
     Returns:
-        structs.DataForBuild: A tuple with data for build(-raw) commands.
+        structs.DataForBuild: A data container with data for build(-raw) commands.
     """
     tx_files = tx_files or structs.TxFiles()
 
@@ -960,7 +960,7 @@ def filter_utxo_with_highest_amount(
         coin: A coin name (asset IDs).
 
     Returns:
-        structs.UTXOData: An UTxO record with the highest amount.
+        structs.UTXOData: A UTxO record with the highest amount.
     """
     filtered_utxos = [u for u in utxos if u.coin == coin]
     highest_amount_rec = max(filtered_utxos, key=lambda x: x.amount)

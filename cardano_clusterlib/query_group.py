@@ -248,7 +248,7 @@ class QueryGroup:
             stake_addr: A stake address string.
 
         Returns:
-            structs.StakeAddrInfo: A tuple containing stake address info.
+            structs.StakeAddrInfo: A data container containing stake address info.
         """
         output_json = json.loads(self.query_cli(["stake-address-info", "--address", stake_addr]))
         if not output_json:
@@ -433,7 +433,7 @@ class QueryGroup:
             coin: A coin name (asset IDs).
 
         Returns:
-            structs.UTXOData: An UTxO record with the highest amount.
+            structs.UTXOData: A UTxO record with the highest amount.
         """
         utxo = self.get_utxo(address=address, coins=[coin])
         highest_amount_rec = max(utxo, key=lambda x: x.amount)

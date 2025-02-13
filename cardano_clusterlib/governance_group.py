@@ -194,7 +194,7 @@ class GovernanceGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.TxRawOutput: A tuple with transaction output details.
+            structs.TxRawOutput: A data container with transaction output details.
         """
         # TODO: assumption is update proposals submitted near beginning of epoch
         epoch = epoch if epoch is not None else self._clusterlib_obj.g_query.get_epoch()

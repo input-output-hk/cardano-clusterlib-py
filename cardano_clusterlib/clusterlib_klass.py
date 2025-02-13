@@ -249,7 +249,7 @@ class ClusterLib:
             add_default_args: Whether to add default arguments to the command (optional).
 
         Returns:
-            structs.CLIOut: A tuple containing command stdout and stderr.
+            structs.CLIOut: A data container containing command stdout and stderr.
         """
         cli_args_strs_all = [str(arg) for arg in cli_args]
 

@@ -22,7 +22,7 @@ class GenesisGroup:
 
     @property
     def genesis_keys(self) -> structs.GenesisKeys:
-        """Return tuple with genesis-related keys."""
+        """Return data container with genesis-related keys."""
         if self._genesis_keys:
             return self._genesis_keys
 

@@ -139,7 +139,7 @@ class StakeAddressGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.KeyPair: A tuple containing the key pair.
+            structs.KeyPair: A data container containing the key pair.
         """
         destination_dir = pl.Path(destination_dir).expanduser()
         vkey = destination_dir / f"{key_name}_stake.vkey"
@@ -485,7 +485,8 @@ class StakeAddressGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.AddressRecord: A tuple containing the address and key pair / script file.
+            structs.AddressRecord: A data container containing the address
+                and key pair / script file.
         """
         key_pair = self.gen_stake_key_pair(key_name=name, destination_dir=destination_dir)
         addr = self.gen_stake_addr(
@@ -535,8 +536,10 @@ class StakeAddressGroup:
         """Withdraw reward to payment address.
 
         Args:
-            stake_addr_record: An `structs.AddressRecord` tuple for the stake address with reward.
-            dst_addr_record: An `structs.AddressRecord` tuple for the destination payment address.
+            stake_addr_record: A `structs.AddressRecord` data container for the stake address
+                with reward.
+            dst_addr_record: A `structs.AddressRecord` data container for the destination
+                payment address.
             tx_name: A name of the transaction.
             verify: A bool indicating whether to verify that the reward was transferred correctly.
             destination_dir: A path to directory for storing artifacts (optional).
