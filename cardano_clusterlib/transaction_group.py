@@ -149,9 +149,9 @@ class TransactionGroup:
             return 0
 
         pparams = self._clusterlib_obj.g_query.get_protocol_params()
-        key_deposit = pparams.get("stakeAddressDeposit") or 0
-        pool_deposit = pparams.get("stakePoolDeposit") or 0
-        drep_deposit = pparams.get("dRepDeposit") or 0
+        key_deposit = self._clusterlib_obj.g_query.get_address_deposit(pparams=pparams)
+        pool_deposit = self._clusterlib_obj.g_query.get_pool_deposit(pparams=pparams)
+        drep_deposit = self._clusterlib_obj.g_query.get_drep_deposit(pparams=pparams)
 
         deposit = 0
         for cert in tx_files.certificate_files:
