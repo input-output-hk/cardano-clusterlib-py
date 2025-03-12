@@ -152,8 +152,10 @@ class TransactionGroup:
         key_deposit = self._clusterlib_obj.g_query.get_address_deposit(pparams=pparams)
         pool_deposit = self._clusterlib_obj.g_query.get_pool_deposit(pparams=pparams)
         drep_deposit = self._clusterlib_obj.g_query.get_drep_deposit(pparams=pparams)
+        action_deposit = self._clusterlib_obj.g_query.get_gov_action_deposit(pparams=pparams)
 
         deposit = 0
+
         for cert in tx_files.certificate_files:
             with open(cert, encoding="utf-8") as in_json:
                 content = json.load(in_json)
@@ -171,6 +173,13 @@ class TransactionGroup:
                 deposit += drep_deposit
             elif "DRep Retirement" in description:
                 deposit -= drep_deposit
+
+        for prop in tx_files.proposal_files:
+            with open(prop, encoding="utf-8") as in_json:
+                content = json.load(in_json)
+            ptype = content.get("type", "")
+            if "Governance proposal" in ptype:
+                deposit += action_deposit
 
         return deposit
 
