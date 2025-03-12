@@ -277,24 +277,24 @@ class QueryGroup:
             vote_delegation=vote_delegation,
         )
 
-    def get_address_deposit(self) -> int:
+    def get_address_deposit(self, pparams: dict[str, tp.Any] | None = None) -> int:
         """Return stake address deposit amount."""
-        pparams = self.get_protocol_params()
+        pparams = pparams or self.get_protocol_params()
         return pparams.get("stakeAddressDeposit") or 0
 
-    def get_pool_deposit(self) -> int:
+    def get_pool_deposit(self, pparams: dict[str, tp.Any] | None = None) -> int:
         """Return stake pool deposit amount."""
-        pparams = self.get_protocol_params()
+        pparams = pparams or self.get_protocol_params()
         return pparams.get("stakePoolDeposit") or 0
 
-    def get_drep_deposit(self) -> int:
+    def get_drep_deposit(self, pparams: dict[str, tp.Any] | None = None) -> int:
         """Return DRep deposit amount."""
-        pparams = self.get_protocol_params()
+        pparams = pparams or self.get_protocol_params()
         return pparams.get("dRepDeposit") or 0
 
-    def get_gov_action_deposit(self) -> int:
+    def get_gov_action_deposit(self, pparams: dict[str, tp.Any] | None = None) -> int:
         """Return governance action deposit amount."""
-        pparams = self.get_protocol_params()
+        pparams = pparams or self.get_protocol_params()
         return pparams.get("govActionDeposit") or 0
 
     def get_stake_distribution(self) -> dict[str, float]:
