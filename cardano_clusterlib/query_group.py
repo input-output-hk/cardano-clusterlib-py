@@ -287,6 +287,16 @@ class QueryGroup:
         pparams = self.get_protocol_params()
         return pparams.get("stakePoolDeposit") or 0
 
+    def get_drep_deposit(self) -> int:
+        """Return DRep deposit amount."""
+        pparams = self.get_protocol_params()
+        return pparams.get("dRepDeposit") or 0
+
+    def get_gov_action_deposit(self) -> int:
+        """Return governance action deposit amount."""
+        pparams = self.get_protocol_params()
+        return pparams.get("govActionDeposit") or 0
+
     def get_stake_distribution(self) -> dict[str, float]:
         """Return current aggregated stake distribution per stake pool."""
         # Stake pool values are displayed starting with line 2 of the command output
