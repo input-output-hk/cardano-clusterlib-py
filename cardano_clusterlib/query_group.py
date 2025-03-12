@@ -391,31 +391,37 @@ class QueryGroup:
 
         return schedule
 
-    def get_slot_no(self) -> int:
+    def get_slot_no(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return slot number of last block that was successfully applied to the ledger."""
+        tip = tip or self.get_tip()
         return int(self.get_tip()["slot"])
 
-    def get_block_no(self) -> int:
+    def get_block_no(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return block number of last block that was successfully applied to the ledger."""
+        tip = tip or self.get_tip()
         return int(self.get_tip()["block"])
 
-    def get_epoch(self) -> int:
+    def get_epoch(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return epoch of last block that was successfully applied to the ledger."""
+        tip = tip or self.get_tip()
         return int(self.get_tip()["epoch"])
 
-    def get_epoch_slot_no(self) -> int:
+    def get_epoch_slot_no(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return slot number within a given epoch.
 
         (of last block successfully applied to the ledger)
         """
+        tip = tip or self.get_tip()
         return int(self.get_tip()["slotInEpoch"])
 
-    def get_slots_to_epoch_end(self) -> int:
+    def get_slots_to_epoch_end(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return the number of slots left until the epoch end."""
+        tip = tip or self.get_tip()
         return int(self.get_tip()["slotsToEpochEnd"])
 
-    def get_era(self) -> str:
+    def get_era(self, tip: dict[str, tp.Any] | None = None) -> str:
         """Return network era."""
+        tip = tip or self.get_tip()
         era: str = self.get_tip()["era"]
         return era
 
