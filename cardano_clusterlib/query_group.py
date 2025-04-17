@@ -59,7 +59,7 @@ class QueryGroup:
         Returns:
             List[structs.UTXOData]: A list of UTxO data.
         """
-        cli_args = ["utxo", "--out-file", "/dev/stdout"]
+        cli_args = ["utxo", "--output-json"]
 
         address_single = ""
         sort_results = False
@@ -300,7 +300,7 @@ class QueryGroup:
     def get_stake_distribution(self) -> dict[str, float]:
         """Return current aggregated stake distribution per stake pool."""
         # Stake pool values are displayed starting with line 2 of the command output
-        result = self.query_cli(["stake-distribution"]).splitlines()[2:]
+        result = self.query_cli(["stake-distribution", "--output-text"]).splitlines()[2:]
         stake_distribution: dict[str, float] = {}
         for pool in result:
             pool_id, stake = pool.split()
@@ -309,7 +309,7 @@ class QueryGroup:
 
     def get_stake_pools(self) -> list[str]:
         """Return the node's current set of stake pool ids."""
-        stake_pools = self.query_cli(["stake-pools"]).splitlines()
+        stake_pools = self.query_cli(["stake-pools", "--output-text"]).splitlines()
         return stake_pools
 
     def get_leadership_schedule(
@@ -366,6 +366,7 @@ class QueryGroup:
         unparsed = self.query_cli(
             [
                 "leadership-schedule",
+                "--output-text",
                 "--genesis",
                 str(self._clusterlib_obj.genesis_json),
                 "--vrf-signing-key-file",
