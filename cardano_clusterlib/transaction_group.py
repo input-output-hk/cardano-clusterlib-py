@@ -66,7 +66,7 @@ class TransactionGroup:
             raise AssertionError(msg)
 
         return (
-            self._clusterlib_obj.cli(["transaction", "txid", *cli_args])
+            self._clusterlib_obj.cli(["transaction", "txid", "--output-text", *cli_args])
             .stdout.rstrip()
             .decode("ascii")
         )
@@ -576,6 +576,7 @@ class TransactionGroup:
             [
                 "transaction",
                 "calculate-min-fee",
+                "--output-text",
                 *self._clusterlib_obj.magic_args,
                 "--protocol-params-file",
                 str(self._clusterlib_obj.pparams_file),
