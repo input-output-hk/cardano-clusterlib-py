@@ -13,7 +13,6 @@ from cardano_clusterlib.consts import MultiSigTypeArgs
 from cardano_clusterlib.consts import MultiSlotTypeArgs
 from cardano_clusterlib.consts import ScriptTypes
 from cardano_clusterlib.consts import Votes
-from cardano_clusterlib.coverage import record_cli_coverage
 from cardano_clusterlib.exceptions import CLIError
 from cardano_clusterlib.helpers import get_rand_str
 from cardano_clusterlib.helpers import read_address_from_file

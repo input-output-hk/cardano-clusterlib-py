@@ -12,7 +12,6 @@ from cardano_clusterlib import address_group
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
 from cardano_clusterlib import conway_gov_group
-from cardano_clusterlib import coverage
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import genesis_group
 from cardano_clusterlib import governance_group
@@ -58,7 +57,6 @@ class ClusterLib:
         self.cluster_id = 0  # Can be used for identifying cluster instance
         # Number of new blocks before the Tx is considered confirmed
         self.confirm_blocks = consts.CONFIRM_BLOCKS_NUM
-        self.cli_coverage: dict = {}
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
         self.era_in_use = (
@@ -262,8 +260,6 @@ class ClusterLib:
         cmd_str = clusterlib_helpers._format_cli_args(cli_args=cli_args_strs)
         clusterlib_helpers._write_cli_log(clusterlib_obj=self, command=cmd_str)
         LOGGER.debug("Running `%s`", cmd_str)
-
-        coverage.record_cli_coverage(cli_args=cli_args_strs_all, coverage_dict=self.cli_coverage)
 
         # Re-run the command when running into
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
