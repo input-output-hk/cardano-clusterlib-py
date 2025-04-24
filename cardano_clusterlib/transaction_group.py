@@ -57,16 +57,24 @@ class TransactionGroup:
         Returns:
             str: A transaction ID.
         """
+        cli_args = []
+
+        # The `--output-text` option is available since 10.3.0.0 and is the default
+        # until about 10.8.0.0. Then the JSON format became the default.
+        # Adding the option for cli >= 10.7.0.0, because the option was already available.
+        if self._clusterlib_obj.cli_version >= version.parse("10.7.0.0"):
+            cli_args.append("--output-text")
+
         if tx_body_file:
-            cli_args = ["--tx-body-file", str(tx_body_file)]
+            cli_args.extend(["--tx-body-file", str(tx_body_file)])
         elif tx_file:
-            cli_args = ["--tx-file", str(tx_file)]
+            cli_args.extend(["--tx-file", str(tx_file)])
         else:
             msg = "Either `tx_body_file` or `tx_file` is needed."
             raise AssertionError(msg)
 
         return (
-            self._clusterlib_obj.cli(["transaction", "txid", "--output-text", *cli_args])
+            self._clusterlib_obj.cli(["transaction", "txid", *cli_args])
             .stdout.rstrip()
             .decode("ascii")
         )
