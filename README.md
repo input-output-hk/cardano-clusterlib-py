@@ -1,5 +1,6 @@
 # README for cardano-clusterlib
 
+[![CodeQL](https://github.com/input-output-hk/cardano-clusterlib-py/actions/workflows/codeql.yml/badge.svg)](https://github.com/input-output-hk/cardano-clusterlib-py/actions)
 [![Documentation Status](https://readthedocs.org/projects/cardano-clusterlib-py/badge/?version=latest)](https://cardano-clusterlib-py.readthedocs.io/en/latest/?badge=latest)
 [![PyPi Version](https://img.shields.io/pypi/v/cardano-clusterlib.svg)](https://pypi.org/project/cardano-clusterlib/)
 
