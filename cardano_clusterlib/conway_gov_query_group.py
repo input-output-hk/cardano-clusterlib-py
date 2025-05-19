@@ -99,7 +99,7 @@ class ConwayGovQueryGroup:
         drep_vkey: str = "",
         drep_vkey_file: itp.FileType | None = None,
         drep_key_hash: str = "",
-    ) -> list[list]:
+    ) -> dict[str, tp.Any]:
         """Get the DRep stake distribution.
 
         When no key is provided, query all DReps.
@@ -111,7 +111,7 @@ class ConwayGovQueryGroup:
             drep_key_hash: DRep verification key hash (either Bech32-encoded or hex-encoded).
 
         Returns:
-            List[List[Dict[str, Any]]]: DRep stake distribution.
+            dict[str, Any]: DRep stake distribution.
         """
         cred_args = self._get_cred_args(
             drep_script_hash=drep_script_hash,
@@ -122,10 +122,11 @@ class ConwayGovQueryGroup:
         if not cred_args:
             cred_args = ["--all-dreps"]
 
-        out: list[list[dict[str, tp.Any]]] = json.loads(
+        out: list[list] | dict[str, tp.Any] = json.loads(
             self.query_cli(["drep-stake-distribution", *cred_args])
         )
-        return out
+        recs: dict[str, tp.Any] = {i[0]: i[1] for i in out} if isinstance(out, list) else out
+        return recs
 
     def committee_state(self) -> dict[str, tp.Any]:
         """Get the committee state."""
