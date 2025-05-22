@@ -12,7 +12,7 @@ from cardano_clusterlib import types as itp
 LOGGER = logging.getLogger(__name__)
 
 
-class ConwayGovDrepGroup:
+class GovDrepGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = ("governance", "drep")

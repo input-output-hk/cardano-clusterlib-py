@@ -11,9 +11,9 @@ from packaging import version
 from cardano_clusterlib import address_group
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import consts
-from cardano_clusterlib import conway_gov_group
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import genesis_group
+from cardano_clusterlib import gov_group
 from cardano_clusterlib import helpers
 from cardano_clusterlib import key_group
 from cardano_clusterlib import legacy_gov_group
@@ -121,8 +121,8 @@ class ClusterLib:
         self._node_group: node_group.NodeGroup | None = None
         self._key_group: key_group.KeyGroup | None = None
         self._genesis_group: genesis_group.GenesisGroup | None = None
-        self._legacy_gov_group: legacy_gov_group.GovernanceGroup | None = None
-        self._conway_gov_group: conway_gov_group.ConwayGovGroup | None = None
+        self._legacy_gov_group: legacy_gov_group.LegacyGovGroup | None = None
+        self._governance_group: gov_group.GovernanceGroup | None = None
 
     def set_socket_path(self, socket_path: itp.FileType | None) -> None:
         """Set a path to socket file for communication with the node."""
@@ -214,24 +214,24 @@ class ClusterLib:
         return self._genesis_group
 
     @property
-    def g_legacy_governance(self) -> legacy_gov_group.GovernanceGroup:
+    def g_legacy_governance(self) -> legacy_gov_group.LegacyGovGroup:
         """Legacy governance group."""
         if not self._legacy_gov_group:
-            self._legacy_gov_group = legacy_gov_group.GovernanceGroup(clusterlib_obj=self)
+            self._legacy_gov_group = legacy_gov_group.LegacyGovGroup(clusterlib_obj=self)
         return self._legacy_gov_group
 
     @property
-    def g_conway_governance(self) -> conway_gov_group.ConwayGovGroup:
-        """Conway governance group."""
-        if self._conway_gov_group:
-            return self._conway_gov_group
+    def g_governance(self) -> gov_group.GovernanceGroup:
+        """Governance group."""
+        if self._governance_group:
+            return self._governance_group
 
         if not self.conway_genesis:
-            msg = "Conway governance group can be used only with Command era >= Conway."
+            msg = "The governance group can be used only with Command era >= Conway."
             raise exceptions.CLIError(msg)
 
-        self._conway_gov_group = conway_gov_group.ConwayGovGroup(clusterlib_obj=self)
-        return self._conway_gov_group
+        self._governance_group = gov_group.GovernanceGroup(clusterlib_obj=self)
+        return self._governance_group
 
     def cli(
         self,

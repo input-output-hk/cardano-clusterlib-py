@@ -2,70 +2,64 @@
 
 import logging
 
-from cardano_clusterlib import conway_gov_action_group
-from cardano_clusterlib import conway_gov_committee_group
-from cardano_clusterlib import conway_gov_drep_group
-from cardano_clusterlib import conway_gov_query_group
-from cardano_clusterlib import conway_gov_vote_group
+from cardano_clusterlib import gov_action_group
+from cardano_clusterlib import gov_committee_group
+from cardano_clusterlib import gov_drep_group
+from cardano_clusterlib import gov_query_group
+from cardano_clusterlib import gov_vote_group
 from cardano_clusterlib import types as itp
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ConwayGovGroup:
+class GovernanceGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
         # Groups of commands
-        self._action_group: conway_gov_action_group.ConwayGovActionGroup | None = None
-        self._committee_group: conway_gov_committee_group.ConwayGovCommitteeGroup | None = None
-        self._drep_group: conway_gov_drep_group.ConwayGovDrepGroup | None = None
-        self._query_group: conway_gov_query_group.ConwayGovQueryGroup | None = None
-        self._vote_group: conway_gov_vote_group.ConwayGovVoteGroup | None = None
+        self._action_group: gov_action_group.GovActionGroup | None = None
+        self._committee_group: gov_committee_group.GovCommitteeGroup | None = None
+        self._drep_group: gov_drep_group.GovDrepGroup | None = None
+        self._query_group: gov_query_group.GovQueryGroup | None = None
+        self._vote_group: gov_vote_group.GovVoteGroup | None = None
 
     @property
-    def action(self) -> conway_gov_action_group.ConwayGovActionGroup:
+    def action(self) -> gov_action_group.GovActionGroup:
         """Action group."""
         if not self._action_group:
-            self._action_group = conway_gov_action_group.ConwayGovActionGroup(
+            self._action_group = gov_action_group.GovActionGroup(
                 clusterlib_obj=self._clusterlib_obj
             )
         return self._action_group
 
     @property
-    def committee(self) -> conway_gov_committee_group.ConwayGovCommitteeGroup:
+    def committee(self) -> gov_committee_group.GovCommitteeGroup:
         """Committee group."""
         if not self._committee_group:
-            self._committee_group = conway_gov_committee_group.ConwayGovCommitteeGroup(
+            self._committee_group = gov_committee_group.GovCommitteeGroup(
                 clusterlib_obj=self._clusterlib_obj
             )
         return self._committee_group
 
     @property
-    def drep(self) -> conway_gov_drep_group.ConwayGovDrepGroup:
+    def drep(self) -> gov_drep_group.GovDrepGroup:
         """Drep group."""
         if not self._drep_group:
-            self._drep_group = conway_gov_drep_group.ConwayGovDrepGroup(
-                clusterlib_obj=self._clusterlib_obj
-            )
+            self._drep_group = gov_drep_group.GovDrepGroup(clusterlib_obj=self._clusterlib_obj)
         return self._drep_group
 
     @property
-    def query(self) -> conway_gov_query_group.ConwayGovQueryGroup:
+    def query(self) -> gov_query_group.GovQueryGroup:
         """Query group."""
         if not self._query_group:
-            self._query_group = conway_gov_query_group.ConwayGovQueryGroup(
-                clusterlib_obj=self._clusterlib_obj
-            )
+            self._query_group = gov_query_group.GovQueryGroup(clusterlib_obj=self._clusterlib_obj)
         return self._query_group
 
     @property
-    def vote(self) -> conway_gov_vote_group.ConwayGovVoteGroup:
+    def vote(self) -> gov_vote_group.GovVoteGroup:
         """Vote group."""
         if not self._vote_group:
-            self._vote_group = conway_gov_vote_group.ConwayGovVoteGroup(
-                clusterlib_obj=self._clusterlib_obj
-            )
+            self._vote_group = gov_vote_group.GovVoteGroup(clusterlib_obj=self._clusterlib_obj)
         return self._vote_group
 
     def get_anchor_data_hash(
