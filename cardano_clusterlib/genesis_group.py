@@ -18,7 +18,7 @@ class GenesisGroup:
 
         self._genesis_keys: structs.GenesisKeys | None = None
         self._genesis_utxo_addr: str = ""
-        self._cli_args = ("cardano-cli", "legacy", "genesis")
+        self._cli_args = ("cardano-cli", "latest", "genesis")
 
     @property
     def genesis_keys(self) -> structs.GenesisKeys:
