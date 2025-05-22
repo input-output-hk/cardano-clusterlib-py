@@ -14,9 +14,9 @@ from cardano_clusterlib import consts
 from cardano_clusterlib import conway_gov_group
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import genesis_group
-from cardano_clusterlib import governance_group
 from cardano_clusterlib import helpers
 from cardano_clusterlib import key_group
+from cardano_clusterlib import legacy_gov_group
 from cardano_clusterlib import node_group
 from cardano_clusterlib import query_group
 from cardano_clusterlib import stake_address_group
@@ -121,7 +121,7 @@ class ClusterLib:
         self._node_group: node_group.NodeGroup | None = None
         self._key_group: key_group.KeyGroup | None = None
         self._genesis_group: genesis_group.GenesisGroup | None = None
-        self._governance_group: governance_group.GovernanceGroup | None = None
+        self._legacy_gov_group: legacy_gov_group.GovernanceGroup | None = None
         self._conway_gov_group: conway_gov_group.ConwayGovGroup | None = None
 
     def set_socket_path(self, socket_path: itp.FileType | None) -> None:
@@ -214,11 +214,11 @@ class ClusterLib:
         return self._genesis_group
 
     @property
-    def g_governance(self) -> governance_group.GovernanceGroup:
-        """Governance group."""
-        if not self._governance_group:
-            self._governance_group = governance_group.GovernanceGroup(clusterlib_obj=self)
-        return self._governance_group
+    def g_legacy_governance(self) -> legacy_gov_group.GovernanceGroup:
+        """Legacy governance group."""
+        if not self._legacy_gov_group:
+            self._legacy_gov_group = legacy_gov_group.GovernanceGroup(clusterlib_obj=self)
+        return self._legacy_gov_group
 
     @property
     def g_conway_governance(self) -> conway_gov_group.ConwayGovGroup:
