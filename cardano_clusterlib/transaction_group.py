@@ -561,7 +561,7 @@ class TransactionGroup:
         txbody_file: itp.FileType,
         txin_count: int,
         txout_count: int,
-        witness_count: int = 1,
+        witness_count: int,
         byron_witness_count: int = 0,
         reference_script_size: int = 0,
     ) -> int:
@@ -571,7 +571,7 @@ class TransactionGroup:
             txbody_file: A path to file with transaction body.
             txin_count: A number of transaction inputs.
             txout_count: A number of transaction outputs.
-            witness_count: A number of witnesses (optional).
+            witness_count: A number of witnesses.
             byron_witness_count: A number of Byron witnesses (optional).
             reference_script_size: A size in bytes of transaction reference scripts (optional).
 
