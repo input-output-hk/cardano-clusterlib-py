@@ -444,6 +444,7 @@ class TransactionGroup:
         treasury_donation: int | None = None,
         invalid_hereafter: int | None = None,
         invalid_before: int | None = None,
+        script_valid: bool = True,
         src_addr_utxos: list[structs.UTXOData] | None = None,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
@@ -485,6 +486,7 @@ class TransactionGroup:
             treasury_donation: A donation to the treasury to perform (optional).
             invalid_hereafter: A last block when the transaction is still valid (optional).
             invalid_before: A first block when the transaction is valid (optional).
+            script_valid: A bool indicating that the script is valid (True by default).
             src_addr_utxos: A list of UTxOs for the source address (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
@@ -547,6 +549,7 @@ class TransactionGroup:
             invalid_before=invalid_before,
             current_treasury_value=current_treasury_value,
             treasury_donation=treasury_donation,
+            script_valid=script_valid,
             join_txouts=join_txouts,
         )
 
