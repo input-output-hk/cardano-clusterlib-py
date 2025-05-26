@@ -5,7 +5,6 @@ import json
 import logging
 import pathlib as pl
 import typing as tp
-import warnings
 
 from packaging import version
 
@@ -1883,56 +1882,6 @@ class TransactionGroup:
         with open(out_file, encoding="utf-8") as fp_out:
             cost: list[dict] = json.load(fp_out)
         return cost
-
-    def send_funds(
-        self,
-        src_address: str,
-        destinations: list[structs.TxOut],
-        tx_name: str,
-        tx_files: structs.TxFiles | None = None,
-        fee: int | None = None,
-        ttl: int | None = None,
-        deposit: int | None = None,
-        invalid_hereafter: int | None = None,
-        verify_tx: bool = True,
-        destination_dir: itp.FileType = ".",
-    ) -> structs.TxRawOutput:
-        """Send funds - convenience function for `send_tx`.
-
-        Args:
-            src_address: An address used for fee and inputs.
-            destinations: A list (iterable) of `TxOuts`, specifying transaction outputs.
-            tx_name: A name of the transaction.
-            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
-                (optional).
-            fee: A fee amount (optional).
-            ttl: A last block when the transaction is still valid
-                (deprecated in favor of `invalid_hereafter`, optional).
-            deposit: A deposit amount needed by the transaction (optional).
-            invalid_hereafter: A last block when the transaction is still valid (optional).
-            verify_tx: A bool indicating whether to verify the transaction made it to chain
-                and resubmit the transaction if not (True by default).
-            destination_dir: A path to directory for storing artifacts (optional).
-
-        Returns:
-            structs.TxRawOutput: A data container with transaction output details.
-        """
-        warnings.warn(
-            "`send_funds` is deprecated, use `send_tx` instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.send_tx(
-            src_address=src_address,
-            tx_name=tx_name,
-            txouts=destinations,
-            tx_files=tx_files,
-            fee=fee,
-            deposit=deposit,
-            invalid_hereafter=invalid_hereafter or ttl,
-            destination_dir=destination_dir,
-            verify_tx=verify_tx,
-        )
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
