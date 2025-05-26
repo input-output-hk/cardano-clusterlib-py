@@ -89,7 +89,7 @@ class TransactionGroup:
         Returns:
             str: A transaction.
         """
-        cli_args = ["transaction", "view"]
+        cli_args = ["transaction", "view", "--output-json"]
 
         if tx_body_file:
             cli_args.extend(["--tx-body-file", str(tx_body_file)])
@@ -107,6 +107,19 @@ class TransactionGroup:
             .stdout.rstrip()
             .decode("utf-8")
         )
+
+    def view_tx_dict(self, tx_body_file: itp.FileType = "", tx_file: itp.FileType = "") -> dict:
+        """Get a dict from transaction view.
+
+        Args:
+            tx_body_file: A path to the transaction body file (JSON TxBody - optional).
+            tx_file: A path to the signed transaction file (JSON Tx - optional).
+
+        Returns:
+            dict: A transaction.
+        """
+        out: dict = json.loads(self.view_tx(tx_body_file=tx_body_file, tx_file=tx_file))
+        return out
 
     def get_hash_script_data(
         self,
