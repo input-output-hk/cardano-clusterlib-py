@@ -1021,7 +1021,7 @@ def _get_script_args(  # noqa: C901
     complex_proposals: structs.OptionalScriptProposals,
     script_withdrawals: structs.OptionalScriptWithdrawals,
     script_votes: structs.OptionalScriptVotes,
-    for_build: bool = True,
+    with_execution_units: bool = True,
 ) -> list[str]:
     grouped_args: list[str] = []
     collaterals_all = set()
@@ -1047,7 +1047,7 @@ def _get_script_args(  # noqa: C901
                 ]
             )
 
-            if not for_build and tin.execution_units:
+            if with_execution_units and tin.execution_units:
                 grouped_args.extend(
                     [
                         "--tx-in-execution-units",
@@ -1094,7 +1094,7 @@ def _get_script_args(  # noqa: C901
             elif tin.reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--spending-plutus-script-v3")
 
-            if not for_build and tin.execution_units:
+            if with_execution_units and tin.execution_units:
                 grouped_args.extend(
                     [
                         "--spending-reference-tx-in-execution-units",
@@ -1140,7 +1140,7 @@ def _get_script_args(  # noqa: C901
                 ]
             )
 
-            if not for_build and mrec.execution_units:
+            if with_execution_units and mrec.execution_units:
                 grouped_args.extend(
                     [
                         "--mint-execution-units",
@@ -1180,7 +1180,7 @@ def _get_script_args(  # noqa: C901
             elif mrec_reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--mint-plutus-script-v3")
 
-            if not for_build and mrec.execution_units:
+            if with_execution_units and mrec.execution_units:
                 grouped_args.extend(
                     [
                         "--mint-reference-tx-in-execution-units",
@@ -1217,7 +1217,7 @@ def _get_script_args(  # noqa: C901
         if crec.script_file:
             grouped_args.extend(["--certificate-script-file", str(crec.script_file)])
 
-            if not for_build and crec.execution_units:
+            if with_execution_units and crec.execution_units:
                 grouped_args.extend(
                     [
                         "--certificate-execution-units",
@@ -1248,7 +1248,7 @@ def _get_script_args(  # noqa: C901
             if crec_reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--certificate-plutus-script-v3")
 
-            if not for_build and crec.execution_units:
+            if with_execution_units and crec.execution_units:
                 grouped_args.extend(
                     [
                         "--certificate-reference-tx-in-execution-units",
@@ -1291,7 +1291,7 @@ def _get_script_args(  # noqa: C901
                 ]
             )
 
-            if not for_build and prec.execution_units:
+            if with_execution_units and prec.execution_units:
                 grouped_args.extend(
                     [
                         "--proposal-execution-units",
@@ -1325,7 +1325,7 @@ def _get_script_args(  # noqa: C901
                 ]
             )
 
-            if not for_build and wrec.execution_units:
+            if with_execution_units and wrec.execution_units:
                 grouped_args.extend(
                     [
                         "--withdrawal-execution-units",
@@ -1356,7 +1356,7 @@ def _get_script_args(  # noqa: C901
             elif wrec_reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--withdrawal-plutus-script-v3")
 
-            if not for_build and wrec.execution_units:
+            if with_execution_units and wrec.execution_units:
                 grouped_args.extend(
                     [
                         "--withdrawal-reference-tx-in-execution-units",
@@ -1399,7 +1399,7 @@ def _get_script_args(  # noqa: C901
                 ]
             )
 
-            if not for_build and vrec.execution_units:
+            if with_execution_units and vrec.execution_units:
                 grouped_args.extend(
                     [
                         "--vote-execution-units",
