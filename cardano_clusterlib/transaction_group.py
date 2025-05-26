@@ -343,7 +343,7 @@ class TransactionGroup:
             complex_proposals=complex_proposals,
             script_withdrawals=script_withdrawals,
             script_votes=script_votes,
-            for_build=False,
+            with_execution_units=True,
         )
 
         grouped_args_str = " ".join(grouped_args)
@@ -954,10 +954,8 @@ class TransactionGroup:
             complex_proposals=complex_proposals,
             script_withdrawals=collected_data.script_withdrawals,
             script_votes=script_votes,
-            for_build=True,
+            with_execution_units=False,
         )
-
-        misc_args.extend(["--change-address", change_address])
 
         if witness_override is not None:
             misc_args.extend(["--witness-override", str(witness_override)])
@@ -994,12 +992,14 @@ class TransactionGroup:
             *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
             *helpers._prepend_flag("--withdrawal", withdrawal_strings),
             *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
+            "--change-address",
+            change_address,
             *misc_args,
             *self._clusterlib_obj.magic_args,
             *self._clusterlib_obj.socket_args,
         ]
-        stdout = self._clusterlib_obj.cli(cli_args).stdout.strip()
-        stdout_dec = stdout.decode("utf-8") if stdout else ""
+        out = self._clusterlib_obj.cli(cli_args)
+        stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
 
         # Check for the presence of fee information. No fee information was provided in older
         # versions of the `build` command.
@@ -1008,6 +1008,292 @@ class TransactionGroup:
             estimated_fee = int(stdout_dec.split()[-2])
         elif "transaction fee" in stdout_dec:
             estimated_fee = int(stdout_dec.split()[-1])
+        else:
+            fee_str = self.view_tx_dict(tx_body_file=out_file).get("fee") or ""
+            if fee_str.endswith("Lovelace"):
+                estimated_fee = int(fee_str.split()[-2])
+
+        return structs.TxRawOutput(
+            txins=list(collected_data.txins),
+            txouts=processed_txouts,
+            txouts_count=txouts_count,
+            tx_files=tx_files,
+            out_file=out_file,
+            fee=estimated_fee,
+            build_args=cli_args,
+            era=self._clusterlib_obj.era_in_use,
+            script_txins=script_txins,
+            script_withdrawals=collected_data.script_withdrawals,
+            script_votes=script_votes,
+            complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
+            mint=mint,
+            invalid_hereafter=invalid_hereafter,
+            invalid_before=invalid_before,
+            treasury_donation=treasury_donation,
+            withdrawals=collected_data.withdrawals,
+            change_address=change_address or src_address,
+            return_collateral_txouts=return_collateral_txouts,
+            total_collateral_amount=total_collateral_amount,
+            readonly_reference_txins=readonly_reference_txins,
+            script_valid=script_valid,
+            required_signers=required_signers,
+            required_signer_hashes=required_signer_hashes,
+            combined_reference_txins=txtools._get_reference_txins(
+                readonly_reference_txins=readonly_reference_txins,
+                script_txins=script_txins,
+                mint=mint,
+                complex_certs=complex_certs,
+                script_withdrawals=script_withdrawals,
+            ),
+        )
+
+    def build_estimate_tx(  # noqa: C901
+        self,
+        src_address: str,
+        tx_name: str,
+        txins: structs.OptionalUTXOData = (),
+        txouts: structs.OptionalTxOuts = (),
+        readonly_reference_txins: structs.OptionalUTXOData = (),
+        script_txins: structs.OptionalScriptTxIn = (),
+        return_collateral_txouts: structs.OptionalTxOuts = (),
+        total_collateral_amount: int | None = None,
+        mint: structs.OptionalMint = (),
+        tx_files: structs.TxFiles | None = None,
+        complex_certs: structs.OptionalScriptCerts = (),
+        complex_proposals: structs.OptionalScriptProposals = (),
+        change_address: str = "",
+        fee_buffer: int | None = None,
+        required_signers: itp.OptionalFiles = (),
+        required_signer_hashes: tp.Optional[list[str]] = None,
+        withdrawals: structs.OptionalTxOuts = (),
+        script_withdrawals: structs.OptionalScriptWithdrawals = (),
+        script_votes: structs.OptionalScriptVotes = (),
+        deposit: int | None = None,
+        current_treasury_value: int | None = None,
+        treasury_donation: int | None = None,
+        invalid_hereafter: int | None = None,
+        invalid_before: int | None = None,
+        script_valid: bool = True,
+        src_addr_utxos: list[structs.UTXOData] | None = None,
+        witness_count_add: int = 0,
+        byron_witness_count: int = 0,
+        reference_script_size: int = 0,
+        join_txouts: bool = True,
+        destination_dir: itp.FileType = ".",
+        skip_asset_balancing: bool = True,
+    ) -> structs.TxRawOutput:
+        """Build a balanced transaction without access to a live node.
+
+        Args:
+            src_address: An address used for fee and inputs (if inputs not specified by `txins`).
+            tx_name: A name of the transaction.
+            txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
+            txouts: A list (iterable) of `TxOuts`, specifying transaction outputs (optional).
+            readonly_reference_txins: An iterable of `structs.UTXOData`, specifying input
+                UTxOs to be referenced and used as readonly (optional).
+            script_txins: An iterable of `ScriptTxIn`, specifying input script UTxOs (optional).
+            return_collateral_txouts: A list (iterable) of `TxOuts`, specifying transaction outputs
+                for excess collateral (optional).
+            total_collateral_amount: An integer indicating the total amount of collateral
+                (optional).
+            mint: An iterable of `Mint`, specifying script minting data (optional).
+            tx_files: A `structs.TxFiles` data container containing files needed for the transaction
+                (optional).
+            complex_certs: An iterable of `ComplexCert`, specifying certificates script data
+                (optional).
+            complex_proposals: An iterable of `ComplexProposal`, specifying proposals script data
+                (optional).
+            change_address: A string with address where ADA in excess of the transaction fee
+                will go to (`src_address` by default).
+            fee_buffer: A buffer for fee amount (optional).
+            required_signers: An iterable of filepaths of the signing keys whose signatures
+                are required (optional).
+            required_signer_hashes: A list of hashes of the signing keys whose signatures
+                are required (optional).
+            withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
+            script_withdrawals: An iterable of `ScriptWithdrawal`, specifying withdrawal script
+                data (optional).
+            script_votes: An iterable of `ScriptVote`, specifying vote script data (optional).
+            deposit: A deposit amount needed by the transaction (optional).
+            current_treasury_value: The current treasury value (optional).
+            treasury_donation: A donation to the treasury to perform (optional).
+            invalid_hereafter: A last block when the transaction is still valid (optional).
+            invalid_before: A first block when the transaction is valid (optional).
+            script_valid: A bool indicating that the script is valid (True by default).
+            src_addr_utxos: A list of UTxOs for the source address (optional).
+            witness_count_add: A number of witnesses to add - workaround to make the fee
+                calculation more precise.
+            byron_witness_count: A number of Byron witnesses (optional).
+            reference_script_size: A size in bytes of transaction reference scripts (optional).
+            join_txouts: A bool indicating whether to aggregate transaction outputs
+                by payment address (True by default).
+            destination_dir: A path to directory for storing artifacts (optional).
+            skip_asset_balancing: A bool indicating if assets balancing should be skipped.
+
+        Returns:
+            structs.TxRawOutput: A data container with transaction output details.
+        """
+        max_txout = [o for o in txouts if o.amount == -1 and o.coin in ("", consts.DEFAULT_COIN)]
+        if max_txout:
+            if change_address:
+                msg = "Cannot use '-1' amount and change address at the same time."
+                raise AssertionError(msg)
+            change_address = max_txout[0].address
+        else:
+            change_address = change_address or src_address
+
+        if (treasury_donation is not None) != (current_treasury_value is not None):
+            msg = (
+                "Both `treasury_donation` and `current_treasury_value` must be specified together."
+            )
+            raise AssertionError(msg)
+
+        tx_files = tx_files or structs.TxFiles()
+        if tx_files.certificate_files and complex_certs:
+            LOGGER.warning(
+                "Mixing `tx_files.certificate_files` and `complex_certs`, "
+                "certs may come in unexpected order."
+            )
+
+        if tx_files.proposal_files and complex_proposals:
+            LOGGER.warning(
+                "Mixing `tx_files.proposal_files` and `complex_proposals`, "
+                "proposals may come in unexpected order."
+            )
+
+        destination_dir = pl.Path(destination_dir).expanduser()
+
+        out_file = destination_dir / f"{tx_name}_tx.body"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        collected_data = txtools.collect_data_for_build(
+            clusterlib_obj=self._clusterlib_obj,
+            src_address=src_address,
+            txins=txins,
+            txouts=txouts,
+            script_txins=script_txins,
+            mint=mint,
+            tx_files=tx_files,
+            complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
+            fee=fee_buffer or 0,
+            withdrawals=withdrawals,
+            script_withdrawals=script_withdrawals,
+            deposit=deposit,
+            treasury_donation=treasury_donation,
+            src_addr_utxos=src_addr_utxos,
+            skip_asset_balancing=skip_asset_balancing,
+        )
+
+        required_signer_hashes = required_signer_hashes or []
+
+        txout_args, processed_txouts, txouts_count = txtools._process_txouts(
+            txouts=collected_data.txouts, join_txouts=join_txouts
+        )
+
+        txin_strings = txtools._get_txin_strings(
+            txins=collected_data.txins, script_txins=script_txins
+        )
+
+        withdrawal_strings = [f"{x.address}+{x.amount}" for x in collected_data.withdrawals]
+
+        mint_txouts = list(itertools.chain.from_iterable(m.txouts for m in mint))
+
+        script_txins_records = list(itertools.chain.from_iterable(r.txins for r in script_txins))
+        combined_txins = [
+            *collected_data.txins,
+            *script_txins_records,
+        ]
+        total_utxo_value = txtools.calculate_utxos_balance(utxos=combined_txins)
+
+        estimate_args = [
+            "--shelley-key-witnesses",
+            str(len(tx_files.signing_key_files) + witness_count_add),
+            "--byron-key-witnesses",
+            str(byron_witness_count),
+            "--reference-script-size",
+            str(reference_script_size),
+            "--total-utxo-value",
+            str(total_utxo_value),
+        ]
+
+        misc_args = []
+
+        if invalid_before is not None:
+            misc_args.extend(["--invalid-before", str(invalid_before)])
+        if invalid_hereafter is not None:
+            misc_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
+
+        if treasury_donation is not None:
+            misc_args.extend(["--treasury-donation", str(treasury_donation)])
+
+        if not script_valid:
+            misc_args.append("--script-invalid")
+
+        # There's allowed just single `--mint` argument, let's aggregate all the outputs
+        mint_records = [f"{m.amount} {m.coin}" for m in mint_txouts]
+        misc_args.extend(["--mint", "+".join(mint_records)] if mint_records else [])
+
+        for txin in readonly_reference_txins:
+            misc_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
+
+        grouped_args = txtools._get_script_args(
+            script_txins=script_txins,
+            mint=mint,
+            complex_certs=complex_certs,
+            complex_proposals=complex_proposals,
+            script_withdrawals=collected_data.script_withdrawals,
+            script_votes=script_votes,
+            with_execution_units=True,
+        )
+
+        if total_collateral_amount:
+            misc_args.extend(["--tx-total-collateral", str(total_collateral_amount)])
+
+        if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
+            misc_args.append("--json-metadata-detailed-schema")
+
+        self._clusterlib_obj.create_pparams_file()
+
+        cli_args = [
+            "transaction",
+            "build-estimate",
+            "--out-file",
+            str(out_file),
+            *estimate_args,
+            *grouped_args,
+            *helpers._prepend_flag("--tx-in", txin_strings),
+            *txout_args,
+            *helpers._prepend_flag("--required-signer", required_signers),
+            *helpers._prepend_flag("--required-signer-hash", required_signer_hashes),
+            *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
+            *helpers._prepend_flag("--proposal-file", tx_files.proposal_files),
+            *helpers._prepend_flag("--vote-file", tx_files.vote_files),
+            *helpers._prepend_flag("--auxiliary-script-file", tx_files.auxiliary_script_files),
+            *helpers._prepend_flag("--metadata-json-file", tx_files.metadata_json_files),
+            *helpers._prepend_flag("--metadata-cbor-file", tx_files.metadata_cbor_files),
+            *helpers._prepend_flag("--withdrawal", withdrawal_strings),
+            *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
+            "--change-address",
+            change_address,
+            "--protocol-params-file",
+            str(self._clusterlib_obj.pparams_file),
+            *misc_args,
+            *self._clusterlib_obj.socket_args,
+        ]
+        out = self._clusterlib_obj.cli(cli_args)
+        stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
+
+        # Check for the presence of fee information. No fee information was provided in older
+        # versions of the `build-estimate` command. Try to get the fee information from the
+        # `transaction view` command if not available from the `build-estimate`.
+        estimated_fee = -1
+        fee_str = stdout_dec
+        if not fee_str.endswith("Lovelace"):
+            fee_str = self.view_tx_dict(tx_body_file=out_file).get("fee") or ""
+        if fee_str.endswith("Lovelace"):
+            estimated_fee = int(fee_str.split()[-2])
 
         return structs.TxRawOutput(
             txins=list(collected_data.txins),
@@ -1192,7 +1478,10 @@ class TransactionGroup:
         return txhash
 
     def submit_tx(
-        self, tx_file: itp.FileType, txins: list[structs.UTXOData], wait_blocks: int | None = None
+        self,
+        tx_file: itp.FileType,
+        txins: list[structs.UTXOData],
+        wait_blocks: int | None = None,
     ) -> str:
         """Submit a transaction, resubmit if the transaction didn't make it to the chain.
 
