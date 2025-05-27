@@ -5,7 +5,6 @@ import logging
 from cardano_clusterlib import gov_action_group
 from cardano_clusterlib import gov_committee_group
 from cardano_clusterlib import gov_drep_group
-from cardano_clusterlib import gov_query_group
 from cardano_clusterlib import gov_vote_group
 from cardano_clusterlib import types as itp
 
@@ -20,7 +19,6 @@ class GovernanceGroup:
         self._action_group: gov_action_group.GovActionGroup | None = None
         self._committee_group: gov_committee_group.GovCommitteeGroup | None = None
         self._drep_group: gov_drep_group.GovDrepGroup | None = None
-        self._query_group: gov_query_group.GovQueryGroup | None = None
         self._vote_group: gov_vote_group.GovVoteGroup | None = None
 
     @property
@@ -47,13 +45,6 @@ class GovernanceGroup:
         if not self._drep_group:
             self._drep_group = gov_drep_group.GovDrepGroup(clusterlib_obj=self._clusterlib_obj)
         return self._drep_group
-
-    @property
-    def query(self) -> gov_query_group.GovQueryGroup:
-        """Query group."""
-        if not self._query_group:
-            self._query_group = gov_query_group.GovQueryGroup(clusterlib_obj=self._clusterlib_obj)
-        return self._query_group
 
     @property
     def vote(self) -> gov_vote_group.GovVoteGroup:
