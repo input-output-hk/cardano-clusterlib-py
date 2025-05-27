@@ -23,6 +23,27 @@ class QueryGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
 
+    def _get_cred_args(
+        self,
+        drep_script_hash: str = "",
+        drep_vkey: str = "",
+        drep_vkey_file: itp.FileType | None = None,
+        drep_key_hash: str = "",
+    ) -> list[str]:
+        """Get arguments for script or verification key."""
+        if drep_script_hash:
+            cred_args = ["--drep-script-hash", str(drep_script_hash)]
+        elif drep_vkey:
+            cred_args = ["--drep-verification-key", str(drep_vkey)]
+        elif drep_vkey_file:
+            cred_args = ["--drep-verification-key-file", str(drep_vkey_file)]
+        elif drep_key_hash:
+            cred_args = ["--drep-key-hash", str(drep_key_hash)]
+        else:
+            cred_args = []
+
+        return cred_args
+
     def query_cli(
         self, cli_args: itp.UnpackableSequence, cli_sub_args: itp.UnpackableSequence = ()
     ) -> str:
@@ -515,6 +536,92 @@ class QueryGroup:
         slot_number: int = json.loads(self.query_cli(["slot-number", timestamp_str]))
 
         return slot_number
+
+    def get_constitution(self) -> dict[str, tp.Any]:
+        """Get the constitution."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["constitution"]))
+        return out
+
+    def get_gov_state(self) -> dict[str, tp.Any]:
+        """Get the governance state."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["gov-state"]))
+        return out
+
+    def get_drep_state(
+        self,
+        drep_script_hash: str = "",
+        drep_vkey: str = "",
+        drep_vkey_file: itp.FileType | None = None,
+        drep_key_hash: str = "",
+    ) -> list[list[dict[str, tp.Any]]]:
+        """Get the DRep state.
+
+        When no key is provided, query all DReps.
+
+        Args:
+            drep_script_hash: DRep script hash (hex-encoded, optional).
+            drep_vkey: DRep verification key (Bech32 or hex-encoded).
+            drep_vkey_file: Filepath of the DRep verification key.
+            drep_key_hash: DRep verification key hash (either Bech32-encoded or hex-encoded).
+
+        Returns:
+            list[list[dict[str, Any]]]: DRep state.
+        """
+        cred_args = self._get_cred_args(
+            drep_script_hash=drep_script_hash,
+            drep_vkey=drep_vkey,
+            drep_vkey_file=drep_vkey_file,
+            drep_key_hash=drep_key_hash,
+        )
+        if not cred_args:
+            cred_args = ["--all-dreps"]
+
+        out: list[list[dict[str, tp.Any]]] = json.loads(self.query_cli(["drep-state", *cred_args]))
+        return out
+
+    def get_drep_stake_distribution(
+        self,
+        drep_script_hash: str = "",
+        drep_vkey: str = "",
+        drep_vkey_file: itp.FileType | None = None,
+        drep_key_hash: str = "",
+    ) -> dict[str, tp.Any]:
+        """Get the DRep stake distribution.
+
+        When no key is provided, query all DReps.
+
+        Args:
+            drep_script_hash: DRep script hash (hex-encoded, optional).
+            drep_vkey: DRep verification key (Bech32 or hex-encoded).
+            drep_vkey_file: Filepath of the DRep verification key.
+            drep_key_hash: DRep verification key hash (either Bech32-encoded or hex-encoded).
+
+        Returns:
+            dict[str, Any]: DRep stake distribution.
+        """
+        cred_args = self._get_cred_args(
+            drep_script_hash=drep_script_hash,
+            drep_vkey=drep_vkey,
+            drep_vkey_file=drep_vkey_file,
+            drep_key_hash=drep_key_hash,
+        )
+        if not cred_args:
+            cred_args = ["--all-dreps"]
+
+        out: list[list] | dict[str, tp.Any] = json.loads(
+            self.query_cli(["drep-stake-distribution", *cred_args])
+        )
+        recs: dict[str, tp.Any] = {i[0]: i[1] for i in out} if isinstance(out, list) else out
+        return recs
+
+    def get_committee_state(self) -> dict[str, tp.Any]:
+        """Get the committee state."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
+        return out
+
+    def get_treasury(self) -> int:
+        """Get the treasury value."""
+        return int(self.query_cli(["treasury"]))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
