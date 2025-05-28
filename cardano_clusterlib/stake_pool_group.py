@@ -261,7 +261,7 @@ class StakePoolGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
+            tuple[Path, structs.TxRawOutput]: A tuple with pool registration cert file and
                 transaction output details.
         """
         tx_name = f"{tx_name}_reg_pool"
@@ -316,7 +316,7 @@ class StakePoolGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            Tuple[Path, structs.TxRawOutput]: A data container with pool registration cert file and
+            tuple[Path, structs.TxRawOutput]: A data container with pool registration cert file and
                 transaction output details.
         """
         tx_name = f"{tx_name}_dereg_pool"
