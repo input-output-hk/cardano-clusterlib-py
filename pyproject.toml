@@ -33,12 +33,6 @@ homepage = "https://github.com/input-output-hk/cardano-clusterlib-py"
 documentation = "https://cardano-clusterlib-py.readthedocs.io/"
 repository = "https://github.com/input-output-hk/cardano-clusterlib-py"
 
-[tool.black]
-line-length = 100
-
-[tool.isort]
-force_single_line = true
-
 [tool.ruff]
 line-length = 100
 
