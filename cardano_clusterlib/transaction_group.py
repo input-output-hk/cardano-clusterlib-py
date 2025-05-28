@@ -647,6 +647,8 @@ class TransactionGroup:
         invalid_before: int | None = None,
         src_addr_utxos: list[structs.UTXOData] | None = None,
         witness_count_add: int = 0,
+        byron_witness_count: int = 0,
+        reference_script_size: int = 0,
         join_txouts: bool = True,
         destination_dir: itp.FileType = ".",
     ) -> int:
@@ -690,6 +692,8 @@ class TransactionGroup:
             src_addr_utxos: A list of UTxOs for the source address (optional).
             witness_count_add: A number of witnesses to add - workaround to make the fee
                 calculation more precise.
+            byron_witness_count: A number of Byron witnesses (optional).
+            reference_script_size: A size in bytes of transaction reference scripts (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
             destination_dir: A path to directory for storing artifacts (optional).
@@ -744,6 +748,8 @@ class TransactionGroup:
             txin_count=len(tx_raw_output.txins) + 1,
             txout_count=len(tx_raw_output.txouts),
             witness_count=len(tx_files.signing_key_files) + witness_count_add,
+            byron_witness_count=byron_witness_count,
+            reference_script_size=reference_script_size,
         )
 
         return fee
