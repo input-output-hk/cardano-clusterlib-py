@@ -11,11 +11,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - name: Check out repository
+      uses: actions/checkout@v4
+    - name: Set up python
+      id: setup-python
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
     - name: Install dependencies
       run: make install
-    - name: Run lint
-      run: make lint || { git diff; false; }
+    - name: Load cached pre-commit env
+      id: cached-pre-commit
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+    - name: Install pre-commit hooks
+      run: |
+        mkdir -p ~/.cache/pre-commit
+        true > ~/.cache/pre-commit/pre-commit.log
+        pre-commit install-hooks --color=always
+        retval="$?"
+        if [ "$retval" -ne 0 ]; then
+          cat ~/.cache/pre-commit/pre-commit.log
+        fi
+        exit "$retval"
+    - name: Run pre-commit linters
+      run: pre-commit run -a --show-diff-on-failure --color=always
