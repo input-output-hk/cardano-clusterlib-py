@@ -43,8 +43,11 @@ force_single_line = true
 line-length = 100
 
 [tool.ruff.lint]
-select = ["ARG", "B", "C4", "C90", "D", "DTZ", "E", "EM", "F", "FURB", "I001", "ISC", "N", "PERF", "PIE", "PL", "PLE", "PLR", "PLW", "PT", "PTH", "Q", "RET", "RSE", "RUF", "SIM", "TRY", "UP", "W", "YTT"]
+select = ["ANN", "ARG", "B", "C4", "C90", "D", "DTZ", "E", "EM", "F", "FURB", "I001", "ISC", "N", "PERF", "PIE", "PL", "PLE", "PLR", "PLW", "PT", "PTH", "Q", "RET", "RSE", "RUF", "SIM", "TRY", "UP", "W", "YTT"]
 ignore = ["D10", "D203", "D212", "D213", "D214", "D215", "D404", "D405", "D406", "D407", "D408", "D409", "D410", "D411", "D413", "ISC001", "PLR0912", "PLR0913", "PLR0915", "PT001", "PT007", "PT012", "PT018", "PT023", "PTH123", "RET504", "TRY002", "TRY301", "UP006", "UP007", "UP035"]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/**.py" = ["ANN"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
@@ -56,6 +59,18 @@ ignore_missing_imports = true
 follow_imports = "normal"
 no_implicit_optional = true
 allow_untyped_globals = false
-allow_untyped_defs = false
 warn_unused_configs = true
 warn_return_any = true
+
+[tool.pyrefly]
+project_includes = ["cardano_clusterlib"]
+ignore_errors_in_generated_code = true
+use_untyped_imports = true
+ignore_missing_source = true
+
+[[tool.pyrefly.sub_config]]
+matches = "cardano_clusterlib/clusterlib_klass.py"
+
+# Ignore the bad-argument-type errors for Self@ClusterLib, that are reported only for LSP
+[tool.pyrefly.sub_config.errors]
+bad-argument-type = false

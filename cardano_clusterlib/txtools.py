@@ -1428,6 +1428,7 @@ def get_proposal_file_argname(era_in_use: str = "") -> str:
     """Return the name of the proposal file argument."""
     proposal_file_argname = (
         "--proposal-file"
+        # pyrefly: ignore  # bad-specialization, bad-argument-type, not-a-type
         if (consts.Eras[era_in_use.upper()].value >= consts.Eras.CONWAY.value)
         else "--update-proposal-file"
     )

@@ -1,8 +1,9 @@
 -e . --config-settings editable_mode=compat
 
 # linting
-mypy
-pre-commit
+mypy~=1.15.0
+pyrefly~=0.17.0
+pre-commit~=4.2.0
 
 build
 virtualenv
