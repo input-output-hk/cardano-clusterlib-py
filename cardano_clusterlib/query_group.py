@@ -78,7 +78,7 @@ class QueryGroup:
             coins: A list (iterable) of coin names (asset IDs, optional).
 
         Returns:
-            List[structs.UTXOData]: A list of UTxO data.
+            list[structs.UTXOData]: A list of UTxO data.
         """
         cli_args = ["utxo", "--output-json"]
 
@@ -352,7 +352,7 @@ class QueryGroup:
                 epoch (current epoch by default)
 
         Returns:
-            List[structs.LeadershipSchedule]: A list of `structs.LeadershipSchedule`, specifying
+            list[structs.LeadershipSchedule]: A list of `structs.LeadershipSchedule`, specifying
                 slot and time.
         """
         args = []

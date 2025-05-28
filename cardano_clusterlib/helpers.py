@@ -28,7 +28,7 @@ def _prepend_flag(flag: str, contents: itp.UnpackableSequence) -> list[str]:
         contents: A list (iterable) of content to be prepended.
 
     Returns:
-        List[str]: A list of flag followed by content, see below.
+        list[str]: A list of flag followed by content, see below.
 
     >>> ClusterLib._prepend_flag(None, "--foo", [1, 2, 3])
     ['--foo', '1', '--foo', '2', '--foo', '3']

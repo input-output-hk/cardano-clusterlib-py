@@ -374,7 +374,7 @@ def _resolve_withdrawals(
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals.
 
     Returns:
-        List[structs.TxOut]: A list of `TxOuts`, specifying resolved reward withdrawals.
+        list[structs.TxOut]: A list of `TxOuts`, specifying resolved reward withdrawals.
     """
     resolved_withdrawals = []
     for rec in withdrawals:
@@ -658,7 +658,7 @@ def _get_tx_ins_outs(
             (`build` command balance the assets automatically in newer versions).
 
     Returns:
-        Tuple[list, list]: A tuple of list of transaction inputs and list of transaction
+        tuple[list, list]: A tuple of list of transaction inputs and list of transaction
             outputs.
     """
     txouts_passed_db: dict[str, list[structs.TxOut]] = _organize_tx_ins_outs_by_coin(txouts)
@@ -863,7 +863,7 @@ def get_utxo(
         coins: A list (iterable) of coin names (asset IDs).
 
     Returns:
-        List[structs.UTXOData]: A list of UTxO data.
+        list[structs.UTXOData]: A list of UTxO data.
     """
     utxo = []
     for utxo_rec, utxo_data in utxo_dict.items():

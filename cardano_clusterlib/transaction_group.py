@@ -1872,7 +1872,7 @@ class TransactionGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            List[dict]: A Plutus scripts cost data.
+            list[dict]: A Plutus scripts cost data.
         """
         # Collect all arguments that will be passed to `build_tx`
         kwargs = locals()
