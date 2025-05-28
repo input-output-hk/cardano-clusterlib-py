@@ -47,7 +47,7 @@ class ClusterLib:
         slots_offset: int | None = None,
         socket_path: itp.FileType = "",
         command_era: str = consts.CommandEras.LATEST,
-    ):
+    ) -> None:
         try:
             self.command_era = getattr(consts.CommandEras, command_era.upper())
         except AttributeError as excp:
@@ -59,6 +59,7 @@ class ClusterLib:
         self.confirm_blocks = consts.CONFIRM_BLOCKS_NUM
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
+        # pyrefly: ignore  # missing-attribute
         self.era_in_use = (
             consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
         ).name.lower()
@@ -100,6 +101,7 @@ class ClusterLib:
         # Conway+ era
         self.conway_genesis_json: pl.Path | None = None
         self.conway_genesis: dict = {}
+        # pyrefly: ignore  # bad-specialization, bad-argument-type, not-a-type
         if consts.Eras[self.era_in_use.upper()].value >= consts.Eras.CONWAY.value:
             # Conway genesis
             self.conway_genesis_json = clusterlib_helpers._find_conway_genesis_json(
@@ -276,6 +278,7 @@ class ClusterLib:
             if retcode == 0:
                 break
 
+            # pyrefly: ignore  # missing-attribute
             stderr_dec = stderr.decode()
             err_msg = (
                 f"An error occurred running a CLI command `{cmd_str}` on path "
@@ -289,6 +292,7 @@ class ClusterLib:
         else:
             raise exceptions.CLIError(err_msg)
 
+        # pyrefly: ignore  # bad-argument-type
         return structs.CLIOut(stdout or b"", stderr or b"")
 
     def refresh_pparams_file(self) -> None:
