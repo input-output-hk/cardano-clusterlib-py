@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=77.0.3", "setuptools_scm[toml]"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -11,7 +11,7 @@ description = "Python wrapper for cardano-cli for working with cardano cluster"
 readme = "README.md"
 requires-python = ">=3.9"
 keywords = ["cardano", "cardano-node", "cardano-cli", "cardano-node-tests"]
-license = {text = "Apache License 2.0"}
+license = "Apache-2.0"
 classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Intended Audience :: Developers",
 ]
 dynamic = ["version"]
@@ -26,12 +27,15 @@ dependencies = [
     "packaging",
 ]
 
-[tool.setuptools_scm]
-
 [project.urls]
 homepage = "https://github.com/input-output-hk/cardano-clusterlib-py"
 documentation = "https://cardano-clusterlib-py.readthedocs.io/"
 repository = "https://github.com/input-output-hk/cardano-clusterlib-py"
+
+[tool.setuptools]
+package-dir = {"" = "cardano_clusterlib"}
+
+[tool.setuptools_scm]
 
 [tool.ruff]
 line-length = 100
