@@ -59,7 +59,7 @@ class ClusterLib:
         self.confirm_blocks = consts.CONFIRM_BLOCKS_NUM
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
-        # pyrefly: ignore  # missing-attribute
+
         self.era_in_use = (
             consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
         ).name.lower()
@@ -101,7 +101,7 @@ class ClusterLib:
         # Conway+ era
         self.conway_genesis_json: pl.Path | None = None
         self.conway_genesis: dict = {}
-        # pyrefly: ignore  # bad-specialization, bad-argument-type, not-a-type
+
         if consts.Eras[self.era_in_use.upper()].value >= consts.Eras.CONWAY.value:
             # Conway genesis
             self.conway_genesis_json = clusterlib_helpers._find_conway_genesis_json(

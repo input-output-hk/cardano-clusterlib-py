@@ -12,20 +12,6 @@ repos:
     language_version: python3
   - id: debug-statements
     language_version: python3
-- repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: v0.9.2
-  hooks:
-    - id: ruff
-      args: [ --fix ]
-    - id: ruff-format
-- repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.10.0.1
-  hooks:
-  - id: shellcheck
-- repo: https://github.com/igorshubovych/markdownlint-cli
-  rev: v0.43.0
-  hooks:
-  - id: markdownlint
 - repo: local
   hooks:
   - id: pyrefly
@@ -35,6 +21,22 @@ repos:
     pass_filenames: false
     language: system
     types: [python]
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: v0.12.1
+  hooks:
+    - id: ruff-check
+      args: [ --fix ]
+    - id: ruff-format
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.45.0
+  hooks:
+  - id: markdownlint
+- repo: local
+  hooks:
   - id: mypy
     name: mypy
     entry: mypy

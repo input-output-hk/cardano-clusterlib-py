@@ -22,9 +22,10 @@ def _organize_tx_ins_outs_by_coin(
     """Organize transaction inputs or outputs by coin type."""
     db: dict[str, list] = {}
     for rec in tx_list:
-        if rec.coin not in db:
-            db[rec.coin] = []
-        db[rec.coin].append(rec)
+        rc = rec.coin
+        if rc not in db:
+            db[rc] = []
+        db[rc].append(rec)
     return db
 
 
@@ -1428,7 +1429,6 @@ def get_proposal_file_argname(era_in_use: str = "") -> str:
     """Return the name of the proposal file argument."""
     proposal_file_argname = (
         "--proposal-file"
-        # pyrefly: ignore  # bad-specialization, bad-argument-type, not-a-type
         if (consts.Eras[era_in_use.upper()].value >= consts.Eras.CONWAY.value)
         else "--update-proposal-file"
     )

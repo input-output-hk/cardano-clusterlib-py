@@ -1,8 +1,8 @@
--e . --config-settings editable_mode=compat
+-e .
 
 # linting
-mypy~=1.15.0
-pyrefly~=0.17.0
+mypy~=1.16.1
+pyrefly~=0.22.0
 pre-commit~=4.2.0
 
 build
