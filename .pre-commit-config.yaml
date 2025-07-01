@@ -17,7 +17,9 @@ repos:
   - id: pyrefly
     name: pyrefly
     entry: pyrefly
-    args: [ check, --remove-unused-ignores ]
+    # pyrefly doesn't handle editable installs and adds 'cardano_clusterlib' to 'project-excludes',
+    # so it must be added here
+    args: [ check, --remove-unused-ignores, cardano_clusterlib ]
     pass_filenames: false
     language: system
     types: [python]
