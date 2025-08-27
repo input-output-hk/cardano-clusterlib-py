@@ -614,6 +614,44 @@ class QueryGroup:
         recs: dict[str, tp.Any] = {i[0]: i[1] for i in out} if isinstance(out, list) else out
         return recs
 
+    def get_spo_stake_distribution(
+        self,
+        spo_vkey: str = "",
+        spo_vkey_file: itp.FileType | None = None,
+        spo_key_hash: str = "",
+    ) -> list[structs.SPOStakeDistrib]:
+        """Get the SPO stake distribution.
+
+        When no key is provided, query all SPOs.
+
+        Args:
+            spo_vkey: SPO verification key (Bech32 or hex-encoded).
+            spo_vkey_file: Filepath of the SPO verification key.
+            spo_key_hash: SPO verification key hash (either Bech32-encoded or hex-encoded).
+
+        Returns:
+            list[structs.SPOStakeDistrib]: SPO stake distribution.
+        """
+        if spo_vkey:
+            cred_args = ["--spo-verification-key", str(spo_vkey)]
+        elif spo_vkey_file:
+            cred_args = ["--spo-verification-key-file", str(spo_vkey_file)]
+        elif spo_key_hash:
+            cred_args = ["--spo-key-hash", str(spo_key_hash)]
+        else:
+            cred_args = []
+        if not cred_args:
+            cred_args = ["--all-spos"]
+
+        out: list[list] = json.loads(self.query_cli(["spo-stake-distribution", *cred_args]))
+        recs = [
+            structs.SPOStakeDistrib(
+                spo_vkey_hex=r[0], stake_distribution=r[1], vote_delegation=r[2] or ""
+            )
+            for r in out
+        ]
+        return recs
+
     def get_committee_state(self) -> dict[str, tp.Any]:
         """Get the committee state."""
         out: dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
