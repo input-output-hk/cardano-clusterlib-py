@@ -468,3 +468,10 @@ class ActionHardfork:
     deposit_return_stake_vkey: str = ""
     deposit_return_stake_vkey_file: pl.Path | None = None
     deposit_return_stake_key_hash: str = ""
+
+
+@dataclasses.dataclass(frozen=True, order=True)
+class SPOStakeDistrib:
+    spo_vkey_hex: str
+    stake_distribution: int
+    vote_delegation: str
