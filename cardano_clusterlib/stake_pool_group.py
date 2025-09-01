@@ -177,6 +177,7 @@ class StakePoolGroup:
         pool_data: structs.PoolData,
         pool_owners: list[structs.PoolUser],
         tx_name: str,
+        reward_account_key_pair: structs.KeyPair | structs.AddressRecord | None = None,
         destination_dir: itp.FileType = ".",
     ) -> structs.PoolCreationOutput:
         """Create and register a stake pool.
@@ -186,6 +187,7 @@ class StakePoolGroup:
             pool_owners: A list of `structs.PoolUser` structures containing pool user addresses
                 and keys.
             tx_name: A name of the transaction.
+            reward_account_key_pair: A data container containing reward account key pair (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -221,6 +223,9 @@ class StakePoolGroup:
             vrf_vkey_file=node_vrf.vkey_file,
             cold_key_pair=node_cold,
             tx_name=tx_name,
+            reward_account_vkey_file=reward_account_key_pair.vkey_file
+            if reward_account_key_pair
+            else None,
             destination_dir=destination_dir,
         )
 
@@ -231,6 +236,7 @@ class StakePoolGroup:
             pool_reg_cert_file=pool_reg_cert_file,
             pool_data=pool_data,
             pool_owners=pool_owners,
+            reward_account_key_pair=reward_account_key_pair or pool_owners[0].stake,
             tx_raw_output=tx_raw_output,
             kes_key_pair=node_kes,
         )
