@@ -32,8 +32,9 @@ homepage = "https://github.com/input-output-hk/cardano-clusterlib-py"
 documentation = "https://cardano-clusterlib-py.readthedocs.io/"
 repository = "https://github.com/input-output-hk/cardano-clusterlib-py"
 
-[tool.setuptools]
-package-dir = {"" = "cardano_clusterlib"}
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cardano_clusterlib*"]
 
 [tool.setuptools_scm]
 
