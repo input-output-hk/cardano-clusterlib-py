@@ -270,6 +270,7 @@ class PoolCreationOutput:
     pool_reg_cert_file: pl.Path
     pool_data: PoolData
     pool_owners: list[PoolUser]
+    reward_account_key_pair: KeyPair | AddressRecord
     tx_raw_output: TxRawOutput
     kes_key_pair: KeyPair | None = None
 
