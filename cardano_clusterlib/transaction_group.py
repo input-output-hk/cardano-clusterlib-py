@@ -23,6 +23,7 @@ class TransactionGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
         self.min_fee = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
+        self.fee_buffer = min(self.min_fee * 6, 1_000_000)
         self._has_debug_prop: bool | None = None
 
     @property
@@ -910,7 +911,7 @@ class TransactionGroup:
             tx_files=tx_files,
             complex_certs=complex_certs,
             complex_proposals=complex_proposals,
-            fee=fee_buffer or 0,
+            fee=fee_buffer if fee_buffer is not None else self.fee_buffer,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             deposit=deposit,
@@ -1182,7 +1183,7 @@ class TransactionGroup:
             tx_files=tx_files,
             complex_certs=complex_certs,
             complex_proposals=complex_proposals,
-            fee=fee_buffer or 0,
+            fee=fee_buffer if fee_buffer is not None else self.fee_buffer,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
             deposit=deposit,
