@@ -267,6 +267,7 @@ class ClusterLib:
         # Network.Socket.connect: <socket: X>: resource exhausted (Resource temporarily unavailable)
         # or
         # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"
+        err_msg = ""
         for __ in range(3):
             retcode = None
             with subprocess.Popen(

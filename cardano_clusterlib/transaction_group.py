@@ -1505,6 +1505,7 @@ class TransactionGroup:
             else wait_blocks
         )
         txid = ""
+        err = None
         for r in range(20):
             err = None
 
