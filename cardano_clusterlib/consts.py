@@ -53,3 +53,16 @@ class Votes(enum.Enum):
     YES = 1
     NO = 2
     ABSTAIN = 3
+
+
+class KeyType(enum.Enum):
+    PAYMENT = "payment"
+    STAKE = "stake"
+    DREP = "drep"
+    CC_COLD = "cc-cold"
+    CC_HOT = "cc-hot"
+
+
+class OutputFormat(enum.Enum):
+    TEXT_ENVELOPE = "text-envelope"
+    BECH32 = "bech32"

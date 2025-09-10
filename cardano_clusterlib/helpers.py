@@ -14,10 +14,15 @@ def get_rand_str(length: int = 8) -> str:
     return "".join(random.choice(string.ascii_lowercase) for i in range(length))
 
 
+def read_from_file(file: itp.FileType) -> str:
+    """Read file content."""
+    with open(pl.Path(file).expanduser(), encoding="utf-8") as in_file:
+        return in_file.read()
+
+
 def read_address_from_file(addr_file: itp.FileType) -> str:
     """Read address stored in file."""
-    with open(pl.Path(addr_file).expanduser(), encoding="utf-8") as in_file:
-        return in_file.read().strip()
+    return read_from_file(file=addr_file).strip()
 
 
 def _prepend_flag(flag: str, contents: itp.UnpackableSequence) -> list[str]:
