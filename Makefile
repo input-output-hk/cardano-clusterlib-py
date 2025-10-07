@@ -11,7 +11,6 @@ install:
 .PHONY: lint
 lint:
 	pre-commit run -a --show-diff-on-failure --color=always
-	if command -v pytype >/dev/null 2>&1; then pytype -k -j auto cardano_clusterlib; fi
 
 # build package
 .PHONY: build
