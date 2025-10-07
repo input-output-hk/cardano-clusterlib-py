@@ -283,19 +283,36 @@ class QueryGroup:
 
         address_rec = next(iter(output_json))
         address = address_rec.get("address") or ""
-        delegation = address_rec.get("delegation") or address_rec.get("stakeDelegation") or ""
         reward_account_balance = address_rec.get("rewardAccountBalance") or 0
         tmp_deposit = address_rec.get("stakeRegistrationDeposit") or address_rec.get(
             "delegationDeposit"
         )
         registration_deposit = -1 if tmp_deposit is None else tmp_deposit
-        vote_delegation = address_rec.get("voteDelegation") or ""
+
+        delegation_raw = address_rec.get("delegation") or address_rec.get("stakeDelegation") or ""
+        if isinstance(delegation_raw, dict):
+            delegation = delegation_raw.get("stakePoolBech32") or ""
+            delegation_hex = delegation_raw.get("stakePoolHex") or ""
+        else:
+            delegation = delegation_raw
+            delegation_hex = ""
+
+        vote_delegation_raw = address_rec.get("voteDelegation") or ""
+        if isinstance(vote_delegation_raw, dict):
+            vote_delegation = vote_delegation_raw.get("keyHashBech32") or ""
+            vote_delegation_hex = vote_delegation_raw.get("keyHashHex") or ""
+        else:
+            vote_delegation = vote_delegation_raw
+            vote_delegation_hex = ""
+
         return structs.StakeAddrInfo(
             address=address,
             delegation=delegation,
             reward_account_balance=reward_account_balance,
             registration_deposit=registration_deposit,
             vote_delegation=vote_delegation,
+            delegation_hex=delegation_hex,
+            vote_delegation_hex=vote_delegation_hex,
         )
 
     def get_address_deposit(self, pparams: dict[str, tp.Any] | None = None) -> int:

@@ -40,6 +40,8 @@ class StakeAddrInfo:
     reward_account_balance: int
     registration_deposit: int
     vote_delegation: str
+    delegation_hex: str = ""
+    vote_delegation_hex: str = ""
 
     def __bool__(self) -> bool:
         return bool(self.address)
