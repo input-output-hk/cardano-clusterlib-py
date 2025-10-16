@@ -674,6 +674,37 @@ class QueryGroup:
         out: dict[str, tp.Any] = json.loads(self.query_cli(["committee-state"]))
         return out
 
+    def get_proposals(
+        self,
+        action_txid: str = "",
+        action_ix: int | None = None,
+    ) -> list[dict[str, tp.Any]]:
+        """Get the governance proposals that are eligible for ratification.
+
+        When no arguments are passed, query for all proposals.
+
+        Args:
+            action_txid: TxId of the governance action.
+            action_ix: Tx's governance action index.
+
+        Returns:
+            list[dict[str, tp.Any]]: A list of governance proposals.
+        """
+        if bool(action_txid) != (action_ix is not None):
+            msg = "Both `action_txid` and `action_ix` must be specified together."
+            raise ValueError(msg)
+
+        query_args = ["proposals"]
+
+        if action_txid and action_ix is not None:
+            query_args.extend(["--governance-action-tx-id", action_txid])
+            query_args.extend(["--governance-action-index", str(action_ix)])
+        else:
+            query_args.append("--all-proposals")
+
+        proposals: list[dict[str, tp.Any]] = json.loads(self.query_cli(query_args))
+        return proposals
+
     def get_treasury(self) -> int:
         """Get the treasury value."""
         return int(self.query_cli(["treasury"]))
