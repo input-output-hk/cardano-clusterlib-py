@@ -1518,7 +1518,12 @@ class TransactionGroup:
                     self.submit_tx_bare(tx_file)
                 except exceptions.CLIError as exc:
                     # Check if resubmitting failed because an input UTxO was already spent
-                    if "(BadInputsUTxO" not in str(exc):
+                    exc_str = str(exc)
+                    inputs_spent = (
+                        '(ConwayMempoolFailure "All inputs are spent.' in exc_str
+                        or "(BadInputsUTxO" in exc_str
+                    )
+                    if not inputs_spent:
                         raise
                     err = err or exc
                     # If here, the TX is likely still in mempool and we need to wait
