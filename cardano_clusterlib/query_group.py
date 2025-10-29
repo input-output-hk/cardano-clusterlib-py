@@ -710,56 +710,9 @@ class QueryGroup:
         return int(self.query_cli(["treasury"]))
 
     def get_future_pparams(self) -> dict[str, tp.Any]:
-        """
-        Return the protocol parameters that will apply at the next epoch.
-
-        Equivalent CLI:
-            cardano-cli latest query future-pparams --testnet-magic <n> --socket-path <socket>
-
-        Returns:
-            dict[str, Any]: Parameters scheduled for the next epoch, or {} if none.
-        """
-        socket_path = str(self._clusterlib_obj.socket_path or "")
-        if not socket_path:
-            possible_socket = pl.Path(self._clusterlib_obj.state_dir) / "bft1.socket"
-            if possible_socket.exists():
-                socket_path = str(possible_socket)
-            else:
-                msg = "Socket path not set or found. Make sure the cluster is running."
-                raise RuntimeError(msg)
-
-        cmd_args: list[str] = [
-            "cardano-cli",
-            "latest",
-            "query",
-            "future-pparams",
-            *map(str, self._clusterlib_obj.magic_args),
-            "--socket-path",
-            socket_path,
-            "--output-json",
-        ]
-
-        cli_out = self._clusterlib_obj.cli(cmd_args, add_default_args=False)
-        out_str = cli_out.stdout.decode().strip()
-
-        if not out_str or out_str.lower() == "null":
-            LOGGER.debug("No future protocol parameters scheduled.")
-            return {}
-
-        try:
-            result = json.loads(out_str)
-        except json.JSONDecodeError as err:
-            LOGGER.warning(f"Could not decode future-pparams output as JSON: {err}")
-            return {}
-
-        # Type-safe
-        if isinstance(result, dict):
-            return result
-        if isinstance(result, list):
-            LOGGER.warning(f"Unexpected list returned from future-pparams query: {result}")
-            return {"_list_result": result}
-        LOGGER.warning(f"Unexpected output type for future-pparams: {type(result).__name__}")
-        return {}
+        """Get the future protocol parameters that will apply at the next epoch."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["future-pparams"]))
+        return out
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
