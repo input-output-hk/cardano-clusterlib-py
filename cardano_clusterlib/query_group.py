@@ -709,5 +709,10 @@ class QueryGroup:
         """Get the treasury value."""
         return int(self.query_cli(["treasury"]))
 
+    def get_future_pparams(self) -> dict[str, tp.Any]:
+        """Get the future protocol parameters that will apply at the next epoch."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["future-pparams"])) or {}
+        return out
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
