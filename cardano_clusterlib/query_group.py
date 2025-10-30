@@ -711,7 +711,7 @@ class QueryGroup:
 
     def get_future_pparams(self) -> dict[str, tp.Any]:
         """Get the future protocol parameters that will apply at the next epoch."""
-        out: dict[str, tp.Any] = json.loads(self.query_cli(["future-pparams"]))
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["future-pparams"])) or {}
         return out
 
     def __repr__(self) -> str:
