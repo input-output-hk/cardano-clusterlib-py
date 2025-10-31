@@ -714,5 +714,10 @@ class QueryGroup:
         out: dict[str, tp.Any] = json.loads(self.query_cli(["future-pparams"])) or {}
         return out
 
+    def get_ratify_state(self) -> dict[str, tp.Any]:
+        """Get the current ratification state."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["ratify-state"]))
+        return out
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
