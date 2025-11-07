@@ -56,7 +56,7 @@ class AddressGroup:
             cli_args = ["--payment-verification-key", str(payment_vkey)]
         else:
             msg = "Either `payment_vkey_file`, `payment_script_file` or `payment_vkey` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         if stake_vkey:
             cli_args.extend(["--stake-verification-key", str(stake_vkey)])
@@ -137,7 +137,7 @@ class AddressGroup:
             cli_args = ["--payment-verification-key-file", str(payment_vkey_file)]
         else:
             msg = "Either `payment_vkey` or `payment_vkey_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return (
             self._clusterlib_obj.cli(["address", "key-hash", *cli_args])

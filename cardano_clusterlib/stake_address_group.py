@@ -34,7 +34,7 @@ class StakeAddressGroup:
             stake_args = ["--stake-address", stake_address]
         else:
             msg = "Either `stake_vkey_file`, `stake_script_file` or `stake_address` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return stake_args
 
@@ -62,7 +62,7 @@ class StakeAddressGroup:
             drep_args = ["--drep-key-hash", str(drep_key_hash)]
         else:
             msg = "DRep identification, verification key or script hash is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return drep_args
 
@@ -81,7 +81,7 @@ class StakeAddressGroup:
             pool_key_args = ["--stake-pool-id", stake_pool_id]
         else:
             msg = "No stake pool key was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return pool_key_args
 
@@ -113,7 +113,7 @@ class StakeAddressGroup:
             cli_args = ["--stake-script-file", str(stake_script_file)]
         else:
             msg = "Either `stake_vkey_file` or `stake_script_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -517,7 +517,7 @@ class StakeAddressGroup:
             cli_args = ["--stake-verification-key-file", str(stake_vkey_file)]
         else:
             msg = "Either `stake_vkey` or `stake_vkey_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return (
             self._clusterlib_obj.cli(["stake-address", "key-hash", *cli_args])

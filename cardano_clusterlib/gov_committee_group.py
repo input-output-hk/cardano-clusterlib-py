@@ -31,7 +31,7 @@ class GovCommitteeGroup:
             key_args = ["--cold-key-hash", str(cold_vkey_hash)]
         else:
             msg = "Either `cold_vkey`, `cold_vkey_file` or `cold_vkey_hash` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return key_args
 
@@ -99,7 +99,7 @@ class GovCommitteeGroup:
             hot_key_args = ["--hot-verification-key-hash", str(hot_key_hash)]
         else:
             msg = "Either `hot_key`, `hot_key_file` or `hot_key_hash` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -176,7 +176,7 @@ class GovCommitteeGroup:
             key_args = ["--verification-key-file", str(vkey_file)]
         else:
             msg = "Either `vkey` or `vkey_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         key_hash = (
             self._clusterlib_obj.cli([*self._group_args, "key-hash", *key_args])

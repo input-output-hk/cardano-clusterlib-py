@@ -31,7 +31,7 @@ class GovVoteGroup:
             vote_args = ["--abstain"]
         else:
             msg = "No vote was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return vote_args
 
@@ -57,7 +57,7 @@ class GovVoteGroup:
         if anchor_url:
             if not anchor_data_hash:
                 msg = "Anchor data hash is required when anchor URL is specified."
-                raise AssertionError(msg)
+                raise ValueError(msg)
             anchor_args = [
                 "--anchor-url",
                 str(anchor_url),
@@ -101,7 +101,7 @@ class GovVoteGroup:
             cred_args = ["--cc-hot-script-hash", cc_hot_script_hash]
         else:
             msg = "No CC key or script hash was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -166,7 +166,7 @@ class GovVoteGroup:
             cred_args = ["--drep-script-hash", drep_script_hash]
         else:
             msg = "No DRep key or script hash was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.cli(
             [
@@ -228,7 +228,7 @@ class GovVoteGroup:
             key_args = ["--stake-pool-id", stake_pool_id]
         else:
             msg = "No key was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.cli(
             [

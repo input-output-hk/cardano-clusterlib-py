@@ -42,7 +42,7 @@ class GovActionGroup:
             key_args = ["--deposit-return-stake-key-hash", str(deposit_return_stake_key_hash)]
         else:
             msg = "Either stake verification key or stake key hash must be set."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return key_args
 
@@ -86,7 +86,7 @@ class GovActionGroup:
                 )
             else:
                 msg = f"Either {arg_action} cold verification key or its hash must be set."
-                raise AssertionError(msg)
+                raise ValueError(msg)
 
             if not remove:
                 cc_members_args.extend(["--epoch", str(cc_member.epoch)])
@@ -103,7 +103,7 @@ class GovActionGroup:
         if prev_action_txid:
             if prev_action_ix == -1:
                 msg = "Previous action index must be set."
-                raise AssertionError(msg)
+                raise ValueError(msg)
             prev_action_args = [
                 "--prev-governance-action-tx-id",
                 str(prev_action_txid),
@@ -508,7 +508,7 @@ class GovActionGroup:
             ]
         else:
             msg = "Either stake verification key or stake key hash must be set."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         deposit_key_args = self._get_deposit_return_key_args(
             deposit_return_stake_vkey=deposit_return_stake_vkey,
