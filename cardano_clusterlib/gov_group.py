@@ -77,7 +77,7 @@ class GovernanceGroup:
             content_args = ["--file-text", str(file_text)]
         else:
             msg = "Either `text`, `file_binary` or `file_text` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         out_hash = (
             self._clusterlib_obj.cli(

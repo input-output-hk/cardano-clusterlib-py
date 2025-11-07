@@ -165,7 +165,7 @@ class StakePoolGroup:
             key_args = ["--cold-verification-key-file", str(cold_vkey_file)]
         else:
             msg = "No key was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         pool_id = (
             self._clusterlib_obj.cli(["stake-pool", "id", *key_args]).stdout.strip().decode("ascii")

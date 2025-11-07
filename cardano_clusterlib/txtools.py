@@ -303,7 +303,7 @@ def _balance_txouts(
     burning_txouts = [r for r in txouts if r.amount < 0 and r.coin != consts.DEFAULT_COIN]
     if burning_txouts:
         msg = f"Token burning is not allowed in txouts: {burning_txouts}"
-        raise AssertionError(msg)
+        raise ValueError(msg)
 
     # Filter out negative amounts (-1 "max" amounts)
     txouts_result = [r for r in txouts if r.amount > 0]
@@ -327,7 +327,7 @@ def _balance_txouts(
             max_index = [idx for idx, val in enumerate(coin_txouts) if val.amount == -1]
             if len(max_index) > 1:
                 msg = "Cannot send all remaining funds to more than one address."
-                raise AssertionError(msg)
+                raise ValueError(msg)
             if max_index:
                 # Remove the "-1" record and get its address
                 max_address = coin_txouts.pop(max_index[0]).address
@@ -608,7 +608,7 @@ def _get_return_collateral_txout_args(txouts: structs.OptionalTxOuts) -> list[st
     addresses = {t.address for t in txouts}
     if len(addresses) > 1:
         msg = "Accepts `txouts` only for single address."
-        raise AssertionError(msg)
+        raise ValueError(msg)
 
     txout_records = [
         f"{t.amount} {t.coin if t.coin != consts.DEFAULT_COIN else ''}".rstrip() for t in txouts
@@ -804,7 +804,7 @@ def collect_data_for_build(
     script_addresses = {r.address for r in script_txins_records}
     if src_address in script_addresses:
         msg = "Source address cannot be a script address."
-        raise AssertionError(msg)
+        raise ValueError(msg)
 
     # Combine txins and make sure we have enough funds to satisfy all txouts
     combined_txins = [

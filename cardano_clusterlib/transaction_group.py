@@ -71,7 +71,7 @@ class TransactionGroup:
             cli_args.extend(["--tx-file", str(tx_file)])
         else:
             msg = "Either `tx_body_file` or `tx_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return (
             self._clusterlib_obj.cli(["transaction", "txid", *cli_args])
@@ -97,7 +97,7 @@ class TransactionGroup:
             cli_args.extend(["--tx-file", str(tx_file)])
         else:
             msg = "Either `tx_body_file` or `tx_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         if self._has_debug:
             cli_args = ["cardano-cli", "debug", *cli_args]
@@ -148,7 +148,7 @@ class TransactionGroup:
                 "Either `script_data_file`, `script_data_cbor_file` or `script_data_value` "
                 "is needed."
             )
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return (
             self._clusterlib_obj.cli(["transaction", "hash-script-data", *cli_args])
@@ -277,7 +277,7 @@ class TransactionGroup:
             msg = (
                 "Both `treasury_donation` and `current_treasury_value` must be specified together."
             )
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         if tx_files.certificate_files and complex_certs:
             LOGGER.warning(
@@ -769,7 +769,7 @@ class TransactionGroup:
         """
         if not txouts:
             msg = "No txout was specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         txout_args, __, txouts_count = txtools._join_txouts(txouts=txouts)
 
@@ -778,7 +778,7 @@ class TransactionGroup:
                 "Accepts `TxOuts` only for a single transaction txout "
                 "(same address, datum, script)."
             )
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.create_pparams_file()
         stdout = self._clusterlib_obj.cli(
@@ -879,7 +879,7 @@ class TransactionGroup:
         if max_txout:
             if change_address:
                 msg = "Cannot use '-1' amount and change address at the same time."
-                raise AssertionError(msg)
+                raise ValueError(msg)
             change_address = max_txout[0].address
         else:
             change_address = change_address or src_address
@@ -1144,7 +1144,7 @@ class TransactionGroup:
         if max_txout:
             if change_address:
                 msg = "Cannot use '-1' amount and change address at the same time."
-                raise AssertionError(msg)
+                raise ValueError(msg)
             change_address = max_txout[0].address
         else:
             change_address = change_address or src_address
@@ -1153,7 +1153,7 @@ class TransactionGroup:
             msg = (
                 "Both `treasury_donation` and `current_treasury_value` must be specified together."
             )
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         tx_files = tx_files or structs.TxFiles()
         if tx_files.certificate_files and complex_certs:
@@ -1366,7 +1366,7 @@ class TransactionGroup:
             cli_args = ["--tx-file", str(tx_file)]
         else:
             msg = "Either `tx_body_file` or `tx_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         self._clusterlib_obj.cli(
             [

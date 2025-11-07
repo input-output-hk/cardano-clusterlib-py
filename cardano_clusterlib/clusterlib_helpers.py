@@ -160,7 +160,7 @@ def get_epoch_for_slot(cluster_obj: "itp.ClusterLib", slot_no: int) -> EpochInfo
     genesis_byron = cluster_obj.state_dir / "byron" / "genesis.json"
     if not genesis_byron.exists():
         msg = f"File '{genesis_byron}' does not exist."
-        raise AssertionError(msg)
+        raise FileNotFoundError(msg)
 
     with open(genesis_byron, encoding="utf-8") as in_json:
         byron_dict = json.load(in_json)

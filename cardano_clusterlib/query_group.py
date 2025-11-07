@@ -112,7 +112,7 @@ class QueryGroup:
             cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
         else:
             msg = "Either `address`, `txin`, `utxo` or `tx_raw_output` need to be specified."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         utxo_dict = json.loads(self.query_cli(cli_args))
         utxos = txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
@@ -397,7 +397,7 @@ class QueryGroup:
             )
         else:
             msg = "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         args.append("--next" if for_next else "--current")
 

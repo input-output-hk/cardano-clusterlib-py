@@ -56,7 +56,7 @@ class GovDrepGroup:
             msg = (
                 "Either `script_hash`, `drep_vkey`, `drep_vkey_file` or `drep_key_hash` is needed."
             )
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         return cred_args
 
@@ -111,12 +111,12 @@ class GovDrepGroup:
             cli_args = ["--drep-verification-key-file", str(drep_vkey_file)]
         else:
             msg = "Either `drep_vkey` or `drep_vkey_file` is needed."
-            raise AssertionError(msg)
+            raise ValueError(msg)
 
         if out_format:
             if out_format not in ("hex", "bech32"):
                 msg = f"Invalid output format: {out_format} (expected 'hex' or 'bech32')."
-                raise AssertionError(msg)
+                raise ValueError(msg)
             if self._has_output_hex:
                 cli_args.append(f"--output-{out_format}")
             else:
