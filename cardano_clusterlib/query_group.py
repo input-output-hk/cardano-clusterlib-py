@@ -719,5 +719,25 @@ class QueryGroup:
         out: dict[str, tp.Any] = json.loads(self.query_cli(["ratify-state"]))
         return out
 
+    def get_stake_pool_default_vote(
+        self,
+        spo_vkey: str = "",
+        spo_vkey_file: itp.FileType | None = None,
+        spo_key_hash: str = "",
+    ) -> str:
+        """Get the stake pool default vote."""
+        if spo_vkey:
+            cred_args = ["--spo-verification-key", str(spo_vkey)]
+        elif spo_vkey_file:
+            cred_args = ["--spo-verification-key-file", str(spo_vkey_file)]
+        elif spo_key_hash:
+            cred_args = ["--spo-key-hash", str(spo_key_hash)]
+        else:
+            msg = "Must provide one of spo_vkey, spo_vkey_file, or spo_key_hash"
+            raise ValueError(msg)
+
+        raw_output: str = self.query_cli(["stake-pool-default-vote", *cred_args]).strip().strip('"')
+        return raw_output
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
