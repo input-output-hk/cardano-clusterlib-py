@@ -739,5 +739,10 @@ class QueryGroup:
         raw_output: str = self.query_cli(["stake-pool-default-vote", *cred_args]).strip().strip('"')
         return raw_output
 
+    def get_ledger_peer_snapshot(self) -> dict[str, tp.Any]:
+        """Get the current snapshot of ledger peers."""
+        out: dict[str, tp.Any] = json.loads(self.query_cli(["ledger-peer-snapshot"])) or {}
+        return out
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
