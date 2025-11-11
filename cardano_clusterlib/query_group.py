@@ -744,5 +744,24 @@ class QueryGroup:
         out: dict[str, tp.Any] = json.loads(self.query_cli(["ledger-peer-snapshot"])) or {}
         return out
 
+    def get_ref_script_size(self, txins: str | list[str]) -> dict[str, tp.Any]:
+        """Get the reference input scripts size in bytes for provided transaction inputs.
+
+        Args:
+            txins: One or more transaction inputs in the format 'TxId#TxIx'.
+
+        Returns:
+            dict[str, Any]: JSON output from the CLI (
+            typically contains 'refScriptSize' or similar key).
+        """
+        if isinstance(txins, str):
+            txins = [txins]
+
+        cli_args = ["ref-script-size", "--output-json"]
+        cli_args.extend(helpers._prepend_flag("--tx-in", txins))
+
+        out: dict[str, tp.Any] = json.loads(self.query_cli(cli_args))
+        return out
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
