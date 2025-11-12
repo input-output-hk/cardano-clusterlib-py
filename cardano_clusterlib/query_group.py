@@ -744,18 +744,34 @@ class QueryGroup:
         out: dict[str, tp.Any] = json.loads(self.query_cli(["ledger-peer-snapshot"])) or {}
         return out
 
-    def get_ref_script_size(self, txins: str | list[str]) -> dict[str, tp.Any]:
-        """Get the reference input scripts size in bytes for provided transaction inputs.
+    def get_ref_script_size(
+        self,
+        txin: str | list[str] | None = None,
+        utxo: structs.UTXOData | None = None,
+    ) -> dict[str, tp.Any]:
+        """Get the reference input script size in bytes for one or more transaction inputs.
 
         Args:
-            txins: One or more transaction inputs in the format 'TxId#TxIx'.
+            txin: One or more transaction inputs in the format 'TxId#TxIx'
+                (string or list of strings).
+            utxo: A single UTxO record (alternative to `txin`).
 
         Returns:
-            dict[str, Any]: JSON output from the CLI (
-            typically contains 'refScriptSize' or similar key).
+            dict[str, Any]: JSON output from the CLI, typically containing
+            keys like 'refScriptSize' or 'refScriptHash'.
         """
-        if isinstance(txins, str):
-            txins = [txins]
+        if not txin and not utxo:
+            msg = "Either `txin` or `utxo` must be provided."
+            raise ValueError(msg)
+        if txin and utxo:
+            msg = "Provide only one of `txin` or `utxo`, not both."
+            raise ValueError(msg)
+
+        if txin:
+            txins = [txin] if isinstance(txin, str) else txin
+        else:
+            assert utxo is not None  # reassure static type checkers
+            txins = [f"{utxo.utxo_hash}#{utxo.utxo_ix}"]
 
         cli_args = ["ref-script-size", "--output-json"]
         cli_args.extend(helpers._prepend_flag("--tx-in", txins))
