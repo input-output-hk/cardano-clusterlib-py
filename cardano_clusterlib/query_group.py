@@ -746,35 +746,34 @@ class QueryGroup:
 
     def get_ref_script_size(
         self,
-        txin: str | list[str] | None = None,
-        utxo: structs.UTXOData | None = None,
+        txin: str | list[str] = "",
+        utxo: structs.UTXOData | structs.OptionalUTXOData = (),
     ) -> dict[str, tp.Any]:
         """Get the reference input script size in bytes for one or more transaction inputs.
 
         Args:
             txin: One or more transaction inputs in the format 'TxId#TxIx'
                 (string or list of strings).
-            utxo: A single UTxO record (alternative to `txin`).
+            utxo: One or more UTxO records (`structs.UTXOData`) or an empty tuple by default.
 
         Returns:
             dict[str, Any]: JSON output from the CLI, typically containing
-            keys like 'refScriptSize' or 'refScriptHash'.
+            keys like 'refScriptSize' or 'refInputScriptSize'.
         """
-        if not txin and not utxo:
-            msg = "Either `txin` or `utxo` must be provided."
-            raise ValueError(msg)
-        if txin and utxo:
-            msg = "Provide only one of `txin` or `utxo`, not both."
-            raise ValueError(msg)
+        cli_args = ["ref-script-size", "--output-json"]
 
         if txin:
-            txins = [txin] if isinstance(txin, str) else txin
+            if isinstance(txin, str):
+                txin = [txin]
+            cli_args += [*helpers._prepend_flag("--tx-in", txin)]
+        elif utxo:
+            if isinstance(utxo, structs.UTXOData):
+                utxo = [utxo]
+            utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
+            cli_args += [*helpers._prepend_flag("--tx-in", utxo_formatted)]
         else:
-            assert utxo is not None  # reassure static type checkers
-            txins = [f"{utxo.utxo_hash}#{utxo.utxo_ix}"]
-
-        cli_args = ["ref-script-size", "--output-json"]
-        cli_args.extend(helpers._prepend_flag("--tx-in", txins))
+            msg = "Either `txin` or `utxo` must be specified."
+            raise ValueError(msg)
 
         out: dict[str, tp.Any] = json.loads(self.query_cli(cli_args))
         return out
