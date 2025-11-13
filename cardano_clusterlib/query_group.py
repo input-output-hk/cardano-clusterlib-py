@@ -80,24 +80,22 @@ class QueryGroup:
         Returns:
             list[structs.UTXOData]: A list of UTxO data.
         """
-        cli_args = ["utxo", "--output-json"]
-
         address_single = ""
         sort_results = False
         if address:
             if isinstance(address, str):
                 address_single = address
-                address = [address]
-            cli_args.extend(helpers._prepend_flag("--address", address))
+                addresses = [address]
+            else:
+                addresses = address
+            input_args = helpers._prepend_flag("--address", addresses)
         elif txin:
-            if isinstance(txin, str):
-                txin = [txin]
-            cli_args.extend(helpers._prepend_flag("--tx-in", txin))
+            txins = [txin] if isinstance(txin, str) else txin
+            input_args = helpers._prepend_flag("--tx-in", txins)
         elif utxo:
-            if isinstance(utxo, structs.UTXOData):
-                utxo = [utxo]
-            utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
-            cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
+            utxos = [utxo] if isinstance(utxo, structs.UTXOData) else utxo
+            utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxos]
+            input_args = helpers._prepend_flag("--tx-in", utxo_formatted)
         elif tx_raw_output:
             sort_results = True
             change_txout_num = 1 if tx_raw_output.change_address else 0
@@ -109,16 +107,21 @@ class QueryGroup:
                 tx_body_file=tx_raw_output.out_file
             )
             utxo_formatted = [f"{utxo_hash}#{ix}" for ix in range(num_of_txouts)]
-            cli_args.extend(helpers._prepend_flag("--tx-in", utxo_formatted))
+            input_args = helpers._prepend_flag("--tx-in", utxo_formatted)
         else:
             msg = "Either `address`, `txin`, `utxo` or `tx_raw_output` need to be specified."
             raise ValueError(msg)
 
+        if not input_args:
+            msg = "No input arguments for UTxO query."
+            raise ValueError(msg)
+
+        cli_args = ["utxo", "--output-json", *input_args]
         utxo_dict = json.loads(self.query_cli(cli_args))
-        utxos = txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
+        out_utxos = txtools.get_utxo(utxo_dict=utxo_dict, address=address_single, coins=coins)
         if sort_results:
-            utxos = sorted(utxos, key=lambda u: u.utxo_ix)
-        return utxos
+            out_utxos = sorted(out_utxos, key=lambda u: u.utxo_ix)
+        return out_utxos
 
     def get_tip(self) -> dict[str, tp.Any]:
         """Return current tip - last block successfully applied to the ledger."""
@@ -190,14 +193,16 @@ class QueryGroup:
         Returns:
             dict: A stake snapshot data.
         """
-        query_args = ["stake-snapshot"]
-
         if all_stake_pools:
-            query_args.extend(["--all-stake-pools"])
+            query_args = ["--all-stake-pools"]
         elif stake_pool_ids:
-            query_args.extend(helpers._prepend_flag("--stake-pool-id", stake_pool_ids))
+            query_args = helpers._prepend_flag("--stake-pool-id", stake_pool_ids)
+        else:
+            msg = "Either `stake_pool_ids` or `all_stake_pools` need to be specified."
+            raise ValueError(msg)
 
-        stake_snapshot: dict[str, tp.Any] = json.loads(self.query_cli(query_args))
+        cli_args = ["stake-snapshot", *query_args]
+        stake_snapshot: dict[str, tp.Any] = json.loads(self.query_cli(cli_args))
         return stake_snapshot
 
     def get_pool_params(
@@ -372,34 +377,26 @@ class QueryGroup:
             list[structs.LeadershipSchedule]: A list of `structs.LeadershipSchedule`, specifying
                 slot and time.
         """
-        args = []
-
         if stake_pool_vkey:
-            args.extend(
-                [
-                    "--stake-pool-verification-key",
-                    str(stake_pool_vkey),
-                ]
-            )
+            pool_args = [
+                "--stake-pool-verification-key",
+                str(stake_pool_vkey),
+            ]
         elif cold_vkey_file:
-            args.extend(
-                [
-                    "--cold-verification-key-file",
-                    str(cold_vkey_file),
-                ]
-            )
+            pool_args = [
+                "--cold-verification-key-file",
+                str(cold_vkey_file),
+            ]
         elif stake_pool_id:
-            args.extend(
-                [
-                    "--stake-pool-id",
-                    str(stake_pool_id),
-                ]
-            )
+            pool_args = [
+                "--stake-pool-id",
+                str(stake_pool_id),
+            ]
         else:
             msg = "Either `stake_pool_vkey`, `cold_vkey_file` or `stake_pool_id` is needed."
             raise ValueError(msg)
 
-        args.append("--next" if for_next else "--current")
+        epoch_arg = "--next" if for_next else "--current"
 
         unparsed = self.query_cli(
             [
@@ -409,7 +406,8 @@ class QueryGroup:
                 str(self._clusterlib_obj.genesis_json),
                 "--vrf-signing-key-file",
                 str(vrf_skey_file),
-                *args,
+                *pool_args,
+                epoch_arg,
             ]
             # Schedule values are displayed starting with line 2 of the command output
         ).splitlines()[2:]
@@ -694,15 +692,18 @@ class QueryGroup:
             msg = "Both `action_txid` and `action_ix` must be specified together."
             raise ValueError(msg)
 
-        query_args = ["proposals"]
-
         if action_txid and action_ix is not None:
-            query_args.extend(["--governance-action-tx-id", action_txid])
-            query_args.extend(["--governance-action-index", str(action_ix)])
+            query_args = [
+                "--governance-action-tx-id",
+                action_txid,
+                "--governance-action-index",
+                str(action_ix),
+            ]
         else:
-            query_args.append("--all-proposals")
+            query_args = ["--all-proposals"]
 
-        proposals: list[dict[str, tp.Any]] = json.loads(self.query_cli(query_args))
+        cli_args = ["proposals", *query_args]
+        proposals: list[dict[str, tp.Any]] = json.loads(self.query_cli(cli_args))
         return proposals
 
     def get_treasury(self) -> int:
