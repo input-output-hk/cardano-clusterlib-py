@@ -758,23 +758,18 @@ class QueryGroup:
 
         Returns:
             dict[str, Any]: JSON output from the CLI, typically containing
-            keys like 'refScriptSize' or 'refInputScriptSize'.
+                keys like 'refScriptSize' or 'refInputScriptSize'.
         """
-        cli_args = ["ref-script-size", "--output-json"]
-
         if txin:
-            if isinstance(txin, str):
-                txin = [txin]
-            cli_args += [*helpers._prepend_flag("--tx-in", txin)]
+            txins = [txin] if isinstance(txin, str) else txin
         elif utxo:
-            if isinstance(utxo, structs.UTXOData):
-                utxo = [utxo]
-            utxo_formatted = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxo]
-            cli_args += [*helpers._prepend_flag("--tx-in", utxo_formatted)]
+            utxos = [utxo] if isinstance(utxo, structs.UTXOData) else utxo
+            txins = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxos]
         else:
             msg = "Either `txin` or `utxo` must be specified."
             raise ValueError(msg)
 
+        cli_args = ["ref-script-size", "--output-json", *helpers._prepend_flag("--tx-in", txins)]
         out: dict[str, tp.Any] = json.loads(self.query_cli(cli_args))
         return out
 
