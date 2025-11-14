@@ -769,6 +769,10 @@ class QueryGroup:
             msg = "Either `txin` or `utxo` must be specified."
             raise ValueError(msg)
 
+        if not txins:
+            msg = "No transaction inputs provided for ref-script-size query."
+            raise ValueError(msg)
+
         cli_args = ["ref-script-size", "--output-json", *helpers._prepend_flag("--tx-in", txins)]
         out: dict[str, tp.Any] = json.loads(self.query_cli(cli_args))
         return out
