@@ -745,5 +745,38 @@ class QueryGroup:
         out: dict[str, tp.Any] = json.loads(self.query_cli(["ledger-peer-snapshot"])) or {}
         return out
 
+    def get_ref_script_size(
+        self,
+        txin: str | list[str] = "",
+        utxo: structs.UTXOData | structs.OptionalUTXOData = (),
+    ) -> dict[str, tp.Any]:
+        """Get the reference input script size in bytes for one or more transaction inputs.
+
+        Args:
+            txin: One or more transaction inputs in the format 'TxId#TxIx'
+                (string or list of strings).
+            utxo: One or more UTxO records (`structs.UTXOData`) or an empty tuple by default.
+
+        Returns:
+            dict[str, Any]: JSON output from the CLI, typically containing
+                keys like 'refScriptSize' or 'refInputScriptSize'.
+        """
+        if txin:
+            txins = [txin] if isinstance(txin, str) else txin
+        elif utxo:
+            utxos = [utxo] if isinstance(utxo, structs.UTXOData) else utxo
+            txins = [f"{u.utxo_hash}#{u.utxo_ix}" for u in utxos]
+        else:
+            msg = "Either `txin` or `utxo` must be specified."
+            raise ValueError(msg)
+
+        if not txins:
+            msg = "No transaction inputs provided for ref-script-size query."
+            raise ValueError(msg)
+
+        cli_args = ["ref-script-size", "--output-json", *helpers._prepend_flag("--tx-in", txins)]
+        out: dict[str, tp.Any] = json.loads(self.query_cli(cli_args))
+        return out
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
