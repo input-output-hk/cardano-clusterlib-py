@@ -1,7 +1,6 @@
 """Transaction commands for 'cardano-cli compatible alonzo transaction'."""
 
 import logging
-from typing import Sequence
 
 from cardano_clusterlib import types as itp
 
@@ -9,44 +8,38 @@ LOGGER = logging.getLogger(__name__)
 
 
 class CompatibleAlonzoTransactionGroup:
-    def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
-        self._clusterlib_obj = clusterlib_obj
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", group_args: tuple[str, str]) -> None:
+        """Group for 'compatible alonzo transaction' commands.
 
-    def build_raw(
-        self,
-        txins: Sequence[str],
-        txouts: Sequence[str],
-        out_file: itp.FileType,
-        extra_args: Sequence[str] | None = None,
-    ) -> None:
-        """Simple wrapper for `cardano-cli compatible alonzo transaction build-raw`.
+        Args:
+            clusterlib_obj: Main ClusterLib instance.
+            group_args: Fixed CLI prefix, e.g. ("compatible", "alonzo").
         """
-        if not txins:
-            msg = "`txins` must not be empty for compatible transaction build-raw."
-            raise ValueError(msg)
+        self._clusterlib_obj = clusterlib_obj
+        # ("compatible", "alonzo")
+        self._group_args = group_args
 
-        extra_args = extra_args or ()
-
-        cmd: list[str] = [
-            "cardano-cli",
-            "compatible",
-            "alonzo",
+    def signed_transaction(
+        self,
+        cli_args: itp.UnpackableSequence,
+    ) -> None:
+        """Low-level wrapper for `cardano-cli compatible alonzo transaction signed-transaction`."""
+        full_args: list[str] = [
+            *self._group_args,
             "transaction",
-            "build-raw",
+            "signed-transaction",
+            *cli_args,
         ]
 
-        for txin in txins:
-            cmd.extend(["--tx-in", txin])
+        LOGGER.debug(
+            "Running compatible Alonzo signed-transaction: %s",
+            " ".join(str(a) for a in full_args),
+        )
 
-        for txout in txouts:
-            cmd.extend(["--tx-out", txout])
-
-        cmd.extend(["--out-file", str(out_file)])
-        cmd.extend(list(extra_args))
-
-        LOGGER.debug("Running compatible Alonzo transaction build-raw: %s", " ".join(cmd))
-
-        self._clusterlib_obj.cli(cmd)
+        self._clusterlib_obj.cli(full_args)
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: clusterlib_obj={id(self._clusterlib_obj)}>"
+        return (
+            f"<{self.__class__.__name__}: group_args={self._group_args} "
+            f"clusterlib_obj={id(self._clusterlib_obj)}>"
+        )

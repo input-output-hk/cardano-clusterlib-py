@@ -2,6 +2,7 @@
 
 import logging
 
+from cardano_clusterlib import types as itp
 from cardano_clusterlib.compatilbe_group import compatible_alonzo_group
 
 LOGGER = logging.getLogger(__name__)
