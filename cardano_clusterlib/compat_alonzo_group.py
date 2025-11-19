@@ -100,6 +100,8 @@ class _TransactionGroup:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = (*base_args, "transaction")
 
+        #We have only sign-transaction command for now
+
     def signed_transaction(
         self,
         cli_args: itp.UnpackableSequence,
