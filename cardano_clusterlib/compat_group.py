@@ -2,8 +2,8 @@
 
 import logging
 
+from cardano_clusterlib import compat_alonzo_group
 from cardano_clusterlib import types as itp
-from cardano_clusterlib.compatilbe_group import compatible_alonzo_group
 
 LOGGER = logging.getLogger(__name__)
 
@@ -13,16 +13,15 @@ class CompatibleGroup:
         self._clusterlib_obj = clusterlib_obj
 
         # Groups of commands per era
-        self._alonzo_group: compatible_alonzo_group.CompatibleAlonzoGroup | None = None
+        self._alonzo_group: compat_alonzo_group.CompatibleAlonzoGroup | None = None
         # self._mary_group: compatible_mary_group.CompatibleMaryGroup | None = None
         # self._shelley_group: compatible_shelley_group.CompatibleShelleyGroup | None = None
         # ...
 
     @property
-    def alonzo(self) -> "compatible_alonzo_group.CompatibleAlonzoGroup":
-        """Alonzo compatible era group."""
+    def alonzo(self) -> compat_alonzo_group.CompatibleAlonzoGroup:
         if not self._alonzo_group:
-            self._alonzo_group = compatible_alonzo_group.CompatibleAlonzoGroup(
+            self._alonzo_group = compat_alonzo_group.CompatibleAlonzoGroup(
                 clusterlib_obj=self._clusterlib_obj
             )
         return self._alonzo_group
