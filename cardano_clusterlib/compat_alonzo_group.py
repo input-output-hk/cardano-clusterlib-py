@@ -95,7 +95,7 @@ class _TransactionGroup:
 
         Args:
             clusterlib_obj: Main ClusterLib instance.
-            group_args: Fixed CLI prefix, e.g. ("compatible", "alonzo").
+            base_args: Fixed CLI prefix, e.g. ("compatible", "alonzo").
         """
         self._clusterlib_obj = clusterlib_obj
         self._group_args = (*base_args, "transaction")  # corrected: append “transaction” here
