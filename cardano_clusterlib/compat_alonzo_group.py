@@ -98,7 +98,7 @@ class _TransactionGroup:
             base_args: Fixed CLI prefix, e.g. ("compatible", "alonzo").
         """
         self._clusterlib_obj = clusterlib_obj
-        self._group_args = (*base_args, "transaction")  # corrected: append “transaction” here
+        self._group_args = (*base_args, "transaction")
 
     def signed_transaction(
         self,
