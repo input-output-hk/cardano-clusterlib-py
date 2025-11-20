@@ -21,10 +21,10 @@ class CompatibleAlonzoGroup:
         self._clusterlib_obj = clusterlib_obj
         self._base_args = ("compatible", "alonzo")
 
-        self.stake_address = _StakeAddressGroup(clusterlib_obj, self._base_args)
-        self.stake_pool = _StakePoolGroup(clusterlib_obj, self._base_args)
-        self.governance = _GovernanceGroup(clusterlib_obj, self._base_args)
-        self.transaction = _TransactionGroup(clusterlib_obj, self._base_args)
+        self.stake_address = StakeAddressGroup(clusterlib_obj, self._base_args)
+        self.stake_pool = StakePoolGroup(clusterlib_obj, self._base_args)
+        self.governance = GovernanceGroup(clusterlib_obj, self._base_args)
+        self.transaction = TransactionGroup(clusterlib_obj, self._base_args)
 
     def __repr__(self) -> str:
         return (
@@ -33,25 +33,38 @@ class CompatibleAlonzoGroup:
         )
 
 
-class _StakeAddressGroup:
+class StakeAddressGroup:
     """`cardano-cli compatible alonzo stake-address` commands."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._group_args = (*base_args, "stake-address")
 
-    def run_raw(self, cli_args: itp.UnpackableSequence) -> None:
-        """Generic low-level wrapper for stake-address commands."""
-        full_args = [*self._group_args, *cli_args]
+    def registration_certificate(
+            self,
+            cli_args: itp.UnpackableSequence,
+    ) -> None:
+        """Wrapper for:
+            cardano-cli compatible alonzo stake-address registration-certificate
+        """
+        full_args = [
+            *self._group_args,
+            "registration-certificate",
+            *cli_args,
+        ]
 
-        LOGGER.debug("Running compatible alonzo stake-address: %s", " ".join(full_args))
+        LOGGER.debug(
+            "Running compatible alonzo stake-address registration-certificate: %s",
+            " ".join(str(a) for a in full_args),
+        )
+
         self._clusterlib_obj.cli(full_args)
 
     def __repr__(self) -> str:
         return f"<StakeAddressGroup base={self._group_args}>"
 
 
-class _StakePoolGroup:
+class StakePoolGroup:
     """`cardano-cli compatible alonzo stake-pool` commands."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
@@ -69,7 +82,7 @@ class _StakePoolGroup:
         return f"<StakePoolGroup base={self._group_args}>"
 
 
-class _GovernanceGroup:
+class GovernanceGroup:
     """`cardano-cli compatible alonzo governance` commands."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
@@ -87,7 +100,7 @@ class _GovernanceGroup:
         return f"<GovernanceGroup base={self._group_args}>"
 
 
-class _TransactionGroup:
+class TransactionGroup:
     """Transaction commands for `cardano-cli compatible alonzo transaction`."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
@@ -95,7 +108,7 @@ class _TransactionGroup:
 
         Args:
             clusterlib_obj: Main ClusterLib instance.
-            base_args: Fixed CLI prefix, e.g. ("compatible", "alonzo").
+            base_args: Fixed CLI prefix
         """
         self._clusterlib_obj = clusterlib_obj
         self._group_args = (*base_args, "transaction")
