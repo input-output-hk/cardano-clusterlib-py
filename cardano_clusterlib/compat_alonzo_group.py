@@ -38,17 +38,17 @@ class StakeAddressGroup:
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
         self._clusterlib_obj = clusterlib_obj
-        self._group_args = (*base_args, "stake-address")
+        self._cli_args = ("cardano-cli", *base_args, "stake-address")
 
     def registration_certificate(
-            self,
-            cli_args: itp.UnpackableSequence,
+        self,
+        cli_args: itp.UnpackableSequence,
     ) -> None:
         """Wrapper for:
             cardano-cli compatible alonzo stake-address registration-certificate
         """
         full_args = [
-            *self._group_args,
+            *self._cli_args,
             "registration-certificate",
             *cli_args,
         ]
@@ -58,10 +58,30 @@ class StakeAddressGroup:
             " ".join(str(a) for a in full_args),
         )
 
-        self._clusterlib_obj.cli(full_args)
+        self._clusterlib_obj.cli(full_args, add_default_args=False)
+
+    def stake_delegation_certificate(
+        self,
+        cli_args: itp.UnpackableSequence,
+    ) -> None:
+        """Wrapper for:
+            cardano-cli compatible alonzo stake-address stake-delegation-certificate
+        """
+        full_args = [
+            *self._cli_args,
+            "stake-delegation-certificate",
+            *cli_args,
+        ]
+
+        LOGGER.debug(
+            "Running compatible alonzo stake-address stake-delegation-certificate: %s",
+            " ".join(str(a) for a in full_args),
+        )
+
+        self._clusterlib_obj.cli(full_args, add_default_args=False)
 
     def __repr__(self) -> str:
-        return f"<StakeAddressGroup base={self._group_args}>"
+        return f"<{self.__class__.__name__} cli_args={self._cli_args}>"
 
 
 class StakePoolGroup:
