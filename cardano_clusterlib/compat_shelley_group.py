@@ -1,4 +1,4 @@
-"""Alonzo era compatible commands for `cardano-cli compatible alonzo`."""
+"""Shelley era compatible commands for `cardano-cli compatible shelley`."""
 
 import logging
 from typing import TYPE_CHECKING
@@ -11,12 +11,12 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-class CompatibleAlonzoGroup:
-    """A single container for all Alonzo compatible commands."""
+class CompatibleShelleyGroup:
+    """Shelley era compatible group."""
 
     def __init__(self, clusterlib_obj: "ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
-        self._base_args = ("compatible", "alonzo")
+        self._base_args = ("compatible", "shelley")
 
         self.stake_address = StakeAddressGroup(clusterlib_obj, self._base_args)
         self.stake_pool = StakePoolGroup(clusterlib_obj, self._base_args)
@@ -31,10 +31,11 @@ class CompatibleAlonzoGroup:
 
 
 class StakeAddressGroup:
-    """`cardano-cli compatible alonzo stake-address` commands."""
+    """`cardano-cli compatible shelley stake-address` commands."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
         self._clusterlib_obj = clusterlib_obj
+        # cardano-cli compatible shelley stake-address
         self._cli_args = ("cardano-cli", *base_args, "stake-address")
 
     def registration_certificate(
@@ -49,7 +50,7 @@ class StakeAddressGroup:
         ]
 
         LOGGER.debug(
-            "Running compatible alonzo stake-address registration-certificate: %s",
+            "Running compatible shelley stake-address registration-certificate: %s",
             " ".join(str(a) for a in full_args),
         )
 
@@ -67,7 +68,7 @@ class StakeAddressGroup:
         ]
 
         LOGGER.debug(
-            "Running compatible alonzo stake-address stake-delegation-certificate: %s",
+            "Running compatible shelley stake-address stake-delegation-certificate: %s",
             " ".join(str(a) for a in full_args),
         )
 
@@ -78,10 +79,11 @@ class StakeAddressGroup:
 
 
 class StakePoolGroup:
-    """`cardano-cli compatible alonzo stake-pool` commands."""
+    """`cardano-cli compatible shelley stake-pool` commands."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
         self._clusterlib_obj = clusterlib_obj
+        # cardano-cli compatible shelley stake-pool
         self._cli_args = ("cardano-cli", *base_args, "stake-pool")
 
     def registration_certificate(
@@ -96,7 +98,7 @@ class StakePoolGroup:
         ]
 
         LOGGER.debug(
-            "Running compatible alonzo stake-pool registration-certificate: %s",
+            "Running compatible shelley stake-pool registration-certificate: %s",
             " ".join(str(a) for a in full_args),
         )
 
@@ -107,11 +109,11 @@ class StakePoolGroup:
 
 
 class GovernanceGroup:
-    """`cardano-cli compatible alonzo governance` commands."""
+    """`cardano-cli compatible shelley governance` commands."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
         self._clusterlib_obj = clusterlib_obj
-        # Full fixed prefix: cardano-cli compatible alonzo governance
+        # cardano-cli compatible shelley governance
         self._cli_args = ("cardano-cli", *base_args, "governance")
 
     def create_mir_certificate(
@@ -126,7 +128,7 @@ class GovernanceGroup:
         ]
 
         LOGGER.debug(
-            "Running compatible alonzo governance create-mir-certificate: %s",
+            "Running compatible shelley governance create-mir-certificate: %s",
             " ".join(str(a) for a in full_args),
         )
 
@@ -144,7 +146,7 @@ class GovernanceGroup:
         ]
 
         LOGGER.debug(
-            "Running compatible alonzo governance create-genesis-key-delegation-certificate: %s",
+            "Running compatible shelley governance create-genesis-key-delegation-certificate: %s",
             " ".join(str(a) for a in full_args),
         )
 
@@ -155,11 +157,11 @@ class GovernanceGroup:
 
 
 class TransactionGroup:
-    """Transaction commands for `cardano-cli compatible alonzo transaction`."""
+    """Transaction commands for `cardano-cli compatible shelley transaction`."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", base_args: tuple[str, str]) -> None:
         self._clusterlib_obj = clusterlib_obj
-        # Full prefix: cardano-cli compatible alonzo transaction
+        # cardano-cli compatible shelley transaction
         self._cli_args = ("cardano-cli", *base_args, "transaction")
 
     def signed_transaction(
@@ -174,7 +176,7 @@ class TransactionGroup:
         ]
 
         LOGGER.debug(
-            "Running compatible alonzo transaction signed-transaction: %s",
+            "Running compatible shelley transaction signed-transaction: %s",
             " ".join(str(a) for a in full_args),
         )
 
