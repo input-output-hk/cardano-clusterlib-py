@@ -121,11 +121,180 @@ class StakePoolGroup:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "stake-pool")
 
-    def registration_certificate(self, cli_args: itp.UnpackableSequence) -> None:
-        """Wrap the `stake-pool registration-certificate` command."""
-        full_args = [*self._base, "registration-certificate", *cli_args]
+    def _resolve_pool_vkey_args(
+        self,
+        *,
+        stake_pool_vkey: str = "",
+        stake_pool_extended_vkey: str = "",
+        cold_vkey_file: itp.FileType | None = None,
+    ) -> list[str]:
+        """Resolve pool key identification."""
+        if stake_pool_vkey:
+            return ["--stake-pool-verification-key", stake_pool_vkey]
+        if stake_pool_extended_vkey:
+            return ["--stake-pool-verification-extended-key", stake_pool_extended_vkey]
+        if cold_vkey_file:
+            return ["--cold-verification-key-file", str(cold_vkey_file)]
 
-        self._clusterlib_obj.cli(full_args, add_default_args=False)
+        msg = (
+            "One of stake_pool_vkey, stake_pool_extended_vkey, or cold_vkey_file must be provided."
+        )
+        raise ValueError(msg)
+
+    def _resolve_vrf_args(
+        self,
+        *,
+        vrf_vkey: str = "",
+        vrf_vkey_file: itp.FileType | None = None,
+    ) -> list[str]:
+        """Resolve VRF key identification."""
+        if vrf_vkey:
+            return ["--vrf-verification-key", vrf_vkey]
+        if vrf_vkey_file:
+            return ["--vrf-verification-key-file", str(vrf_vkey_file)]
+
+        msg = "One of vrf_vkey or vrf_vkey_file must be provided."
+        raise ValueError(msg)
+
+    def _resolve_reward_account_args(
+        self,
+        *,
+        reward_vkey: str = "",
+        reward_vkey_file: itp.FileType | None = None,
+    ) -> list[str]:
+        """Resolve reward account specification."""
+        if reward_vkey:
+            return ["--pool-reward-account-verification-key", reward_vkey]
+        if reward_vkey_file:
+            return ["--pool-reward-account-verification-key-file", str(reward_vkey_file)]
+
+        msg = "One of reward_vkey or reward_vkey_file must be provided."
+        raise ValueError(msg)
+
+    def _resolve_owner_args(
+        self,
+        *,
+        owner_vkey: str = "",
+        owner_vkey_file: itp.FileType | None = None,
+    ) -> list[str]:
+        """Resolve owner stake key."""
+        if owner_vkey:
+            return ["--pool-owner-verification-key", owner_vkey]
+        if owner_vkey_file:
+            return ["--pool-owner-stake-verification-key-file", str(owner_vkey_file)]
+
+        msg = "One of owner_vkey or owner_vkey_file must be provided."
+        raise ValueError(msg)
+
+    def registration_certificate(
+        self,
+        *,
+        # pool identification
+        stake_pool_vkey: str = "",
+        stake_pool_extended_vkey: str = "",
+        cold_vkey_file: itp.FileType | None = None,
+        # VRF identification
+        vrf_vkey: str = "",
+        vrf_vkey_file: itp.FileType | None = None,
+        # financials
+        pool_pledge: int,
+        pool_cost: int,
+        pool_margin: str,
+        # reward account
+        reward_vkey: str = "",
+        reward_vkey_file: itp.FileType | None = None,
+        # owner
+        owner_vkey: str = "",
+        owner_vkey_file: itp.FileType | None = None,
+        # relays
+        relay_ipv4: str = "",
+        relay_ipv6: str = "",
+        relay_port: int | None = None,
+        single_host_relay: str = "",
+        multi_host_relay: str = "",
+        # metadata
+        metadata_url: str = "",
+        metadata_hash: str = "",
+        check_metadata_hash: bool = False,
+        # output
+        out_file: itp.FileType,
+    ) -> None:
+        """Wrap the compat stake-pool registration-certificate command."""
+        # Required argument groups
+        pool_args = self._resolve_pool_vkey_args(
+            stake_pool_vkey=stake_pool_vkey,
+            stake_pool_extended_vkey=stake_pool_extended_vkey,
+            cold_vkey_file=cold_vkey_file,
+        )
+
+        vrf_args = self._resolve_vrf_args(
+            vrf_vkey=vrf_vkey,
+            vrf_vkey_file=vrf_vkey_file,
+        )
+
+        reward_args = self._resolve_reward_account_args(
+            reward_vkey=reward_vkey,
+            reward_vkey_file=reward_vkey_file,
+        )
+
+        owner_args = self._resolve_owner_args(
+            owner_vkey=owner_vkey,
+            owner_vkey_file=owner_vkey_file,
+        )
+
+        # Relay handling
+        relay_args: list[str] = []
+
+        if relay_ipv4:
+            relay_args.extend(["--pool-relay-ipv4", relay_ipv4])
+        if relay_ipv6:
+            relay_args.extend(["--pool-relay-ipv6", relay_ipv6])
+        if relay_port:
+            relay_args.extend(["--pool-relay-port", str(relay_port)])
+
+        if single_host_relay:
+            relay_args.extend(["--single-host-pool-relay", single_host_relay])
+            if relay_port:
+                relay_args.extend(["--pool-relay-port", str(relay_port)])
+
+        if multi_host_relay:
+            relay_args.extend(["--multi-host-pool-relay", multi_host_relay])
+
+        # Metadata arguments
+        metadata_args: list[str] = []
+        if metadata_url and metadata_hash:
+            metadata_args.extend(
+                [
+                    "--metadata-url",
+                    metadata_url,
+                    "--metadata-hash",
+                    metadata_hash,
+                ]
+            )
+            if check_metadata_hash:
+                metadata_args.append("--check-metadata-hash")
+
+        # Build final CLI cmd
+        cmd = [
+            *self._base,
+            "registration-certificate",
+            *pool_args,
+            *vrf_args,
+            "--pool-pledge",
+            str(pool_pledge),
+            "--pool-cost",
+            str(pool_cost),
+            "--pool-margin",
+            str(pool_margin),
+            *reward_args,
+            *owner_args,
+            *relay_args,
+            *metadata_args,
+            "--out-file",
+            str(out_file),
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
 
 
 class GovernanceGroup:
