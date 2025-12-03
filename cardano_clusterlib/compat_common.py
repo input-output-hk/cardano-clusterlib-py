@@ -98,9 +98,9 @@ class StakeAddressGroup:
             pool_args = ["--cold-verification-key-file", str(cold_vkey_file)]
         elif stake_pool_id:
             pool_args = ["--stake-pool-id", stake_pool_id]
-
-        msg = "One of stake_pool_vkey, cold_vkey_file or stake_pool_id must be provided."
-        raise ValueError(msg)
+        else:
+            msg = "One of stake_pool_vkey, cold_vkey_file or stake_pool_id must be provided."
+            raise ValueError(msg)
 
         cmd = [
             *self._base,
