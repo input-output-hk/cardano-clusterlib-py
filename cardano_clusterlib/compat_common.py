@@ -304,17 +304,354 @@ class GovernanceGroup:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance")
 
-    def create_mir_certificate(self, cli_args: itp.UnpackableSequence) -> None:
-        """Wrap the `governance create-mir-certificate` command."""
-        full_args = [*self._base, "create-mir-certificate", *cli_args]
+    def _resolve_mir_direct_args(
+        self,
+        *,
+        reserves: bool,
+        treasury: bool,
+        stake_address: str | None,
+        reward: int | None,
+        out_file: itp.FileType,
+    ) -> list[str] | None:
+        """Resolve direct MIR mode args (no subcommand).
 
-        self._clusterlib_obj.cli(full_args, add_default_args=False)
+        Direct mode syntax:
+            (--reserves | --treasury)
+            --stake-address ADDRESS
+            --reward LOVELACE
+            --out-file FILEPATH
+        """
+        # No direct mode selected
+        if not reserves and not treasury:
+            return None
 
-    def create_genesis_key_delegation_certificate(self, cli_args: itp.UnpackableSequence) -> None:
+        # Invalid: both pots selected
+        if reserves and treasury:
+            msg = "Cannot specify both `reserves` and `treasury` in direct MIR mode."
+            raise ValueError(msg)
+
+        if not stake_address:
+            msg = "`stake_address` is required in direct MIR mode."
+            raise ValueError(msg)
+
+        if reward is None:
+            msg = "`reward` is required in direct MIR mode."
+            raise ValueError(msg)
+
+        pot_flag = "--reserves" if reserves else "--treasury"
+
+        args: list[str] = [
+            pot_flag,
+            "--stake-address",
+            stake_address,
+            "--reward",
+            str(reward),
+            "--out-file",
+            str(out_file),
+        ]
+        return args
+
+    def _mir_stake_addresses_args(
+        self,
+        *,
+        stake_address: str | None,
+        reward: int | None,
+        funds: str | None,
+        out_file: itp.FileType,
+    ) -> list[str]:
+        """Arguments for `create-mir-certificate stake-addresses`."""
+        if not stake_address:
+            msg = "`stake_address` is required for 'stake-addresses' MIR subcommand."
+            raise ValueError(msg)
+
+        if reward is None:
+            msg = "`reward` is required for 'stake-addresses' MIR subcommand."
+            raise ValueError(msg)
+
+        if funds not in ("reserves", "treasury"):
+            msg = "`funds` must be either 'reserves' or 'treasury' for 'stake-addresses'."
+            raise ValueError(msg)
+
+        args: list[str] = [
+            "stake-addresses",
+            f"--{funds}",
+            "--stake-address",
+            stake_address,
+            "--reward",
+            str(reward),
+            "--out-file",
+            str(out_file),
+        ]
+        return args
+
+    def _mir_transfer_to_treasury_args(
+        self,
+        *,
+        transfer_amt: int | None,
+        out_file: itp.FileType,
+    ) -> list[str]:
+        """Arguments for `create-mir-certificate transfer-to-treasury`."""
+        if transfer_amt is None:
+            msg = "`transfer_amt` is required for 'transfer-to-treasury' MIR subcommand."
+            raise ValueError(msg)
+
+        args: list[str] = [
+            "transfer-to-treasury",
+            "--transfer",
+            str(transfer_amt),
+            "--out-file",
+            str(out_file),
+        ]
+        return args
+
+    def _mir_transfer_to_rewards_args(
+        self,
+        *,
+        transfer_amt: int | None,
+        out_file: itp.FileType,
+    ) -> list[str]:
+        """Arguments for `create-mir-certificate transfer-to-rewards`."""
+        if transfer_amt is None:
+            msg = "`transfer_amt` is required for 'transfer-to-rewards' MIR subcommand."
+            raise ValueError(msg)
+
+        args: list[str] = [
+            "transfer-to-rewards",
+            "--transfer",
+            str(transfer_amt),
+            "--out-file",
+            str(out_file),
+        ]
+        return args
+
+    def _resolve_mir_subcommand_args(
+        self,
+        *,
+        subcommand: str | None,
+        stake_address: str | None,
+        reward: int | None,
+        transfer_amt: int | None,
+        funds: str | None,
+        out_file: itp.FileType,
+    ) -> list[str] | None:
+        """Resolve MIR subcommand arguments, if any.
+
+        Supported subcommands:
+          * stake-addresses
+          * transfer-to-treasury
+          * transfer-to-rewards
+        """
+        if not subcommand:
+            return None
+
+        if subcommand == "stake-addresses":
+            return self._mir_stake_addresses_args(
+                stake_address=stake_address,
+                reward=reward,
+                funds=funds,
+                out_file=out_file,
+            )
+
+        if subcommand == "transfer-to-treasury":
+            return self._mir_transfer_to_treasury_args(
+                transfer_amt=transfer_amt,
+                out_file=out_file,
+            )
+
+        if subcommand == "transfer-to-rewards":
+            return self._mir_transfer_to_rewards_args(
+                transfer_amt=transfer_amt,
+                out_file=out_file,
+            )
+
+        msg = f"Unknown MIR subcommand: {subcommand}"
+        raise ValueError(msg)
+
+    def create_mir_certificate(
+        self,
+        *,
+        # Direct MIR mode
+        reserves: bool = False,
+        treasury: bool = False,
+        reward: int | None = None,
+        stake_address: str | None = None,
+        # Subcommand mode
+        subcommand: str | None = None,
+        transfer_amt: int | None = None,
+        funds: str | None = None,
+        # Output
+        out_file: itp.FileType,
+    ) -> None:
+        """Wrap the `governance create-mir-certificate` command (compatible eras).
+
+        Two usage modes:
+
+        1. Direct MIR:
+           * `reserves` or `treasury` (exactly one)
+           * `stake_address`
+           * `reward`
+           * `out_file`
+
+        2. Subcommands:
+           * `subcommand="stake-addresses"`, `funds=("reserves"|"treasury")`,
+             `stake_address`, `reward`, `out_file`
+           * `subcommand="transfer-to-treasury"`, `transfer_amt`, `out_file`
+           * `subcommand="transfer-to-rewards"`, `transfer_amt`, `out_file`
+        """
+        direct_args = self._resolve_mir_direct_args(
+            reserves=reserves,
+            treasury=treasury,
+            stake_address=stake_address,
+            reward=reward,
+            out_file=out_file,
+        )
+
+        subcmd_args = self._resolve_mir_subcommand_args(
+            subcommand=subcommand,
+            stake_address=stake_address,
+            reward=reward,
+            transfer_amt=transfer_amt,
+            funds=funds,
+            out_file=out_file,
+        )
+
+        # Cannot mix modes
+        if direct_args and subcmd_args:
+            msg = "Cannot mix direct MIR mode with MIR subcommand mode."
+            raise ValueError(msg)
+
+        if not direct_args and not subcmd_args:
+            msg = (
+                "No MIR mode selected. Provide either direct MIR parameters "
+                "(reserves/treasury + stake_address + reward) "
+                "or a valid MIR subcommand."
+            )
+            raise ValueError(msg)
+
+        final_args = direct_args or subcmd_args
+        assert final_args is not None
+
+        cmd = [
+            *self._base,
+            "create-mir-certificate",
+            *final_args,
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
+
+    def _resolve_genesis_key_args(
+        self,
+        *,
+        genesis_vkey: str = "",
+        genesis_vkey_file: itp.FileType | None = None,
+        genesis_vkey_hash: str = "",
+    ) -> list[str]:
+        """Resolve genesis verification key specification."""
+        if genesis_vkey:
+            return ["--genesis-verification-key", genesis_vkey]
+
+        if genesis_vkey_file:
+            return ["--genesis-verification-key-file", str(genesis_vkey_file)]
+
+        if genesis_vkey_hash:
+            return ["--genesis-verification-key-hash", genesis_vkey_hash]
+
+        msg = (
+            "One of genesis_vkey, genesis_vkey_file or genesis_vkey_hash "
+            "must be provided for genesis key delegation."
+        )
+        raise ValueError(msg)
+
+    def _resolve_delegate_key_args(
+        self,
+        *,
+        delegate_vkey: str = "",
+        delegate_vkey_file: itp.FileType | None = None,
+        delegate_vkey_hash: str = "",
+    ) -> list[str]:
+        """Resolve delegate verification key specification."""
+        if delegate_vkey:
+            return ["--genesis-delegate-verification-key", delegate_vkey]
+
+        if delegate_vkey_file:
+            return ["--genesis-delegate-verification-key-file", str(delegate_vkey_file)]
+
+        if delegate_vkey_hash:
+            return ["--genesis-delegate-verification-key-hash", delegate_vkey_hash]
+
+        msg = (
+            "One of delegate_vkey, delegate_vkey_file or delegate_vkey_hash "
+            "must be provided for genesis key delegation."
+        )
+        raise ValueError(msg)
+
+    def _resolve_vrf_key_args(
+        self,
+        *,
+        vrf_vkey: str = "",
+        vrf_vkey_file: itp.FileType | None = None,
+        vrf_vkey_hash: str = "",
+    ) -> list[str]:
+        """Resolve VRF key specification."""
+        if vrf_vkey:
+            return ["--vrf-verification-key", vrf_vkey]
+
+        if vrf_vkey_file:
+            return ["--vrf-verification-key-file", str(vrf_vkey_file)]
+
+        if vrf_vkey_hash:
+            return ["--vrf-verification-key-hash", vrf_vkey_hash]
+
+        msg = (
+            "One of vrf_vkey, vrf_vkey_file or vrf_vkey_hash "
+            "must be provided for genesis key delegation."
+        )
+        raise ValueError(msg)
+
+    def create_genesis_key_delegation_certificate(
+        self,
+        *,
+        genesis_vkey: str = "",
+        genesis_vkey_file: itp.FileType | None = None,
+        genesis_vkey_hash: str = "",
+        delegate_vkey: str = "",
+        delegate_vkey_file: itp.FileType | None = None,
+        delegate_vkey_hash: str = "",
+        vrf_vkey: str = "",
+        vrf_vkey_file: itp.FileType | None = None,
+        vrf_vkey_hash: str = "",
+        out_file: itp.FileType,
+    ) -> None:
         """Wrap the `governance create-genesis-key-delegation-certificate` command."""
-        full_args = [*self._base, "create-genesis-key-delegation-certificate", *cli_args]
+        genesis_args = self._resolve_genesis_key_args(
+            genesis_vkey=genesis_vkey,
+            genesis_vkey_file=genesis_vkey_file,
+            genesis_vkey_hash=genesis_vkey_hash,
+        )
 
-        self._clusterlib_obj.cli(full_args, add_default_args=False)
+        delegate_args = self._resolve_delegate_key_args(
+            delegate_vkey=delegate_vkey,
+            delegate_vkey_file=delegate_vkey_file,
+            delegate_vkey_hash=delegate_vkey_hash,
+        )
+
+        vrf_args = self._resolve_vrf_key_args(
+            vrf_vkey=vrf_vkey,
+            vrf_vkey_file=vrf_vkey_file,
+            vrf_vkey_hash=vrf_vkey_hash,
+        )
+
+        cmd = [
+            *self._base,
+            "create-genesis-key-delegation-certificate",
+            *genesis_args,
+            *delegate_args,
+            *vrf_args,
+            "--out-file",
+            str(out_file),
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
 
 
 class TransactionGroup:
