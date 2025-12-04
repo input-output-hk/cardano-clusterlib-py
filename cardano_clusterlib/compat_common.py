@@ -297,12 +297,113 @@ class StakePoolGroup:
         self._clusterlib_obj.cli(cmd, add_default_args=False)
 
 
+class GovernanceActionGroup:
+    """Governance action subcommands for compatible eras."""
+
+    def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
+        self._clusterlib_obj = clusterlib_obj
+        self._base = ("cardano-cli", "compatible", era, "governance", "action")
+
+    def _resolve_pparam_args(
+        self,
+        *,
+        epoch: int | None = None,
+        genesis_vkey_file: itp.FileType | None = None,
+        pparams: dict[str, object] | None = None,
+    ) -> list[str]:
+        """Resolve protocol parameter update CLI arguments."""
+        if epoch is None:
+            message = "The `epoch` parameter is required for protocol parameters update."
+            raise ValueError(message)
+
+        if not genesis_vkey_file:
+            message = "`genesis_vkey_file` is required for protocol parameters update."
+            raise ValueError(message)
+
+        if not pparams:
+            message = "At least one protocol parameter must be provided."
+            raise ValueError(message)
+
+        args: list[str] = ["--epoch", str(epoch)]
+
+        for flag, value in pparams.items():
+            if value is None:
+                continue
+            args.extend([flag, str(value)])
+
+        args.extend(["--genesis-verification-key-file", str(genesis_vkey_file)])
+
+        return args
+
+    def create_protocol_parameters_update(
+        self,
+        *,
+        epoch: int,
+        genesis_vkey_file: itp.FileType,
+        out_file: itp.FileType,
+        **pparams: object,
+    ) -> None:
+        """Wrap the protocol parameters update command."""
+        flag_map = {
+            "min_fee_linear": "--min-fee-linear",
+            "min_fee_constant": "--min-fee-constant",
+            "max_block_body_size": "--max-block-body-size",
+            "max_tx_size": "--max-tx-size",
+            "max_block_header_size": "--max-block-header-size",
+            "key_reg_deposit_amt": "--key-reg-deposit-amt",
+            "pool_reg_deposit": "--pool-reg-deposit",
+            "pool_retirement_epoch_interval": "--pool-retirement-epoch-interval",
+            "number_of_pools": "--number-of-pools",
+            "pool_influence": "--pool-influence",
+            "treasury_expansion": "--treasury-expansion",
+            "monetary_expansion": "--monetary-expansion",
+            "min_pool_cost": "--min-pool-cost",
+            "price_execution_steps": "--price-execution-steps",
+            "price_execution_memory": "--price-execution-memory",
+            "max_tx_execution_units": "--max-tx-execution-units",
+            "max_block_execution_units": "--max-block-execution-units",
+            "max_value_size": "--max-value-size",
+            "collateral_percent": "--collateral-percent",
+            "max_collateral_inputs": "--max-collateral-inputs",
+            "protocol_major_version": "--protocol-major-version",
+            "protocol_minor_version": "--protocol-minor-version",
+            "utxo_cost_per_byte": "--utxo-cost-per-byte",
+            "cost_model_file": "--cost-model-file",
+        }
+
+        pparam_args: dict[str, object] = {}
+
+        for py_key, value in pparams.items():
+            if py_key not in flag_map:
+                msg = f"Unknown protocol parameter: {py_key}"
+                raise ValueError(msg)
+            if value is not None:
+                pparam_args[flag_map[py_key]] = value
+
+        resolved_args = self._resolve_pparam_args(
+            epoch=epoch,
+            genesis_vkey_file=genesis_vkey_file,
+            pparams=pparam_args,
+        )
+
+        cmd = [
+            *self._base,
+            "create-protocol-parameters-update",
+            *resolved_args,
+            "--out-file",
+            str(out_file),
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
+
+
 class GovernanceGroup:
     """Generic governance group for all compatible eras."""
 
     def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance")
+        self.action = GovernanceActionGroup(clusterlib_obj, era)
 
     def _resolve_mir_direct_args(
         self,
@@ -313,19 +414,9 @@ class GovernanceGroup:
         reward: int | None,
         out_file: itp.FileType,
     ) -> list[str] | None:
-        """Resolve direct MIR mode args (no subcommand).
-
-        Direct mode syntax:
-            (--reserves | --treasury)
-            --stake-address ADDRESS
-            --reward LOVELACE
-            --out-file FILEPATH
-        """
-        # No direct mode selected
         if not reserves and not treasury:
             return None
 
-        # Invalid: both pots selected
         if reserves and treasury:
             msg = "Cannot specify both `reserves` and `treasury` in direct MIR mode."
             raise ValueError(msg)
@@ -338,10 +429,10 @@ class GovernanceGroup:
             msg = "`reward` is required in direct MIR mode."
             raise ValueError(msg)
 
-        pot_flag = "--reserves" if reserves else "--treasury"
+        flag = "--reserves" if reserves else "--treasury"
 
-        args: list[str] = [
-            pot_flag,
+        args = [
+            flag,
             "--stake-address",
             stake_address,
             "--reward",
@@ -359,7 +450,6 @@ class GovernanceGroup:
         funds: str | None,
         out_file: itp.FileType,
     ) -> list[str]:
-        """Arguments for `create-mir-certificate stake-addresses`."""
         if not stake_address:
             msg = "`stake_address` is required for 'stake-addresses' MIR subcommand."
             raise ValueError(msg)
@@ -372,7 +462,7 @@ class GovernanceGroup:
             msg = "`funds` must be either 'reserves' or 'treasury' for 'stake-addresses'."
             raise ValueError(msg)
 
-        args: list[str] = [
+        args = [
             "stake-addresses",
             f"--{funds}",
             "--stake-address",
@@ -390,19 +480,17 @@ class GovernanceGroup:
         transfer_amt: int | None,
         out_file: itp.FileType,
     ) -> list[str]:
-        """Arguments for `create-mir-certificate transfer-to-treasury`."""
         if transfer_amt is None:
             msg = "`transfer_amt` is required for 'transfer-to-treasury' MIR subcommand."
             raise ValueError(msg)
 
-        args: list[str] = [
+        return [
             "transfer-to-treasury",
             "--transfer",
             str(transfer_amt),
             "--out-file",
             str(out_file),
         ]
-        return args
 
     def _mir_transfer_to_rewards_args(
         self,
@@ -410,19 +498,17 @@ class GovernanceGroup:
         transfer_amt: int | None,
         out_file: itp.FileType,
     ) -> list[str]:
-        """Arguments for `create-mir-certificate transfer-to-rewards`."""
         if transfer_amt is None:
             msg = "`transfer_amt` is required for 'transfer-to-rewards' MIR subcommand."
             raise ValueError(msg)
 
-        args: list[str] = [
+        return [
             "transfer-to-rewards",
             "--transfer",
             str(transfer_amt),
             "--out-file",
             str(out_file),
         ]
-        return args
 
     def _resolve_mir_subcommand_args(
         self,
@@ -434,13 +520,6 @@ class GovernanceGroup:
         funds: str | None,
         out_file: itp.FileType,
     ) -> list[str] | None:
-        """Resolve MIR subcommand arguments, if any.
-
-        Supported subcommands:
-          * stake-addresses
-          * transfer-to-treasury
-          * transfer-to-rewards
-        """
         if not subcommand:
             return None
 
@@ -470,34 +549,15 @@ class GovernanceGroup:
     def create_mir_certificate(
         self,
         *,
-        # Direct MIR mode
         reserves: bool = False,
         treasury: bool = False,
         reward: int | None = None,
         stake_address: str | None = None,
-        # Subcommand mode
         subcommand: str | None = None,
         transfer_amt: int | None = None,
         funds: str | None = None,
-        # Output
         out_file: itp.FileType,
     ) -> None:
-        """Wrap the `governance create-mir-certificate` command (compatible eras).
-
-        Two usage modes:
-
-        1. Direct MIR:
-           * `reserves` or `treasury` (exactly one)
-           * `stake_address`
-           * `reward`
-           * `out_file`
-
-        2. Subcommands:
-           * `subcommand="stake-addresses"`, `funds=("reserves"|"treasury")`,
-             `stake_address`, `reward`, `out_file`
-           * `subcommand="transfer-to-treasury"`, `transfer_amt`, `out_file`
-           * `subcommand="transfer-to-rewards"`, `transfer_amt`, `out_file`
-        """
         direct_args = self._resolve_mir_direct_args(
             reserves=reserves,
             treasury=treasury,
@@ -515,7 +575,6 @@ class GovernanceGroup:
             out_file=out_file,
         )
 
-        # Cannot mix modes
         if direct_args and subcmd_args:
             msg = "Cannot mix direct MIR mode with MIR subcommand mode."
             raise ValueError(msg)
@@ -523,19 +582,27 @@ class GovernanceGroup:
         if not direct_args and not subcmd_args:
             msg = (
                 "No MIR mode selected. Provide either direct MIR parameters "
-                "(reserves/treasury + stake_address + reward) "
                 "or a valid MIR subcommand."
             )
             raise ValueError(msg)
 
-        final_args = direct_args or subcmd_args
-        assert final_args is not None
+        if direct_args is not None:
+            final_args: list[str] = direct_args
+        else:
+            msg = "Internal error: MIR subcommand arguments missing."
+            if subcmd_args is None:
+                raise ValueError(msg)
+            final_args = subcmd_args
 
         cmd = [
             *self._base,
             "create-mir-certificate",
             *final_args,
         ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
 
         self._clusterlib_obj.cli(cmd, add_default_args=False)
 
@@ -546,7 +613,6 @@ class GovernanceGroup:
         genesis_vkey_file: itp.FileType | None = None,
         genesis_vkey_hash: str = "",
     ) -> list[str]:
-        """Resolve genesis verification key specification."""
         if genesis_vkey:
             return ["--genesis-verification-key", genesis_vkey]
 
@@ -556,10 +622,7 @@ class GovernanceGroup:
         if genesis_vkey_hash:
             return ["--genesis-verification-key-hash", genesis_vkey_hash]
 
-        msg = (
-            "One of genesis_vkey, genesis_vkey_file or genesis_vkey_hash "
-            "must be provided for genesis key delegation."
-        )
+        msg = "One of genesis_vkey, genesis_vkey_file or genesis_vkey_hash must be provided."
         raise ValueError(msg)
 
     def _resolve_delegate_key_args(
@@ -569,7 +632,6 @@ class GovernanceGroup:
         delegate_vkey_file: itp.FileType | None = None,
         delegate_vkey_hash: str = "",
     ) -> list[str]:
-        """Resolve delegate verification key specification."""
         if delegate_vkey:
             return ["--genesis-delegate-verification-key", delegate_vkey]
 
@@ -579,10 +641,7 @@ class GovernanceGroup:
         if delegate_vkey_hash:
             return ["--genesis-delegate-verification-key-hash", delegate_vkey_hash]
 
-        msg = (
-            "One of delegate_vkey, delegate_vkey_file or delegate_vkey_hash "
-            "must be provided for genesis key delegation."
-        )
+        msg = "One of delegate_vkey, delegate_vkey_file or delegate_vkey_hash must be provided."
         raise ValueError(msg)
 
     def _resolve_vrf_key_args(
@@ -592,7 +651,6 @@ class GovernanceGroup:
         vrf_vkey_file: itp.FileType | None = None,
         vrf_vkey_hash: str = "",
     ) -> list[str]:
-        """Resolve VRF key specification."""
         if vrf_vkey:
             return ["--vrf-verification-key", vrf_vkey]
 
@@ -602,10 +660,7 @@ class GovernanceGroup:
         if vrf_vkey_hash:
             return ["--vrf-verification-key-hash", vrf_vkey_hash]
 
-        msg = (
-            "One of vrf_vkey, vrf_vkey_file or vrf_vkey_hash "
-            "must be provided for genesis key delegation."
-        )
+        msg = "One VRF key argument must be provided."
         raise ValueError(msg)
 
     def create_genesis_key_delegation_certificate(
@@ -622,7 +677,6 @@ class GovernanceGroup:
         vrf_vkey_hash: str = "",
         out_file: itp.FileType,
     ) -> None:
-        """Wrap the `governance create-genesis-key-delegation-certificate` command."""
         genesis_args = self._resolve_genesis_key_args(
             genesis_vkey=genesis_vkey,
             genesis_vkey_file=genesis_vkey_file,
