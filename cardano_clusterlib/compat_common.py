@@ -1,7 +1,11 @@
 """Generic reusable classes for cardano-cli `compatible` commands."""
 
+import pathlib as pl
 from typing import TYPE_CHECKING
 
+from cardano_clusterlib import clusterlib_helpers
+from cardano_clusterlib import helpers
+from cardano_clusterlib import structs
 from cardano_clusterlib import types as itp
 
 if TYPE_CHECKING:
@@ -121,180 +125,91 @@ class StakePoolGroup:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "stake-pool")
 
-    def _resolve_pool_vkey_args(
+    def gen_registration_cert(
         self,
         *,
-        stake_pool_vkey: str = "",
-        stake_pool_extended_vkey: str = "",
-        cold_vkey_file: itp.FileType | None = None,
-    ) -> list[str]:
-        """Resolve pool key identification."""
-        if stake_pool_vkey:
-            return ["--stake-pool-verification-key", stake_pool_vkey]
-        if stake_pool_extended_vkey:
-            return ["--stake-pool-verification-extended-key", stake_pool_extended_vkey]
-        if cold_vkey_file:
-            return ["--cold-verification-key-file", str(cold_vkey_file)]
+        name: str,
+        pool_params: structs.CompatPoolParams,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Generate a compatible stake pool registration certificate."""
+        pool_data = pool_params.pool_data
 
-        msg = (
-            "One of stake_pool_vkey, stake_pool_extended_vkey, or cold_vkey_file must be provided."
-        )
-        raise ValueError(msg)
+        destination_dir_path = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir_path / f"{name}_pool_reg.cert"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
-    def _resolve_vrf_args(
-        self,
-        *,
-        vrf_vkey: str = "",
-        vrf_vkey_file: itp.FileType | None = None,
-    ) -> list[str]:
-        """Resolve VRF key identification."""
-        if vrf_vkey:
-            return ["--vrf-verification-key", vrf_vkey]
-        if vrf_vkey_file:
-            return ["--vrf-verification-key-file", str(vrf_vkey_file)]
-
-        msg = "One of vrf_vkey or vrf_vkey_file must be provided."
-        raise ValueError(msg)
-
-    def _resolve_reward_account_args(
-        self,
-        *,
-        reward_vkey: str = "",
-        reward_vkey_file: itp.FileType | None = None,
-    ) -> list[str]:
-        """Resolve reward account specification."""
-        if reward_vkey:
-            return ["--pool-reward-account-verification-key", reward_vkey]
-        if reward_vkey_file:
-            return ["--pool-reward-account-verification-key-file", str(reward_vkey_file)]
-
-        msg = "One of reward_vkey or reward_vkey_file must be provided."
-        raise ValueError(msg)
-
-    def _resolve_owner_args(
-        self,
-        *,
-        owner_vkey: str = "",
-        owner_vkey_file: itp.FileType | None = None,
-    ) -> list[str]:
-        """Resolve owner stake key."""
-        if owner_vkey:
-            return ["--pool-owner-verification-key", owner_vkey]
-        if owner_vkey_file:
-            return ["--pool-owner-stake-verification-key-file", str(owner_vkey_file)]
-
-        msg = "One of owner_vkey or owner_vkey_file must be provided."
-        raise ValueError(msg)
-
-    def registration_certificate(
-        self,
-        *,
-        # pool identification
-        stake_pool_vkey: str = "",
-        stake_pool_extended_vkey: str = "",
-        cold_vkey_file: itp.FileType | None = None,
-        # VRF identification
-        vrf_vkey: str = "",
-        vrf_vkey_file: itp.FileType | None = None,
-        # financials
-        pool_pledge: int,
-        pool_cost: int,
-        pool_margin: str,
-        # reward account
-        reward_vkey: str = "",
-        reward_vkey_file: itp.FileType | None = None,
-        # owner
-        owner_vkey: str = "",
-        owner_vkey_file: itp.FileType | None = None,
-        # relays
-        relay_ipv4: str = "",
-        relay_ipv6: str = "",
-        relay_port: int | None = None,
-        single_host_relay: str = "",
-        multi_host_relay: str = "",
-        # metadata
-        metadata_url: str = "",
-        metadata_hash: str = "",
-        check_metadata_hash: bool = False,
-        # output
-        out_file: itp.FileType,
-    ) -> None:
-        """Wrap the compat stake-pool registration-certificate command."""
-        # Required argument groups
-        pool_args = self._resolve_pool_vkey_args(
-            stake_pool_vkey=stake_pool_vkey,
-            stake_pool_extended_vkey=stake_pool_extended_vkey,
-            cold_vkey_file=cold_vkey_file,
-        )
-
-        vrf_args = self._resolve_vrf_args(
-            vrf_vkey=vrf_vkey,
-            vrf_vkey_file=vrf_vkey_file,
-        )
-
-        reward_args = self._resolve_reward_account_args(
-            reward_vkey=reward_vkey,
-            reward_vkey_file=reward_vkey_file,
-        )
-
-        owner_args = self._resolve_owner_args(
-            owner_vkey=owner_vkey,
-            owner_vkey_file=owner_vkey_file,
-        )
-
-        # Relay handling
-        relay_args: list[str] = []
-
-        if relay_ipv4:
-            relay_args.extend(["--pool-relay-ipv4", relay_ipv4])
-        if relay_ipv6:
-            relay_args.extend(["--pool-relay-ipv6", relay_ipv6])
-        if relay_port:
-            relay_args.extend(["--pool-relay-port", str(relay_port)])
-
-        if single_host_relay:
-            relay_args.extend(["--single-host-pool-relay", single_host_relay])
-            if relay_port:
-                relay_args.extend(["--pool-relay-port", str(relay_port)])
-
-        if multi_host_relay:
-            relay_args.extend(["--multi-host-pool-relay", multi_host_relay])
-
-        # Metadata arguments
         metadata_args: list[str] = []
-        if metadata_url and metadata_hash:
+        if pool_data.pool_metadata_url and pool_data.pool_metadata_hash:
             metadata_args.extend(
                 [
                     "--metadata-url",
-                    metadata_url,
+                    str(pool_data.pool_metadata_url),
                     "--metadata-hash",
-                    metadata_hash,
+                    str(pool_data.pool_metadata_hash),
                 ]
             )
-            if check_metadata_hash:
+            if pool_params.check_metadata_hash:
                 metadata_args.append("--check-metadata-hash")
 
-        # Build final CLI cmd
+        relay_args: list[str] = []
+        if pool_data.pool_relay_dns:
+            relay_args.extend(["--single-host-pool-relay", pool_data.pool_relay_dns])
+
+        if pool_data.pool_relay_ipv4:
+            relay_args.extend(["--pool-relay-ipv4", pool_data.pool_relay_ipv4])
+
+        if pool_params.relay_ipv6:
+            relay_args.extend(["--pool-relay-ipv6", pool_params.relay_ipv6])
+
+        if pool_data.pool_relay_port:
+            relay_args.extend(["--pool-relay-port", str(pool_data.pool_relay_port)])
+
+        if pool_params.multi_host_relay:
+            relay_args.extend(["--multi-host-pool-relay", pool_params.multi_host_relay])
+
+        # Reward account, default to first owner if not provided
+        if pool_params.reward_account_vkey_file:
+            reward_arg = [
+                "--pool-reward-account-verification-key-file",
+                str(pool_params.reward_account_vkey_file),
+            ]
+        else:
+            default_owner = next(iter(pool_params.owner_stake_vkey_files))
+            reward_arg = [
+                "--pool-reward-account-verification-key-file",
+                str(default_owner),
+            ]
+
         cmd = [
             *self._base,
             "registration-certificate",
-            *pool_args,
-            *vrf_args,
             "--pool-pledge",
-            str(pool_pledge),
+            str(pool_data.pool_pledge),
             "--pool-cost",
-            str(pool_cost),
+            str(pool_data.pool_cost),
             "--pool-margin",
-            str(pool_margin),
-            *reward_args,
-            *owner_args,
-            *relay_args,
-            *metadata_args,
+            str(pool_data.pool_margin),
+            "--vrf-verification-key-file",
+            str(pool_params.vrf_vkey_file),
+            "--cold-verification-key-file",
+            str(pool_params.cold_vkey_file),
+            *reward_arg,
+            *helpers._prepend_flag(
+                "--pool-owner-stake-verification-key-file",
+                pool_params.owner_stake_vkey_files,
+            ),
+            *self._clusterlib_obj.magic_args,
             "--out-file",
             str(out_file),
+            *metadata_args,
+            *relay_args,
         ]
 
         self._clusterlib_obj.cli(cmd, add_default_args=False)
+        helpers._check_outfiles(out_file)
+
+        return out_file
 
 
 class GovernanceActionGroup:

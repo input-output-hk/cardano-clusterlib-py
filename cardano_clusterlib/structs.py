@@ -233,6 +233,18 @@ class PoolData:
 
 
 @dataclasses.dataclass(frozen=True, order=True)
+class CompatPoolParams:
+    pool_data: PoolData
+    vrf_vkey_file: itp.FileType
+    cold_vkey_file: itp.FileType
+    owner_stake_vkey_files: itp.FileTypeList
+    reward_account_vkey_file: itp.FileType | None = None
+    relay_ipv6: str = ""
+    multi_host_relay: str = ""
+    check_metadata_hash: bool = False
+
+
+@dataclasses.dataclass(frozen=True, order=True)
 class TxRawOutput:
     txins: list[UTXOData]  # UTXOs used as inputs
     txouts: list[TxOut]  # Tx outputs
