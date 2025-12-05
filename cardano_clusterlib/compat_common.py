@@ -211,6 +211,34 @@ class StakePoolGroup:
 
         return out_file
 
+    def gen_dereg_cert(
+        self,
+        *,
+        name: str,
+        params: structs.CompatPoolDeregParams,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Generate a compatible stake pool deregistration certificate."""
+        destination_dir_path = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir_path / f"{name}_pool_dereg.cert"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        cmd = [
+            *self._base,
+            "deregistration-certificate",
+            "--cold-verification-key-file",
+            str(params.cold_vkey_file),
+            "--epoch",
+            str(params.epoch),
+            "--out-file",
+            str(out_file),
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
+        helpers._check_outfiles(out_file)
+
+        return out_file
+
 
 class GovernanceActionGroup:
     """Governance action subcommands for compatible eras."""

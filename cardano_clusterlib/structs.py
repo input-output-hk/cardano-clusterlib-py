@@ -244,6 +244,12 @@ class CompatPoolParams:
     check_metadata_hash: bool = False
 
 
+@dataclasses.dataclass(frozen=True)
+class CompatPoolDeregParams:
+    cold_vkey_file: itp.FileType
+    epoch: int
+
+
 @dataclasses.dataclass(frozen=True, order=True)
 class TxRawOutput:
     txins: list[UTXOData]  # UTXOs used as inputs
