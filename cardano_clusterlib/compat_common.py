@@ -300,7 +300,7 @@ class GovernanceActionGroup:
             str(epoch),
             "--genesis-verification-key-file",
             str(genesis_vkey_file),
-            *cli_args,  # raw CLI flags directly
+            *cli_args,
             "--out-file",
             str(out_file),
         ]
