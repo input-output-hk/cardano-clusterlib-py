@@ -4,6 +4,8 @@ import pathlib as pl
 from typing import TYPE_CHECKING
 
 from cardano_clusterlib import clusterlib_helpers
+from cardano_clusterlib import consts
+from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import types as itp
@@ -543,6 +545,84 @@ class TransactionGroup:
         helpers._check_outfiles(out_file)
 
         return out_file
+
+    def create_signed_tx(
+        self,
+        *,
+        name: str,
+        src_address: str,
+        txouts: list[structs.TxOut],
+        signing_key_files: itp.OptionalFiles,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create, balance, and sign a simple compatible-era transaction.
+
+        Constraints:
+        * ADA only (no multi-asset, no scripts, no metadata)
+        * simple UTxO selection and balancing
+        """
+        # 1 Query UTxOs for the source address
+        utxos = self._clusterlib_obj.g_query.get_utxo(address=src_address)
+
+        ada_utxos = [
+            u
+            for u in utxos
+            if u.coin == consts.DEFAULT_COIN and not u.datum_hash and not u.inline_datum_hash
+        ]
+
+        if not ada_utxos:
+            message = f"No usable ADA UTxOs for {src_address}"
+            raise exceptions.CLIError(message)
+
+        # Required ADA amount (sum of requested outputs)
+        amount_required = sum(t.amount for t in txouts)
+
+        # 3 Simple fee buffers
+        min_fee_b = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
+        fee = min(min_fee_b * 6, 2_000_000)
+
+        # 4 Naive UTxO selections (smallest-first)
+        selected: list[structs.UTXOData] = []
+        running_total = 0
+
+        for u in sorted(ada_utxos, key=lambda x: x.amount):
+            selected.append(u)
+            running_total += u.amount
+            if running_total >= amount_required + fee:
+                break
+
+        if running_total < amount_required + fee:
+            needed = amount_required + fee
+            message = (
+                f"Insufficient ADA for transaction. Required {needed}, available {running_total}."
+            )
+            raise exceptions.CLIError(message)
+
+        # 5 compute change and final outputs
+        change = running_total - (amount_required + fee)
+        final_txouts = list(txouts)
+
+        if change > 0:
+            final_txouts.append(structs.TxOut(address=src_address, amount=change))
+
+        # 6 Build CLI args for signed-transaction
+        cli_args: list[str] = []
+
+        for u in selected:
+            cli_args.extend(["--tx-in", f"{u.utxo_hash}#{u.utxo_ix}"])
+
+        for t in final_txouts:
+            cli_args.extend(["--tx-out", f"{t.address}+{t.amount}"])
+
+        cli_args.extend(["--fee", str(fee)])
+        cli_args.extend(helpers._prepend_flag("--signing-key-file", signing_key_files))
+
+        # 7 Delegate to bare wrapper for actual CLI call and file handling
+        return self.gen_signed_tx(
+            name=name,
+            cli_args=cli_args,
+            destination_dir=destination_dir,
+        )
 
     def __repr__(self) -> str:
         return f"<TransactionGroup base={self._base}>"
