@@ -1,7 +1,6 @@
 """Generic reusable classes for cardano-cli `compatible` commands."""
 
 import pathlib as pl
-from typing import TYPE_CHECKING
 
 from cardano_clusterlib import clusterlib_helpers
 from cardano_clusterlib import helpers
@@ -9,14 +8,11 @@ from cardano_clusterlib import structs
 from cardano_clusterlib import txtools
 from cardano_clusterlib import types as itp
 
-if TYPE_CHECKING:
-    from cardano_clusterlib.clusterlib_klass import ClusterLib
-
 
 class StakeAddressGroup:
     """Compatible stake-address commands for Alonzo / Mary / Babbage eras."""
 
-    def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "stake-address")
         self.era = era
@@ -152,9 +148,9 @@ class StakeAddressGroup:
 
 
 class StakePoolGroup:
-    """Generic stake-pool group for all compatible eras."""
+    """Compatible stake-pool group for all compatible eras."""
 
-    def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "stake-pool")
         self.era = era
@@ -163,15 +159,34 @@ class StakePoolGroup:
         self,
         *,
         name: str,
-        pool_params: structs.CompatPoolParams,
+        pool_data: structs.PoolData,
+        cold_vkey_file: itp.FileType,
+        vrf_vkey_file: itp.FileType,
+        owner_stake_vkey_files: list[itp.FileType],
+        reward_account_vkey_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a compatible stake pool registration certificate."""
-        pool_data = pool_params.pool_data
-
         destination_dir_path = pl.Path(destination_dir).expanduser()
         out_file = destination_dir_path / f"{name}_pool_reg.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        relay_args: list[str] = []
+
+        if pool_data.pool_relay_dns:
+            relay_args.extend(["--single-host-pool-relay", pool_data.pool_relay_dns])
+
+        if pool_data.pool_relay_ipv4:
+            relay_args.extend(["--pool-relay-ipv4", pool_data.pool_relay_ipv4])
+
+        if pool_data.pool_relay_ipv6:
+            relay_args.extend(["--pool-relay-ipv6", pool_data.pool_relay_ipv6])
+
+        if pool_data.pool_relay_port:
+            relay_args.extend(["--pool-relay-port", str(pool_data.pool_relay_port)])
+
+        if pool_data.multi_host_relay:
+            relay_args.extend(["--multi-host-pool-relay", pool_data.multi_host_relay])
 
         metadata_args: list[str] = []
         if pool_data.pool_metadata_url and pool_data.pool_metadata_hash:
@@ -183,33 +198,16 @@ class StakePoolGroup:
                     str(pool_data.pool_metadata_hash),
                 ]
             )
-            if pool_params.check_metadata_hash:
+            if pool_data.check_metadata_hash:
                 metadata_args.append("--check-metadata-hash")
 
-        relay_args: list[str] = []
-        if pool_data.pool_relay_dns:
-            relay_args.extend(["--single-host-pool-relay", pool_data.pool_relay_dns])
-
-        if pool_data.pool_relay_ipv4:
-            relay_args.extend(["--pool-relay-ipv4", pool_data.pool_relay_ipv4])
-
-        if pool_params.relay_ipv6:
-            relay_args.extend(["--pool-relay-ipv6", pool_params.relay_ipv6])
-
-        if pool_data.pool_relay_port:
-            relay_args.extend(["--pool-relay-port", str(pool_data.pool_relay_port)])
-
-        if pool_params.multi_host_relay:
-            relay_args.extend(["--multi-host-pool-relay", pool_params.multi_host_relay])
-
-        # Reward account, default to first owner if not provided
-        if pool_params.reward_account_vkey_file:
+        if reward_account_vkey_file:
             reward_arg = [
                 "--pool-reward-account-verification-key-file",
-                str(pool_params.reward_account_vkey_file),
+                str(reward_account_vkey_file),
             ]
         else:
-            default_owner = next(iter(pool_params.owner_stake_vkey_files))
+            default_owner = next(iter(owner_stake_vkey_files))
             reward_arg = [
                 "--pool-reward-account-verification-key-file",
                 str(default_owner),
@@ -225,31 +223,31 @@ class StakePoolGroup:
             "--pool-margin",
             str(pool_data.pool_margin),
             "--vrf-verification-key-file",
-            str(pool_params.vrf_vkey_file),
+            str(vrf_vkey_file),
             "--cold-verification-key-file",
-            str(pool_params.cold_vkey_file),
+            str(cold_vkey_file),
             *reward_arg,
             *helpers._prepend_flag(
                 "--pool-owner-stake-verification-key-file",
-                pool_params.owner_stake_vkey_files,
+                owner_stake_vkey_files,
             ),
+            *metadata_args,
+            *relay_args,
             *self._clusterlib_obj.magic_args,
             "--out-file",
             str(out_file),
-            *metadata_args,
-            *relay_args,
         ]
 
         self._clusterlib_obj.cli(cmd, add_default_args=False)
         helpers._check_outfiles(out_file)
-
         return out_file
 
     def gen_dereg_cert(
         self,
         *,
         name: str,
-        params: structs.CompatPoolDeregParams,
+        cold_vkey_file: itp.FileType,
+        epoch: int,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a compatible stake pool deregistration certificate."""
@@ -261,26 +259,22 @@ class StakePoolGroup:
             *self._base,
             "deregistration-certificate",
             "--cold-verification-key-file",
-            str(params.cold_vkey_file),
+            str(cold_vkey_file),
             "--epoch",
-            str(params.epoch),
+            str(epoch),
             "--out-file",
             str(out_file),
         ]
 
         self._clusterlib_obj.cli(cmd, add_default_args=False)
         helpers._check_outfiles(out_file)
-
         return out_file
-
-    def __repr__(self) -> str:
-        return f"<StakePoolGroup era={self.era} base={self._base}>"
 
 
 class GovernanceActionGroup:
     """Governance action subcommands for compatible eras."""
 
-    def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance", "action")
         self.era = era
@@ -324,45 +318,11 @@ class GovernanceActionGroup:
 class GovernanceGroup:
     """Generic governance group for all compatible eras."""
 
-    def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance")
         self.action = GovernanceActionGroup(clusterlib_obj, era)
         self.era = era
-
-    def _resolve_mir_direct_args(
-        self,
-        *,
-        reserves: bool,
-        treasury: bool,
-        stake_address: str | None,
-        reward: int | None,
-    ) -> list[str] | None:
-        """Resolve direct MIR args (no subcommand)."""
-        if not reserves and not treasury:
-            return None
-
-        if reserves and treasury:
-            msg = "Cannot specify both `reserves` and `treasury` in MIR direct mode."
-            raise ValueError(msg)
-
-        if not stake_address:
-            msg = "`stake_address` is required in MIR direct mode."
-            raise ValueError(msg)
-
-        if reward is None:
-            msg = "`reward` is required in MIR direct mode."
-            raise ValueError(msg)
-
-        pot_flag = "--reserves" if reserves else "--treasury"
-
-        return [
-            pot_flag,
-            "--stake-address",
-            stake_address,
-            "--reward",
-            str(reward),
-        ]
 
     def _mir_stake_addresses_args(
         self,
@@ -423,95 +383,52 @@ class GovernanceGroup:
             str(transfer_amt),
         ]
 
-    def _resolve_mir_subcommand_args(
-        self,
-        *,
-        subcommand: str | None,
-        stake_address: str | None,
-        reward: int | None,
-        transfer_amt: int | None,
-        funds: str | None,
-    ) -> list[str] | None:
-        """Resolve MIR subcommand args."""
-        if not subcommand:
-            return None
-
-        if subcommand == "stake-addresses":
-            return self._mir_stake_addresses_args(
-                stake_address=stake_address,
-                reward=reward,
-                funds=funds,
-            )
-
-        if subcommand == "transfer-to-treasury":
-            return self._mir_transfer_to_treasury_args(
-                transfer_amt=transfer_amt,
-            )
-
-        if subcommand == "transfer-to-rewards":
-            return self._mir_transfer_to_rewards_args(
-                transfer_amt=transfer_amt,
-            )
-
-        msg = f"Unknown MIR subcommand: {subcommand}"
-        raise ValueError(msg)
-
     def gen_mir_cert(
         self,
         *,
         name: str,
-        reserves: bool = False,
-        treasury: bool = False,
-        reward: int | None = None,
+        subcommand: str,
         stake_address: str | None = None,
-        subcommand: str | None = None,
+        reward: int | None = None,
         transfer_amt: int | None = None,
         funds: str | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
-        """Generate MIR certificate for Babbage compatible eras."""
+        """Generate MIR certificate for compatible eras.
+
+        Supported subcommands:
+        - 'stake-addresses'
+        - 'transfer-to-treasury'
+        - 'transfer-to-rewards'
+        """
         destination_dir_path = pl.Path(destination_dir).expanduser()
 
-        direct_args = self._resolve_mir_direct_args(
-            reserves=reserves,
-            treasury=treasury,
-            stake_address=stake_address,
-            reward=reward,
-        )
-
-        subcmd_args = self._resolve_mir_subcommand_args(
-            subcommand=subcommand,
-            stake_address=stake_address,
-            reward=reward,
-            transfer_amt=transfer_amt,
-            funds=funds,
-        )
-
-        if direct_args and subcmd_args:
-            msg = "Cannot mix MIR direct mode with MIR subcommand mode."
-            raise ValueError(msg)
-
-        if not direct_args and not subcmd_args:
-            msg = "No MIR mode selected."
-            raise ValueError(msg)
-
-        final_args: list[str] = direct_args if direct_args is not None else subcmd_args  # type: ignore
-
-        if direct_args:
-            out_file = destination_dir_path / f"{name}_mir_direct.cert"
-        elif subcommand == "stake-addresses":
+        if subcommand == "stake-addresses":
+            cmd_args = self._mir_stake_addresses_args(
+                stake_address=stake_address,
+                reward=reward,
+                funds=funds,
+            )
             out_file = destination_dir_path / f"{name}_mir_stake.cert"
+
         elif subcommand == "transfer-to-treasury":
+            cmd_args = self._mir_transfer_to_treasury_args(transfer_amt=transfer_amt)
             out_file = destination_dir_path / f"{name}_mir_to_treasury.cert"
-        else:
+
+        elif subcommand == "transfer-to-rewards":
+            cmd_args = self._mir_transfer_to_rewards_args(transfer_amt=transfer_amt)
             out_file = destination_dir_path / f"{name}_mir_to_rewards.cert"
+
+        else:
+            msg = f"Unsupported MIR subcommand: {subcommand}"
+            raise ValueError(msg)
 
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
         cmd = [
             *self._base,
             "create-mir-certificate",
-            *final_args,
+            *cmd_args,
             *self._clusterlib_obj.magic_args,
             "--out-file",
             str(out_file),
@@ -519,7 +436,6 @@ class GovernanceGroup:
 
         self._clusterlib_obj.cli(cmd, add_default_args=False)
         helpers._check_outfiles(out_file)
-
         return out_file
 
     def __repr__(self) -> str:
@@ -547,7 +463,7 @@ class TransactionGroup:
     - governance certificates (MIR, genesis delegation, protocol parameter updates)
     """
 
-    def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "transaction")
         self.era = era
