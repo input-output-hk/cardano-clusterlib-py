@@ -4,8 +4,6 @@ import pathlib as pl
 from typing import TYPE_CHECKING
 
 from cardano_clusterlib import clusterlib_helpers
-from cardano_clusterlib import consts
-from cardano_clusterlib import exceptions
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import txtools
@@ -517,31 +515,71 @@ class GovernanceGroup:
 
 class TransactionGroup:
     """Compatible transaction commands for legacy eras (Alonzo / Mary / Babbage).
+
+    This is a lightweight wrapper around:
+    - txtools.collect_data_for_build  -> UTxO selection, balancing, deposits
+    - `cardano-cli compatible <era> transaction signed-transaction`
+
+    It is intentionally simpler than the Conway TransactionGroup:
+    - No Plutus scripts
+    - No minting or burning
+    - No withdrawals
+    - No collateral
+    - No reference inputs
+
+    Main use for compatible eras:
+    - simple ADA transfers
+    - stake key registration or deregistration
+    - pool registration or deregistration
+    - governance certificates (MIR, genesis delegation, protocol parameter updates)
     """
 
     def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "transaction")
-        self._min_fee = self._clusterlib_obj.genesis["protocolParams"]["minFeeB"]
 
-
-    def gen_signed_tx_raw(
+    def gen_signed_tx_bare(
         self,
         *,
         name: str,
-        cli_args: itp.UnpackableSequence,
+        txins: structs.OptionalUTXOData,
+        txouts: list[structs.TxOut],
+        tx_files: structs.TxFiles,
+        fee: int,
         destination_dir: itp.FileType = ".",
+        join_txouts: bool = True,
     ) -> pl.Path:
-        """Run `... transaction signed-transaction` with pre-built CLI args.
+        """Generate a simple signed transaction using pre-balanced inputs and outputs.
+
+        Assumptions:
+        - `txins` already contain selected UTxOs
+        - `txouts` are already balanced (including change and deposits)
+        - `fee` is already decided
         """
         destination_dir_path = pl.Path(destination_dir).expanduser()
-        out_file = destination_dir_path / f"{name}_signed.tx"
+        out_file = destination_dir_path / f"{name}_tx.signed"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        txout_args, processed_txouts, __ = txtools._process_txouts(
+            txouts=list(txouts),
+            join_txouts=join_txouts,
+        )
+
+        txin_strings = txtools._get_txin_strings(
+            txins=txins,
+            script_txins=(),
+        )
 
         cmd = [
             *self._base,
             "signed-transaction",
-            *cli_args,
+            *helpers._prepend_flag("--tx-in", txin_strings),
+            *txout_args,
+            *helpers._prepend_flag("--certificate-file", tx_files.certificate_files),
+            *helpers._prepend_flag("--signing-key-file", tx_files.signing_key_files),
+            *self._clusterlib_obj.magic_args,
+            "--fee",
+            str(fee),
             "--out-file",
             str(out_file),
         ]
@@ -549,165 +587,118 @@ class TransactionGroup:
         self._clusterlib_obj.cli(cmd, add_default_args=False)
         helpers._check_outfiles(out_file)
 
+        _ = processed_txouts
         return out_file
-
-
-    def _select_ada_utxos_naive(
-        self,
-        *,
-        src_address: str,
-        amount_required: int,
-        fee: int,
-    ) -> list[structs.UTXOData]:
-        """Select simple ADA UTxOs from `src_address` to cover amount + fee.
-
-        Rules:
-          * Only pure ADA UTxOs (no datum, no inline datum, no reference script).
-
-        """
-        utxos = self._clusterlib_obj.g_query.get_utxo(
-            address=src_address,
-            coins=[consts.DEFAULT_COIN],
-        )
-
-        usable_utxos = [
-            u
-            for u in utxos
-            if not u.datum_hash and not u.inline_datum_hash and not u.reference_script
-        ]
-
-        if not usable_utxos:
-            message = f"No usable ADA UTxOs for address {src_address}."
-            raise exceptions.CLIError(message)
-
-        target = amount_required + fee
-        if target <= 0:
-            # At minimum we must cover the fee
-            target = fee
-
-        sorted_utxos = sorted(usable_utxos, key=lambda u: u.amount)
-
-        selected: list[structs.UTXOData] = []
-        running_total = 0
-
-        for utxo in sorted_utxos:
-            selected.append(utxo)
-            running_total += utxo.amount
-            if running_total >= target:
-                break
-
-        if running_total < target:
-            message = (
-                f"Insufficient ADA for transaction: required {target}, available {running_total}."
-            )
-            raise exceptions.CLIError(message)
-
-        return selected
-
 
     def gen_signed_tx(
         self,
         *,
         name: str,
         src_address: str,
-        txouts: list[structs.TxOut],
+        txouts: structs.OptionalTxOuts,
         tx_files: structs.TxFiles,
         fee: int,
+        txins: structs.OptionalUTXOData = (),
+        deposit: int | None = None,
+        treasury_donation: int | None = None,
+        src_addr_utxos: list[structs.UTXOData] | None = None,
         destination_dir: itp.FileType = ".",
+        join_txouts: bool = True,
+        script_valid: bool = True,
     ) -> structs.TxRawOutput:
-        """Generate a simple signed transaction for compatible eras.
+        """High-level helper to build and sign a compatible transaction.
+
+        It reuses txtools.collect_data_for_build to:
+        - select UTxOs (if `txins` not provided)
+        - compute deposits (stake key, pool, governance)
+        - balance outputs and change
+
+        Then it calls gen_signed_tx_bare to run `signed-transaction` and wraps
+        everything into TxRawOutput for tests.
         """
         destination_dir_path = pl.Path(destination_dir).expanduser()
-        out_file = destination_dir_path / f"{name}_signed.tx"
-        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+        effective_tx_files = tx_files or structs.TxFiles()
 
-        # 1) Compute net deposit from certificates using the main (non-compatible) Tx group
-        deposit = 0
-        if tx_files.certificate_files:
-            deposit = self._clusterlib_obj.g_transaction.get_tx_deposit(tx_files=tx_files)
-
-        # 2) Sum ADA outputs (ignore non-ADA coins for now)
-        ada_outputs = [t for t in txouts if t.coin == consts.DEFAULT_COIN]
-        total_out = sum(t.amount for t in ada_outputs)
-        amount_required = total_out + deposit
-
-        # 3) Select ADA UTxOs from the source address
-        selected_utxos = self._select_ada_utxos_naive(
+        collected = txtools.collect_data_for_build(
+            clusterlib_obj=self._clusterlib_obj,
             src_address=src_address,
-            amount_required=amount_required,
+            txins=txins,
+            txouts=list(txouts),
+            script_txins=(),
+            mint=(),
+            tx_files=effective_tx_files,
+            complex_certs=(),
+            complex_proposals=(),
             fee=fee,
+            withdrawals=(),
+            script_withdrawals=(),
+            deposit=deposit,
+            treasury_donation=treasury_donation or 0,
+            src_addr_utxos=src_addr_utxos,
+            skip_asset_balancing=False,
         )
-        total_in = sum(u.amount for u in selected_utxos)
 
-        # 4) Compute change (if any) back to the source address
-        change_amount = total_in - amount_required - fee
-        change_txouts: list[structs.TxOut] = []
-        if change_amount > 0:
-            change_txouts.append(
-                structs.TxOut(
-                    address=src_address,
-                    amount=change_amount,
-                    coin=consts.DEFAULT_COIN,
-                )
-            )
+        signed_tx_file = self.gen_signed_tx_bare(
+            name=name,
+            txins=collected.txins,
+            txouts=collected.txouts,
+            tx_files=effective_tx_files,
+            fee=fee,
+            destination_dir=destination_dir_path,
+            join_txouts=join_txouts,
+        )
 
-        final_txouts = [*txouts, *change_txouts]
-
-        # 5) Build `--tx-in` and `--tx-out` CLI args
-        txin_args: list[str] = []
-        for utxo in selected_utxos:
-            txin_args.extend(
-                [
-                    "--tx-in",
-                    f"{utxo.utxo_hash}#{utxo.utxo_ix}",
-                ]
-            )
-
-        # Reuse existing joining logic so `txouts_count` etc. are consistent
         txout_args, processed_txouts, txouts_count = txtools._process_txouts(
-            txouts=final_txouts,
-            join_txouts=True,
+            txouts=collected.txouts,
+            join_txouts=join_txouts,
+        )
+        txin_strings = txtools._get_txin_strings(
+            txins=collected.txins,
+            script_txins=(),
         )
 
-        # Certificates (if any)
-        cert_args = helpers._prepend_flag("--certificate-file", tx_files.certificate_files)
-
-        # Signing keys
-        skey_args = helpers._prepend_flag("--signing-key-file", tx_files.signing_key_files)
-
-        # 6) Compose CLI args for `signed-transaction`
-        cli_args: list[str] = [
-            *txin_args,
-            *txout_args,
-            *cert_args,
-            *skey_args,
-            "--fee",
-            str(fee),
-            *self._clusterlib_obj.magic_args,
-        ]
-
-        # 7) Run the compat CLI and produce the signed tx file
-        cmd = [
+        build_args = [
             *self._base,
             "signed-transaction",
-            *cli_args,
+            *helpers._prepend_flag("--tx-in", txin_strings),
+            *txout_args,
+            *helpers._prepend_flag("--certificate-file", effective_tx_files.certificate_files),
+            *helpers._prepend_flag("--signing-key-file", effective_tx_files.signing_key_files),
+            *self._clusterlib_obj.magic_args,
+            "--fee",
+            str(fee),
             "--out-file",
-            str(out_file),
+            str(signed_tx_file),
         ]
 
-        self._clusterlib_obj.cli(cmd, add_default_args=False)
-        helpers._check_outfiles(out_file)
-
-        # 8) Return a TxRawOutput describing what we just did
         return structs.TxRawOutput(
-            txins=selected_utxos,
+            txins=list(collected.txins),
             txouts=processed_txouts,
             txouts_count=txouts_count,
-            tx_files=tx_files,
-            out_file=out_file,
+            tx_files=effective_tx_files,
+            out_file=signed_tx_file,
             fee=fee,
-            build_args=cmd,
+            build_args=build_args,
             era=self._clusterlib_obj.era_in_use,
+            script_txins=(),
+            script_withdrawals=(),
+            script_votes=(),
+            complex_certs=(),
+            complex_proposals=(),
+            mint=(),
+            invalid_hereafter=None,
+            invalid_before=None,
+            current_treasury_value=None,
+            treasury_donation=treasury_donation,
+            withdrawals=(),
+            change_address=src_address,
+            return_collateral_txouts=(),
+            total_collateral_amount=None,
+            readonly_reference_txins=(),
+            script_valid=script_valid,
+            required_signers=effective_tx_files.signing_key_files,
+            required_signer_hashes=(),
+            combined_reference_txins=(),
         )
 
     def __repr__(self) -> str:
