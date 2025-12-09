@@ -530,7 +530,7 @@ class TransactionGroup:
     """Compatible transaction commands for legacy eras (Alonzo / Mary / Babbage).
 
     This is a lightweight wrapper around:
-    - txtools.collect_data_for_build  -> UTxO selection, balancing, deposits
+    - txtools.collect_data_for_build (For Utxo selection balancing and deposits)
     - `cardano-cli compatible <era> transaction signed-transaction`
 
     It is intentionally simpler than the Conway TransactionGroup:
@@ -581,7 +581,7 @@ class TransactionGroup:
 
         txin_strings = txtools._get_txin_strings(
             txins=txins,
-            script_txins=(),
+            script_txins=(),  # No script support in compatible mode
         )
 
         cmd = [
@@ -618,6 +618,7 @@ class TransactionGroup:
         src_addr_utxos: list[structs.UTXOData] | None = None,
         destination_dir: itp.FileType = ".",
         join_txouts: bool = True,
+        skip_asset_balancing: bool = False,
         script_valid: bool = True,
     ) -> structs.TxRawOutput:
         """High-level helper to build and sign a compatible transaction.
@@ -649,7 +650,7 @@ class TransactionGroup:
             deposit=deposit,
             treasury_donation=treasury_donation or 0,
             src_addr_utxos=src_addr_utxos,
-            skip_asset_balancing=False,
+            skip_asset_balancing=skip_asset_balancing,
         )
 
         signed_tx_file = self.gen_signed_tx_bare(
