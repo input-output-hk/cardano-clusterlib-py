@@ -19,6 +19,7 @@ class StakeAddressGroup:
     def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "stake-address")
+        self.era = era
 
     def _resolve_stake_key_args(
         self,
@@ -147,7 +148,7 @@ class StakeAddressGroup:
         return out_file
 
     def __repr__(self) -> str:
-        return f"<StakeAddressGroup base={self._base}>"
+        return f"<StakeAddressGroup era={self.era} base={self._base}>"
 
 
 class StakePoolGroup:
@@ -156,6 +157,7 @@ class StakePoolGroup:
     def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "stake-pool")
+        self.era = era
 
     def gen_registration_cert(
         self,
@@ -271,6 +273,9 @@ class StakePoolGroup:
 
         return out_file
 
+    def __repr__(self) -> str:
+        return f"<StakePoolGroup era={self.era} base={self._base}>"
+
 
 class GovernanceActionGroup:
     """Governance action subcommands for compatible eras."""
@@ -278,6 +283,7 @@ class GovernanceActionGroup:
     def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance", "action")
+        self.era = era
 
     def gen_pparams_update(
         self,
@@ -311,6 +317,9 @@ class GovernanceActionGroup:
 
         return out_file
 
+    def __repr__(self) -> str:
+        return f"<GovernanceActionGroup era={self.era} base={self._base}>"
+
 
 class GovernanceGroup:
     """Generic governance group for all compatible eras."""
@@ -319,6 +328,7 @@ class GovernanceGroup:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance")
         self.action = GovernanceActionGroup(clusterlib_obj, era)
+        self.era = era
 
     def _resolve_mir_direct_args(
         self,
@@ -512,6 +522,9 @@ class GovernanceGroup:
 
         return out_file
 
+    def __repr__(self) -> str:
+        return f"<GovernanceGroup era={self.era} base={self._base}>"
+
 
 class TransactionGroup:
     """Compatible transaction commands for legacy eras (Alonzo / Mary / Babbage).
@@ -537,6 +550,7 @@ class TransactionGroup:
     def __init__(self, clusterlib_obj: "ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "transaction")
+        self.era = era
 
     def gen_signed_tx_bare(
         self,
@@ -702,4 +716,4 @@ class TransactionGroup:
         )
 
     def __repr__(self) -> str:
-        return f"<TransactionGroup base={self._base}>"
+        return f"<TransactionGroup era={self.era} base={self._base}>"
