@@ -201,17 +201,16 @@ class StakePoolGroup:
             if pool_data.check_metadata_hash:
                 metadata_args.append("--check-metadata-hash")
 
-        if reward_account_vkey_file:
-            reward_arg = [
-                "--pool-reward-account-verification-key-file",
-                str(reward_account_vkey_file),
-            ]
-        else:
-            default_owner = next(iter(owner_stake_vkey_files))
-            reward_arg = [
-                "--pool-reward-account-verification-key-file",
-                str(default_owner),
-            ]
+        reward_vkey_file = (
+            reward_account_vkey_file
+            if reward_account_vkey_file
+            else next(iter(owner_stake_vkey_files))
+        )
+
+        reward_arg = [
+            "--pool-reward-account-verification-key-file",
+            str(reward_vkey_file),
+        ]
 
         cmd = [
             *self._base,
