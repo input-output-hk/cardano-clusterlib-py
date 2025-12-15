@@ -295,7 +295,6 @@ class GovernanceActionGroup:
         cmd = [
             *self._base,
             "create-protocol-parameters-update",
-            *self._clusterlib_obj.magic_args,
             "--epoch",
             str(epoch),
             "--genesis-verification-key-file",
@@ -315,120 +314,30 @@ class GovernanceActionGroup:
 
 
 class GovernanceGroup:
-    """Generic governance group for all compatible eras."""
-
     def __init__(self, clusterlib_obj: "itp.ClusterLib", era: str) -> None:
         self._clusterlib_obj = clusterlib_obj
         self._base = ("cardano-cli", "compatible", era, "governance")
         self.action = GovernanceActionGroup(clusterlib_obj, era)
         self.era = era
 
-    def _mir_stake_addresses_args(
-        self,
-        *,
-        stake_address: str | None,
-        reward: int | None,
-        funds: str | None,
-    ) -> list[str]:
-        """Args for MIR `stake-addresses` subcommand."""
-        if not stake_address:
-            msg = "`stake_address` is required for MIR stake-addresses."
-            raise ValueError(msg)
-
-        if reward is None:
-            msg = "`reward` is required for MIR stake-addresses."
-            raise ValueError(msg)
-
-        if funds not in ("reserves", "treasury"):
-            msg = "`funds` must be either 'reserves' or 'treasury'."
-            raise ValueError(msg)
-
-        return [
-            "stake-addresses",
-            f"--{funds}",
-            "--stake-address",
-            stake_address,
-            "--reward",
-            str(reward),
-        ]
-
-    def _mir_transfer_to_treasury_args(
-        self,
-        *,
-        transfer_amt: int | None,
-    ) -> list[str]:
-        if transfer_amt is None:
-            msg = "`transfer_amt` is required for MIR transfer-to-treasury."
-            raise ValueError(msg)
-
-        return [
-            "transfer-to-treasury",
-            "--transfer",
-            str(transfer_amt),
-        ]
-
-    def _mir_transfer_to_rewards_args(
-        self,
-        *,
-        transfer_amt: int | None,
-    ) -> list[str]:
-        if transfer_amt is None:
-            msg = "`transfer_amt` is required for MIR transfer-to-rewards."
-            raise ValueError(msg)
-
-        return [
-            "transfer-to-rewards",
-            "--transfer",
-            str(transfer_amt),
-        ]
-
-    def gen_mir_cert(
+    def gen_mir_cert_to_treasury(
         self,
         *,
         name: str,
-        subcommand: str,
-        stake_address: str | None = None,
-        reward: int | None = None,
-        transfer_amt: int | None = None,
-        funds: str | None = None,
+        transfer: int,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
-        """Generate MIR certificate for compatible eras.
-
-        Supported subcommands:
-        - 'stake-addresses'
-        - 'transfer-to-treasury'
-        - 'transfer-to-rewards'
-        """
-        destination_dir_path = pl.Path(destination_dir).expanduser()
-
-        if subcommand == "stake-addresses":
-            cmd_args = self._mir_stake_addresses_args(
-                stake_address=stake_address,
-                reward=reward,
-                funds=funds,
-            )
-            out_file = destination_dir_path / f"{name}_mir_stake.cert"
-
-        elif subcommand == "transfer-to-treasury":
-            cmd_args = self._mir_transfer_to_treasury_args(transfer_amt=transfer_amt)
-            out_file = destination_dir_path / f"{name}_mir_to_treasury.cert"
-
-        elif subcommand == "transfer-to-rewards":
-            cmd_args = self._mir_transfer_to_rewards_args(transfer_amt=transfer_amt)
-            out_file = destination_dir_path / f"{name}_mir_to_rewards.cert"
-
-        else:
-            msg = f"Unsupported MIR subcommand: {subcommand}"
-            raise ValueError(msg)
-
+        """Create MIR certificate transferring from reserves pot to treasury pot."""
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{name}_mir_to_treasury.cert"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
         cmd = [
             *self._base,
             "create-mir-certificate",
-            *cmd_args,
-            *self._clusterlib_obj.magic_args,
+            "transfer-to-treasury",
+            "--transfer",
+            str(transfer),
             "--out-file",
             str(out_file),
         ]
@@ -437,8 +346,63 @@ class GovernanceGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
-    def __repr__(self) -> str:
-        return f"<GovernanceGroup era={self.era} base={self._base}>"
+    def gen_mir_cert_to_rewards(
+        self,
+        *,
+        name: str,
+        transfer: int,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create MIR certificate transferring from treasury pot to reserves pot."""
+        destination_dir = pl.Path(destination_dir).expanduser()
+        out_file = destination_dir / f"{name}_mir_to_rewards.cert"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        cmd = [
+            *self._base,
+            "create-mir-certificate",
+            "transfer-to-rewards",
+            "--transfer",
+            str(transfer),
+            "--out-file",
+            str(out_file),
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
+        helpers._check_outfiles(out_file)
+        return out_file
+
+    def gen_mir_cert_stake_addr(
+        self,
+        *,
+        name: str,
+        stake_address: str,
+        reward: int,
+        use_treasury: bool = False,
+        destination_dir: itp.FileType = ".",
+    ) -> pl.Path:
+        """Create MIR certificate paying a stake address."""
+        destination_dir = pl.Path(destination_dir).expanduser()
+        funds_src = "treasury" if use_treasury else "reserves"
+        out_file = destination_dir / f"{name}_{funds_src}_mir_stake.cert"
+        clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
+        cmd = [
+            *self._base,
+            "create-mir-certificate",
+            "stake-addresses",
+            f"--{funds_src}",
+            "--stake-address",
+            stake_address,
+            "--reward",
+            str(reward),
+            "--out-file",
+            str(out_file),
+        ]
+
+        self._clusterlib_obj.cli(cmd, add_default_args=False)
+        helpers._check_outfiles(out_file)
+        return out_file
 
 
 class TransactionGroup:
