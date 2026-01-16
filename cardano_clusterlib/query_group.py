@@ -304,11 +304,19 @@ class QueryGroup:
 
         vote_delegation_raw = address_rec.get("voteDelegation") or ""
         if isinstance(vote_delegation_raw, dict):
-            vote_delegation = vote_delegation_raw.get("keyHashBech32") or ""
-            vote_delegation_hex = vote_delegation_raw.get("keyHashHex") or ""
+            vote_delegation = (
+                vote_delegation_raw.get("keyHashBech32")
+                or vote_delegation_raw.get("cip129Bech32")
+                or ""
+            )
+            vote_delegation_hex = (
+                vote_delegation_raw.get("keyHashHex") or vote_delegation_raw.get("keyHash") or ""
+            )
+            vote_delegation_cip129_hex = vote_delegation_raw.get("cip129Hex") or ""
         else:
             vote_delegation = vote_delegation_raw
             vote_delegation_hex = ""
+            vote_delegation_cip129_hex = ""
 
         return structs.StakeAddrInfo(
             address=address,
@@ -318,6 +326,7 @@ class QueryGroup:
             vote_delegation=vote_delegation,
             delegation_hex=delegation_hex,
             vote_delegation_hex=vote_delegation_hex,
+            vote_delegation_cip129_hex=vote_delegation_cip129_hex,
         )
 
     def get_address_deposit(self, pparams: dict[str, tp.Any] | None = None) -> int:
