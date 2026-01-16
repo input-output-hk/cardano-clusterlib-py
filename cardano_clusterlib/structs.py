@@ -42,6 +42,7 @@ class StakeAddrInfo:
     vote_delegation: str
     delegation_hex: str = ""
     vote_delegation_hex: str = ""
+    vote_delegation_cip129_hex: str = ""
 
     def __bool__(self) -> bool:
         return bool(self.address)
