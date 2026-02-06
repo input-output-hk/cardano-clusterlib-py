@@ -1459,7 +1459,9 @@ class TransactionGroup:
         return out_file
 
     def submit_tx_bare(self, tx_file: itp.FileType) -> str:
-        """Submit a transaction, don't do any verification that it made it to the chain.
+        """Submit a transaction to a mempool.
+
+        Doesn't do any verification that the transaction made it to the chain.
 
         Args:
             tx_file: A path to signed transaction file.
@@ -1467,16 +1469,45 @@ class TransactionGroup:
         Returns:
             str: A transaction ID.
         """
-        out = self._clusterlib_obj.cli(
-            [
-                "transaction",
-                "submit",
-                *self._clusterlib_obj.magic_args,
-                *self._clusterlib_obj.socket_args,
-                "--tx-file",
-                str(tx_file),
-            ]
-        )
+        out = None
+        err = None
+        attempts = 5
+        for r in range(1, attempts + 1):
+            if r > 1:
+                LOGGER.warning(
+                    f"Mempool failure. Resubmitting transaction (from '{tx_file}'). "
+                    f"Attempt {r}/{attempts}."
+                )
+            try:
+                out = self._clusterlib_obj.cli(
+                    [
+                        "transaction",
+                        "submit",
+                        *self._clusterlib_obj.magic_args,
+                        *self._clusterlib_obj.socket_args,
+                        "--tx-file",
+                        str(tx_file),
+                    ]
+                )
+                break
+            except exceptions.CLIError as exc:
+                # Check if there was a mempool failure while submitting the tx
+                exc_str = str(exc)
+                if "MempoolTxTooSlow" not in exc_str:
+                    raise
+                err = err or exc
+        else:
+            msg = (
+                f"Failed to submit the transaction after {attempts} attempts due to "
+                f"MempoolTxTooSlow errors (from '{tx_file}')."
+            )
+            if err is not None:
+                raise exceptions.CLIError(msg) from err
+            raise exceptions.CLIError(msg)
+
+        if out is None:
+            msg = "Output cannot be None here."
+            raise RuntimeError(msg)
 
         stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
         txhash_maybe = stdout_dec.split("\n")[-1]
@@ -1506,14 +1537,15 @@ class TransactionGroup:
         )
         txid = ""
         err = None
-        for r in range(20):
-            err = None
-
-            if r == 0:
+        attempts = 20
+        for r in range(1, attempts + 1):
+            if r == 1:
                 txid = self.submit_tx_bare(tx_file)
             else:
                 txid = txid or self.get_txid(tx_file=tx_file)
-                LOGGER.warning(f"Resubmitting transaction '{txid}' (from '{tx_file}').")
+                LOGGER.warning(
+                    f"Resubmitting transaction '{txid}' (from '{tx_file}'). Attempt {r}/{attempts}."
+                )
                 try:
                     self.submit_tx_bare(tx_file)
                 except exceptions.CLIError as exc:
@@ -1542,10 +1574,16 @@ class TransactionGroup:
             if err is not None:
                 # Submitting the TX raised an exception as if the input was already
                 # spent, but it was either not the case, or the TX is still in mempool.
-                msg = f"Failed to resubmit the transaction '{txid}' (from '{tx_file}')."
+                msg = (
+                    f"Failed to resubmit the transaction '{txid}' "
+                    f"after {attempts} attempts (from '{tx_file}')."
+                )
                 raise exceptions.CLIError(msg) from err
 
-            msg = f"Transaction '{txid}' didn't make it to the chain (from '{tx_file}')."
+            msg = (
+                f"Transaction '{txid}' didn't make it to the chain "
+                f"after {attempts} attempts (from '{tx_file}')."
+            )
             raise exceptions.CLIError(msg)
 
         return txid
