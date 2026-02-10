@@ -87,7 +87,7 @@ def _format_cli_args(cli_args: list[str]) -> str:
     Args:
         cli_args: List of CLI arguments.
     """
-    processed_args = []
+    processed_args: list[str] = []
     for arg in cli_args:
         arg_p = f'"{arg}"' if SPECIAL_ARG_CHARS_RE.search(arg) else arg
         processed_args.append(arg_p)
