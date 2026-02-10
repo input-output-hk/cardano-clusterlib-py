@@ -279,7 +279,6 @@ class ClusterLib:
             if retcode == 0:
                 break
 
-            # pyrefly: ignore  # missing-attribute
             stderr_dec = stderr.decode()
             err_msg = (
                 f"An error occurred running a CLI command `{cmd_str}` on path "
@@ -293,7 +292,6 @@ class ClusterLib:
         else:
             raise exceptions.CLIError(err_msg)
 
-        # pyrefly: ignore  # bad-argument-type
         return structs.CLIOut(stdout or b"", stderr or b"")
 
     def refresh_pparams_file(self) -> None:

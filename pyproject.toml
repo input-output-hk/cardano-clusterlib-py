@@ -60,16 +60,3 @@ no_implicit_optional = true
 allow_untyped_globals = false
 warn_unused_configs = true
 warn_return_any = true
-
-[tool.pyrefly]
-project_includes = ["cardano_clusterlib"]
-ignore_errors_in_generated_code = true
-use_untyped_imports = true
-ignore_missing_source = true
-
-[[tool.pyrefly.sub_config]]
-matches = "cardano_clusterlib/clusterlib_klass.py"
-
-# Ignore the bad-argument-type errors for Self@ClusterLib, that are reported only for LSP
-[tool.pyrefly.sub_config.errors]
-bad-argument-type = false
