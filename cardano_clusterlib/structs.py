@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 import pathlib as pl
-import typing as tp
 
 from cardano_clusterlib import consts
 from cardano_clusterlib import types as itp
@@ -96,7 +95,7 @@ class ScriptTxIn:
     reference_type: str = ""
     # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tuple[int, int]] = None
+    execution_units: tuple[int, int] | None = None
     datum_file: itp.FileType = ""
     datum_cbor_file: itp.FileType = ""
     datum_value: str = ""
@@ -115,7 +114,7 @@ class ScriptWithdrawal:
     reference_txin: UTXOData | None = None
     reference_type: str = ""
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tuple[int, int]] = None
+    execution_units: tuple[int, int] | None = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -135,7 +134,7 @@ class ComplexCert:
     reference_txin: UTXOData | None = None
     reference_type: str = ""
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tuple[int, int]] = None
+    execution_units: tuple[int, int] | None = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -153,7 +152,7 @@ class ComplexProposal:
     proposal_file: itp.FileType
     script_file: itp.FileType = ""
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tuple[int, int]] = None
+    execution_units: tuple[int, int] | None = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -167,7 +166,7 @@ class ScriptVote:
     script_file: itp.FileType = ""
     # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tuple[int, int]] = None
+    execution_units: tuple[int, int] | None = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
@@ -182,7 +181,7 @@ class Mint:
     policyid: str = ""
     # Values below needed only when working with Plutus
     collaterals: OptionalUTXOData = ()
-    execution_units: tp.Optional[tuple[int, int]] = None
+    execution_units: tuple[int, int] | None = None
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""

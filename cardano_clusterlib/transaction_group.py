@@ -4,7 +4,6 @@ import itertools
 import json
 import logging
 import pathlib as pl
-import typing as tp
 
 from packaging import version
 
@@ -219,7 +218,7 @@ class TransactionGroup:
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -447,7 +446,7 @@ class TransactionGroup:
         complex_proposals: structs.OptionalScriptProposals = (),
         fee: int = 0,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -624,7 +623,7 @@ class TransactionGroup:
         self,
         src_address: str,
         tx_name: str,
-        dst_addresses: tp.Optional[list[str]] = None,
+        dst_addresses: list[str] | None = None,
         txins: structs.OptionalUTXOData = (),
         txouts: structs.OptionalTxOuts = (),
         readonly_reference_txins: structs.OptionalUTXOData = (),
@@ -636,7 +635,7 @@ class TransactionGroup:
         complex_certs: structs.OptionalScriptCerts = (),
         complex_proposals: structs.OptionalScriptProposals = (),
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -810,7 +809,7 @@ class TransactionGroup:
         change_address: str = "",
         fee_buffer: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
@@ -1071,7 +1070,7 @@ class TransactionGroup:
         change_address: str = "",
         fee_buffer: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
@@ -1604,7 +1603,7 @@ class TransactionGroup:
         complex_proposals: structs.OptionalScriptProposals = (),
         fee: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         ttl: int | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
@@ -1859,7 +1858,7 @@ class TransactionGroup:
         change_address: str = "",
         fee_buffer: int | None = None,
         required_signers: itp.OptionalFiles = (),
-        required_signer_hashes: tp.Optional[list[str]] = None,
+        required_signer_hashes: list[str] | None = None,
         withdrawals: structs.OptionalTxOuts = (),
         script_withdrawals: structs.OptionalScriptWithdrawals = (),
         script_votes: structs.OptionalScriptVotes = (),
