@@ -230,7 +230,10 @@ class PoolData:
     pool_metadata_hash: str = ""
     pool_relay_dns: str = ""
     pool_relay_ipv4: str = ""
+    pool_relay_ipv6: str = ""
     pool_relay_port: int = 0
+    multi_host_relay: str = ""
+    check_metadata_hash: bool = False
 
 
 @dataclasses.dataclass(frozen=True, order=True)

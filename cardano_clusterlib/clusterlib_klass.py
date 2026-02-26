@@ -10,6 +10,7 @@ from packaging import version
 
 from cardano_clusterlib import address_group
 from cardano_clusterlib import clusterlib_helpers
+from cardano_clusterlib import compat_group
 from cardano_clusterlib import consts
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import genesis_group
@@ -125,6 +126,7 @@ class ClusterLib:
         self._genesis_group: genesis_group.GenesisGroup | None = None
         self._legacy_gov_group: legacy_gov_group.LegacyGovGroup | None = None
         self._governance_group: gov_group.GovernanceGroup | None = None
+        self._compatible_group: compat_group.CompatibleGroup | None = None
 
     def set_socket_path(self, socket_path: itp.FileType | None) -> None:
         """Set a path to socket file for communication with the node."""
@@ -234,6 +236,12 @@ class ClusterLib:
 
         self._governance_group = gov_group.GovernanceGroup(clusterlib_obj=self)
         return self._governance_group
+
+    @property
+    def g_compatible(self) -> compat_group.CompatibleGroup:
+        if not self._compatible_group:
+            self._compatible_group = compat_group.CompatibleGroup(clusterlib_obj=self)
+        return self._compatible_group
 
     def cli(
         self,
