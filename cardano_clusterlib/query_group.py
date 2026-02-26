@@ -182,7 +182,7 @@ class QueryGroup:
         return registered_pools_details
 
     def get_stake_snapshot(
-        self, stake_pool_ids: tp.Optional[list[str]] = None, all_stake_pools: bool = False
+        self, stake_pool_ids: list[str] | None = None, all_stake_pools: bool = False
     ) -> dict[str, tp.Any]:
         """Return the three stake snapshots, plus the total active stake.
 

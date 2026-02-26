@@ -9,13 +9,12 @@ authors = [
 ]
 description = "Python wrapper for cardano-cli for working with cardano cluster"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["cardano", "cardano-node", "cardano-cli", "cardano-node-tests"]
 license = "Apache-2.0"
 classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
