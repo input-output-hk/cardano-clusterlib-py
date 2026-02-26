@@ -7,6 +7,15 @@ install:
 .install_doc:
 	python3 -m pip install --require-virtualenv --upgrade -r docs/requirements.txt
 
+# initialize linters
+.PHONY: init-lint
+init-lint:
+	pre-commit clean
+	pre-commit gc
+	find . -path '*/.mypy_cache/*' -delete
+	pre-commit uninstall
+	pre-commit install --install-hooks
+
 # run linters
 .PHONY: lint
 lint:
