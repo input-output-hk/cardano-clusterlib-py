@@ -4,6 +4,8 @@ import itertools
 import json
 import logging
 import pathlib as pl
+import random
+import time
 
 from packaging import version
 
@@ -1477,6 +1479,7 @@ class TransactionGroup:
                     f"Mempool failure. Resubmitting transaction (from '{tx_file}'). "
                     f"Attempt {r}/{attempts}."
                 )
+
             try:
                 out = self._clusterlib_obj.cli(
                     [
@@ -1495,6 +1498,11 @@ class TransactionGroup:
                 if "MempoolTxTooSlow" not in exc_str:
                     raise
                 err = err or exc
+
+            if r < attempts:
+                # Sleep up to `r` number of seconds before the next attempt to avoid hitting
+                # the same mempool failure again.
+                time.sleep(random.uniform(0, r))
         else:
             msg = (
                 f"Failed to submit the transaction after {attempts} attempts due to "
