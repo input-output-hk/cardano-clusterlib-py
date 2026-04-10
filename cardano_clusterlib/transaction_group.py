@@ -5,6 +5,7 @@ import json
 import logging
 import pathlib as pl
 import random
+import subprocess
 import time
 
 from packaging import version
@@ -1512,10 +1513,6 @@ class TransactionGroup:
                 raise exceptions.CLIError(msg) from err
             raise exceptions.CLIError(msg)
 
-        if out is None:
-            msg = "Output cannot be None here."
-            raise RuntimeError(msg)
-
         stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
         txhash_maybe = stdout_dec.split("\n")[-1]
         txhash = (json.loads(txhash_maybe).get("txhash") or "") if "txhash" in txhash_maybe else ""
@@ -1543,11 +1540,14 @@ class TransactionGroup:
             else wait_blocks
         )
         txid = ""
-        err = None
+        err: Exception | None = None
         attempts = 20
         for r in range(1, attempts + 1):
             if r == 1:
-                txid = self.submit_tx_bare(tx_file)
+                try:
+                    txid = self.submit_tx_bare(tx_file)
+                except subprocess.TimeoutExpired as exc:
+                    err = exc
             else:
                 txid = txid or self.get_txid(tx_file=tx_file)
                 LOGGER.warning(
@@ -1555,6 +1555,7 @@ class TransactionGroup:
                 )
                 try:
                     self.submit_tx_bare(tx_file)
+                    err = None
                 except exceptions.CLIError as exc:
                     # Check if resubmitting failed because an input UTxO was already spent
                     exc_str = str(exc)
@@ -1564,8 +1565,12 @@ class TransactionGroup:
                     )
                     if not inputs_spent:
                         raise
-                    err = err or exc
+                    err = exc
                     # If here, the TX is likely still in mempool and we need to wait
+                except subprocess.TimeoutExpired as exc:
+                    # If here, the TX might have been successfully submitted, but
+                    # the timeout occurred before we got response.
+                    err = exc
 
             self._clusterlib_obj.wait_for_new_block(wait_blocks)
 
