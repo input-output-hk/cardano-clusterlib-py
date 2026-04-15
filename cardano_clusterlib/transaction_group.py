@@ -1549,7 +1549,6 @@ class TransactionGroup:
                 except subprocess.TimeoutExpired as exc:
                     err = exc
             else:
-                txid = txid or self.get_txid(tx_file=tx_file)
                 LOGGER.warning(
                     f"Resubmitting transaction '{txid}' (from '{tx_file}'). Attempt {r}/{attempts}."
                 )
@@ -1571,6 +1570,8 @@ class TransactionGroup:
                     # If here, the TX might have been successfully submitted, but
                     # the timeout occurred before we got response.
                     err = exc
+
+            txid = txid or self.get_txid(tx_file=tx_file)
 
             self._clusterlib_obj.wait_for_new_block(wait_blocks)
 
