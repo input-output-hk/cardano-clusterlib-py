@@ -35,8 +35,6 @@ class ClusterLib:
     Attributes:
         state_dir: A directory with cluster state files (keys, config files, logs, ...).
         protocol: A cluster protocol - full cardano mode by default.
-        slots_offset: Difference in slots between cluster's start era and Shelley era
-            (Byron vs Shelley)
         socket_path: A path to socket file for communication with the node. This overrides the
             `CARDANO_NODE_SOCKET_PATH` environment variable.
         command_era: An era used for CLI commands, by default same as the latest network Era.
