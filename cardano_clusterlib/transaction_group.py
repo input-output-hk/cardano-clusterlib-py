@@ -1494,16 +1494,19 @@ class TransactionGroup:
                 )
                 break
             except exceptions.CLIError as exc:
-                # Check if there was a mempool failure while submitting the tx
+                # Retry only on `MempoolTxTooSlow`, which is a wallclock soft-timeout in the node's
+                # mempool. It is transient when caused by GC pauses, snapshot writes, or CPU spikes;
+                # backoff must outlast those. If it persists after a few retries, the cause is not
+                # transient (expensive tx or overloaded node) and further retries won't help.
                 exc_str = str(exc)
                 if "MempoolTxTooSlow" not in exc_str:
                     raise
-                err = err or exc
+                err = exc  # Store the most up-to-date error for the final exception.
 
             if r < attempts:
-                # Sleep up to `r` number of seconds before the next attempt to avoid hitting
+                # Sleep for 2-10 seconds before the next attempt to avoid hitting
                 # the same mempool failure again.
-                time.sleep(random.uniform(0, r))
+                time.sleep(random.uniform(2, 10))
         else:
             msg = (
                 f"Failed to submit the transaction after {attempts} attempts due to "
