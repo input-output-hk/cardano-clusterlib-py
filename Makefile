@@ -80,8 +80,11 @@ build: .check-venv-exists ## Build package distributions
 	$(VENV)/bin/python3 -m build
 
 .PHONY: upload
-upload: .check-venv-activated ## Upload package distributions to PyPI
-	if ! command -v twine >/dev/null 2>&1; then $(PIP) install --require-virtualenv --upgrade twine; fi
+upload: ## Upload package distributions to PyPI
+	@if ! command -v twine >/dev/null 2>&1; then \
+		echo "Error: 'twine' is not installed. Please install it in your system, or in your virtual environment with 'pip install twine'." >&2; \
+		exit 1; \
+	fi
 	twine upload --skip-existing dist/*
 
 .PHONY: release
