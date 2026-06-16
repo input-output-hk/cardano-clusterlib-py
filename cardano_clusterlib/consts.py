@@ -14,18 +14,31 @@ SUBCOMMAND_MARK: tp.Final[str] = "SUBCOMMAND"
 
 
 class CommandEras:
+    """Eras corresponding to command groups in cardano-cli.
+
+    E.g. `cardano-cli latest transaction build ...`.
+    """
+
     CONWAY: tp.Final[str] = "conway"
+    DIJKSTRA: tp.Final[str] = "dijkstra"
     LATEST: tp.Final[str] = "latest"
 
 
 class Eras(enum.Enum):
+    """Cardano eras and their protocol version numbers.
+
+    DEFAULT: Era used by default when none is specified.
+    LATEST: Newest era usable in production; bump when a new era goes live.
+    """
+
     BYRON = 1
     SHELLEY = 2
     ALLEGRA = 3
     MARY = 4
     ALONZO = 6
     BABBAGE = 8
-    CONWAY = 9
+    CONWAY = 10
+    DIJKSTRA = 12
     DEFAULT = CONWAY
     LATEST = CONWAY  # noqa: PIE796
 
