@@ -1563,6 +1563,9 @@ class TransactionGroup:
                     exc_str = str(exc)
                     inputs_spent = (
                         '(ConwayMempoolFailure "All inputs are spent.' in exc_str
+                        # The Dijkstra era injects the Conway mempool failure above as its
+                        # own dedicated failure.
+                        or "(AllInputsAreSpent" in exc_str
                         or "(BadInputsUTxO" in exc_str
                     )
                     if not inputs_spent:
