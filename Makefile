@@ -3,7 +3,12 @@
 PIP_INSTALL_ARGS ?=
 DOCS_DIR ?= docs
 VENV := .venv
-PIP := $(VENV)/bin/pip
+VENV_ABS := $(abspath $(VENV))
+PY := $(VENV)/bin/python3
+PIP := $(PY) -m pip
+# Equivalent of activating the venv: needed by pre-commit hooks with
+# "language: system", which resolve their entry point from PATH.
+VENV_ENV := PATH="$(VENV_ABS)/bin:$$PATH" VIRTUAL_ENV="$(VENV_ABS)"
 
 .PHONY: .check-venv-exists
 .check-venv-exists:
@@ -47,8 +52,12 @@ install: ## Install cardano-clusterlib and its dependencies into a virtual envir
 			echo "Error: Another virtual environment is currently activated. Please deactivate it before running 'make install'." >&2; \
 			exit 1; \
 		fi
-	@if [ ! -x "$(VENV)/bin/python3" ]; then \
+	@if [ ! -x "$(PY)" ]; then \
 		python3 -m venv $(VENV); \
+	fi
+	@if ! $(PY) -m pip --version >/dev/null 2>&1; then \
+		echo "No pip in $(VENV), bootstrapping it with ensurepip"; \
+		$(PY) -m ensurepip --upgrade; \
 	fi
 	$(PIP) install --require-virtualenv --upgrade pip
 	$(PIP) install --require-virtualenv --upgrade -r requirements-dev.txt $(PIP_INSTALL_ARGS)
@@ -61,15 +70,15 @@ install: ## Install cardano-clusterlib and its dependencies into a virtual envir
 
 .PHONY: init-lint
 init-lint: .check-venv-exists ## Initialize linters
-	$(VENV)/bin/pre-commit clean
-	$(VENV)/bin/pre-commit gc
+	$(VENV_ENV) $(VENV)/bin/pre-commit clean
+	$(VENV_ENV) $(VENV)/bin/pre-commit gc
 	find . -path '*/.mypy_cache/*' -delete
-	$(VENV)/bin/pre-commit uninstall
-	$(VENV)/bin/pre-commit install --install-hooks
+	$(VENV_ENV) $(VENV)/bin/pre-commit uninstall
+	$(VENV_ENV) $(VENV)/bin/pre-commit install --install-hooks
 
 .PHONY: lint
 lint: .check-venv-exists ## Run linters
-	$(VENV)/bin/pre-commit run -a --show-diff-on-failure --color=always
+	$(VENV_ENV) $(VENV)/bin/pre-commit run -a --show-diff-on-failure --color=always
 
 ## ---------------------------------------------------------------------------
 ## Release
@@ -77,7 +86,7 @@ lint: .check-venv-exists ## Run linters
 
 .PHONY: build
 build: .check-venv-exists ## Build package distributions
-	$(VENV)/bin/python3 -m build
+	$(VENV_ENV) $(PY) -m build
 
 .PHONY: upload
 upload: ## Upload package distributions to PyPI
