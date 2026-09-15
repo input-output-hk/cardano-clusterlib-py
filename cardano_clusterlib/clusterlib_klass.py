@@ -59,9 +59,9 @@ class ClusterLib:
         self._rand_str = helpers.get_rand_str(4)
         self._cli_log = ""
 
-        self.era_in_use = (
-            consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
-        ).name.lower()
+        _era_in_use = consts.Eras.__members__.get(command_era.upper()) or consts.Eras["DEFAULT"]
+        self.era_in_use = _era_in_use.name.lower()
+        self.era_in_use_value = _era_in_use.value
 
         self.state_dir = pl.Path(state_dir).expanduser().resolve()
         if not self.state_dir.exists():
@@ -101,7 +101,7 @@ class ClusterLib:
         self.conway_genesis_json: pl.Path | None = None
         self.conway_genesis: dict = {}
 
-        if consts.Eras[self.era_in_use.upper()].value >= consts.Eras.CONWAY.value:
+        if self.era_in_use_value >= consts.Eras.CONWAY.value:
             # Conway genesis
             self.conway_genesis_json = clusterlib_helpers._find_conway_genesis_json(
                 clusterlib_obj=self

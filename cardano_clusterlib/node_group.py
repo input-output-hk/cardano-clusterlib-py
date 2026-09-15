@@ -77,6 +77,39 @@ class NodeGroup:
         helpers._check_outfiles(vkey, skey)
         return structs.KeyPair(vkey, skey)
 
+    def gen_bls_key_pair(
+        self, node_name: str, destination_dir: itp.FileType = "."
+    ) -> structs.KeyPair:
+        """Generate a key pair for a node BLS key.
+
+        Available in the Dijkstra+ eras.
+
+        Args:
+            node_name: A name of the node the key pair is generated for.
+            destination_dir: A path to directory for storing artifacts (optional).
+
+        Returns:
+            structs.KeyPair: A data container containing the key pair.
+        """
+        destination_dir = pl.Path(destination_dir).expanduser()
+        vkey = destination_dir / f"{node_name}_bls.vkey"
+        skey = destination_dir / f"{node_name}_bls.skey"
+        clusterlib_helpers._check_files_exist(vkey, skey, clusterlib_obj=self._clusterlib_obj)
+
+        self._clusterlib_obj.cli(
+            [
+                "node",
+                "key-gen-BLS",
+                "--verification-key-file",
+                str(vkey),
+                "--signing-key-file",
+                str(skey),
+            ]
+        )
+
+        helpers._check_outfiles(vkey, skey)
+        return structs.KeyPair(vkey, skey)
+
     def gen_cold_key_pair_and_counter(
         self, node_name: str, destination_dir: itp.FileType = "."
     ) -> structs.ColdKeyPair:
