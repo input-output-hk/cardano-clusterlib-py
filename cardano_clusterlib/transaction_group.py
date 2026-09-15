@@ -370,7 +370,7 @@ class TransactionGroup:
             misc_args.append("--json-metadata-detailed-schema")
 
         proposal_file_argname = txtools.get_proposal_file_argname(
-            era_in_use=self._clusterlib_obj.era_in_use
+            clusterlib_obj=self._clusterlib_obj
         )
 
         cli_args = [
@@ -981,7 +981,7 @@ class TransactionGroup:
             misc_args.append("--json-metadata-detailed-schema")
 
         proposal_file_argname = txtools.get_proposal_file_argname(
-            era_in_use=self._clusterlib_obj.era_in_use
+            clusterlib_obj=self._clusterlib_obj
         )
 
         cli_args = [
