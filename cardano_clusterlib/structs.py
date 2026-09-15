@@ -278,6 +278,8 @@ class PoolCreationOutput:
     reward_account_key_pair: KeyPair | AddressRecord
     tx_raw_output: TxRawOutput
     kes_key_pair: KeyPair | None = None
+    # Set only in the Dijkstra+ eras, where BLS keys exist
+    bls_key_pair: KeyPair | None = None
 
 
 @dataclasses.dataclass(frozen=True, order=True)

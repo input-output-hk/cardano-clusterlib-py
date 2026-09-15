@@ -4,6 +4,7 @@ import logging
 import pathlib as pl
 
 from cardano_clusterlib import clusterlib_helpers
+from cardano_clusterlib import consts
 from cardano_clusterlib import helpers
 from cardano_clusterlib import structs
 from cardano_clusterlib import types as itp
@@ -39,6 +40,7 @@ class StakePoolGroup:
         cold_vkey_file: itp.FileType,
         owner_stake_vkey_files: itp.FileTypeList,
         reward_account_vkey_file: itp.FileType | None = None,
+        bls_signing_key_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool registration certificate.
@@ -49,6 +51,7 @@ class StakePoolGroup:
             cold_vkey_file: A path to pool cold vkey file.
             owner_stake_vkey_files: A list of paths to pool owner stake vkey files.
             reward_account_vkey_file: A path to pool reward account vkey file (optional).
+            bls_signing_key_file: A path to pool BLS signing key file (required in Dijkstra+ eras).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -66,6 +69,10 @@ class StakePoolGroup:
                 "--metadata-hash",
                 str(pool_data.pool_metadata_hash),
             ]
+
+        bls_key_cmd = (
+            ["--bls-signing-key-file", str(bls_signing_key_file)] if bls_signing_key_file else []
+        )
 
         relay_cmd = []
         if pool_data.pool_relay_dns:
@@ -101,6 +108,7 @@ class StakePoolGroup:
                 str(out_file),
                 *metadata_cmd,
                 *relay_cmd,
+                *bls_key_cmd,
             ]
         )
 
@@ -191,7 +199,8 @@ class StakePoolGroup:
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
-            structs.PoolCreationOutput: A data container containing pool creation output.
+            structs.PoolCreationOutput: A data container containing pool creation output. Its
+                `bls_key_pair` is set only in the Dijkstra+ eras, where BLS keys exist.
         """
         # Create the KES key pair
         node_kes = self._clusterlib_obj.g_node.gen_kes_key_pair(
@@ -217,6 +226,15 @@ class StakePoolGroup:
             f"{node_cold.vkey_file}; {node_cold.skey_file}; {node_cold.counter_file}"
         )
 
+        # Create the BLS key pair, needed in the Dijkstra+ eras
+        node_bls: structs.KeyPair | None = None
+        if self._clusterlib_obj.era_in_use_value >= consts.Eras.DIJKSTRA.value:
+            node_bls = self._clusterlib_obj.g_node.gen_bls_key_pair(
+                node_name=pool_data.pool_name,
+                destination_dir=destination_dir,
+            )
+            LOGGER.debug(f"BLS keys created - {node_bls.vkey_file}; {node_bls.skey_file}")
+
         pool_reg_cert_file, tx_raw_output = self.register_stake_pool(
             pool_data=pool_data,
             pool_owners=pool_owners,
@@ -226,6 +244,7 @@ class StakePoolGroup:
             reward_account_vkey_file=reward_account_key_pair.vkey_file
             if reward_account_key_pair
             else None,
+            bls_signing_key_file=node_bls.skey_file if node_bls else None,
             destination_dir=destination_dir,
         )
 
@@ -239,6 +258,7 @@ class StakePoolGroup:
             reward_account_key_pair=reward_account_key_pair or pool_owners[0].stake,
             tx_raw_output=tx_raw_output,
             kes_key_pair=node_kes,
+            bls_key_pair=node_bls,
         )
 
     def register_stake_pool(
@@ -249,6 +269,7 @@ class StakePoolGroup:
         cold_key_pair: structs.ColdKeyPair,
         tx_name: str,
         reward_account_vkey_file: itp.FileType | None = None,
+        bls_signing_key_file: itp.FileType | None = None,
         deposit: int | None = None,
         destination_dir: itp.FileType = ".",
     ) -> tuple[pl.Path, structs.TxRawOutput]:
@@ -263,6 +284,7 @@ class StakePoolGroup:
                 and the counter.
             tx_name: A name of the transaction.
             reward_account_vkey_file: A path to reward account vkey file (optional).
+            bls_signing_key_file: A path to pool BLS signing key file (required in Dijkstra+ eras).
             deposit: A deposit amount needed by the transaction (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
@@ -277,6 +299,7 @@ class StakePoolGroup:
             cold_vkey_file=cold_key_pair.vkey_file,
             owner_stake_vkey_files=[p.stake.vkey_file for p in pool_owners],
             reward_account_vkey_file=reward_account_vkey_file,
+            bls_signing_key_file=bls_signing_key_file,
             destination_dir=destination_dir,
         )
 
