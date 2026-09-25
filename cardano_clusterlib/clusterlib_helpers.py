@@ -17,6 +17,17 @@ LOGGER = logging.getLogger(__name__)
 
 SPECIAL_ARG_CHARS_RE = re.compile("[^A-Za-z0-9/._-]")
 
+# Shelley genesis keys (as key paths) that can be huge, e.g. with many injected pools
+# or UTxOs. The data are under `extraConfig` since cardano-cli 11.2, and under
+# `initialFunds` and `staking` before that.
+GENESIS_BULKY_KEYS: tuple[tuple[str, ...], ...] = (
+    ("initialFunds",),
+    ("staking",),
+    ("extraConfig", "initialFunds"),
+    ("extraConfig", "stakeCredentials"),
+    ("extraConfig", "stakePools"),
+)
+
 # Max number of slots' worth of wall-clock time to wait for a new block
 NEXT_BLOCK_TIMEOUT_SLOTS = 300
 
@@ -85,6 +96,27 @@ def _read_genesis_json(genesis_json: pl.Path) -> dict:
     """Read genesis JSON file."""
     with open(genesis_json, encoding="utf-8") as in_json:
         genesis: dict = json.load(in_json)
+    return genesis
+
+
+def _load_shelley_genesis(genesis_json: pl.Path) -> dict:
+    """Load Shelley genesis JSON file, without the potentially huge keys.
+
+    Args:
+        genesis_json: A path to Shelley genesis JSON file.
+
+    Returns:
+        dict: The Shelley genesis, without keys listed in `GENESIS_BULKY_KEYS`.
+    """
+    genesis = _read_genesis_json(genesis_json=genesis_json)
+
+    for *parent_keys, key in GENESIS_BULKY_KEYS:
+        parent: tp.Any = genesis
+        for k in parent_keys:
+            parent = parent.get(k) if isinstance(parent, dict) else None
+        if isinstance(parent, dict):
+            parent.pop(key, None)
+
     return genesis
 
 

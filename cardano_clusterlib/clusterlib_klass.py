@@ -75,7 +75,8 @@ class ClusterLib:
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
 
         self.genesis_json = clusterlib_helpers._find_genesis_json(clusterlib_obj=self)
-        self.genesis = clusterlib_helpers._read_genesis_json(genesis_json=self.genesis_json)
+        # Shelley genesis without the potentially huge keys, see `load_full_genesis`
+        self.genesis = clusterlib_helpers._load_shelley_genesis(genesis_json=self.genesis_json)
 
         self.slot_length = self.genesis["slotLength"]
         self.epoch_length = self.genesis["epochLength"]
@@ -303,6 +304,18 @@ class ClusterLib:
             raise exceptions.CLIError(err_msg)
 
         return structs.CLIOut(stdout or b"", stderr or b"")
+
+    def load_full_genesis(self) -> dict:
+        """Load complete Shelley genesis, including the potentially huge keys.
+
+        The `genesis` attribute doesn't include keys that can be huge, e.g. with many
+        injected pools or UTxOs (see `clusterlib_helpers.GENESIS_BULKY_KEYS`). The
+        complete genesis is loaded from the file on each call and is not cached.
+
+        Returns:
+            dict: The complete Shelley genesis.
+        """
+        return clusterlib_helpers._read_genesis_json(genesis_json=self.genesis_json)
 
     def refresh_pparams_file(self) -> None:
         """Refresh protocol parameters file."""
