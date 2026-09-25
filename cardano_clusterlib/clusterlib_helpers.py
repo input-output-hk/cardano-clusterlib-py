@@ -16,12 +16,49 @@ LOGGER = logging.getLogger(__name__)
 
 SPECIAL_ARG_CHARS_RE = re.compile("[^A-Za-z0-9/._-]")
 
+# Max number of slots' worth of wall-clock time to wait for a new block
+NEXT_BLOCK_TIMEOUT_SLOTS = 300
+
 
 @dataclasses.dataclass(frozen=True, order=True)
 class EpochInfo:
     epoch: int
     first_slot: int
     last_slot: int
+
+
+class _StallTracker:
+    """Detect a halted chain by measuring wall-clock time since the tip slot last changed.
+
+    The tip slot is the slot of the last block, so it doesn't advance when the chain is halted
+    and can't be used for the timeout itself.
+    """
+
+    def __init__(self, clusterlib_obj: "itp.ClusterLib", waiting_for: str) -> None:
+        self.timeout = float(NEXT_BLOCK_TIMEOUT_SLOTS * clusterlib_obj.slot_length)  # in sec
+        self.waiting_for = waiting_for
+        self.last_slot = -1
+        self.last_block_time = time.monotonic()
+
+    def time_left(self) -> float:
+        """Return wall-clock time left until the timeout, in seconds."""
+        return max(0.0, self.last_block_time + self.timeout - time.monotonic())
+
+    def update(self, slot: int) -> None:
+        """Record the current tip slot, raise `CLIError` if the chain is halted."""
+        now = time.monotonic()
+        if slot != self.last_slot:
+            self.last_slot = slot
+            self.last_block_time = now
+            return
+
+        no_block_time = now - self.last_block_time
+        if no_block_time >= self.timeout:
+            msg = (
+                f"Failed to wait for {self.waiting_for}, no new block for "
+                f"{no_block_time:.0f} sec; last slot no: {slot}."
+            )
+            raise exceptions.CLIError(msg)
 
 
 def _find_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
@@ -196,14 +233,19 @@ def wait_for_block(clusterlib_obj: "itp.ClusterLib", tip: dict[str, tp.Any], blo
 
     Returns:
         int: A block number of last added block.
+
+    Raises:
+        exceptions.CLIError: If no new block is created for `NEXT_BLOCK_TIMEOUT_SLOTS` slots'
+            worth of wall-clock time.
     """
     initial_block = int(tip["block"])
-    initial_slot = int(tip["slot"])
 
     if initial_block >= block_no:
         return initial_block
 
-    next_block_timeout = 300  # in slots
+    # Max wall-clock time without a new block. The tip slot is the slot of the last block,
+    # so it doesn't advance when the chain is halted and can't be used for the timeout.
+    next_block_timeout = NEXT_BLOCK_TIMEOUT_SLOTS * clusterlib_obj.slot_length  # in sec
     max_tip_throttle = 5 * clusterlib_obj.slot_length
 
     new_blocks = block_no - initial_block
@@ -211,32 +253,34 @@ def wait_for_block(clusterlib_obj: "itp.ClusterLib", tip: dict[str, tp.Any], blo
     LOGGER.debug(f"Waiting for {new_blocks} new block(s) to be created.")
     LOGGER.debug(f"Initial block no: {initial_block}")
 
-    this_slot = initial_slot
+    start_time = last_block_time = time.monotonic()
     this_block = initial_block
-    timeout_slot = initial_slot + next_block_timeout
     blocks_to_go = new_blocks
     # Limit calls to `query tip`
     tip_throttle = 0
 
-    while this_slot < timeout_slot:
+    while (time_left := last_block_time + next_block_timeout - time.monotonic()) > 0:
         prev_block = this_block
-        time.sleep((clusterlib_obj.slot_length * blocks_to_go) + tip_throttle)
+        # Don't oversleep the timeout
+        time.sleep(min((clusterlib_obj.slot_length * blocks_to_go) + tip_throttle, time_left))
 
-        this_tip = clusterlib_obj.g_query.get_tip()
-        this_slot = int(this_tip["slot"])
-        this_block = int(this_tip["block"])
+        this_block = int(clusterlib_obj.g_query.get_tip()["block"])
 
         if this_block >= block_no:
             break
         if this_block > prev_block:
-            # New block was created, reset timeout slot
-            timeout_slot = this_slot + next_block_timeout
+            # New block was created, reset timeout
+            last_block_time = time.monotonic()
 
         blocks_to_go = block_no - this_block
         tip_throttle = min(max_tip_throttle, tip_throttle + clusterlib_obj.slot_length)
     else:
-        waited_sec = (this_slot - initial_slot) * clusterlib_obj.slot_length
-        msg = f"Timeout waiting for {waited_sec} sec for {new_blocks} block(s)."
+        now = time.monotonic()
+        msg = (
+            f"Timed out waiting for {new_blocks} block(s), no new block for "
+            f"{now - last_block_time:.0f} sec (waited {now - start_time:.0f} sec in total); "
+            f"last block no: {this_block}."
+        )
         raise exceptions.CLIError(msg)
 
     LOGGER.debug(f"New block(s) were created; block number: {this_block}")
@@ -254,21 +298,33 @@ def poll_new_epoch(
 
     Args:
         clusterlib_obj: An instance of `ClusterLib`.
-        tip: Current tip - last block successfully applied to the ledger.
         exp_epoch: An epoch number to wait for.
         padding_seconds: A number of additional seconds to wait for (optional).
+
+    Raises:
+        exceptions.CLIError: If the chain is past `exp_epoch`, is halted, or `exp_epoch`
+            didn't start within 1000 checks.
     """
+    stall_tracker = _StallTracker(
+        clusterlib_obj=clusterlib_obj, waiting_for=f"epoch number {exp_epoch}"
+    )
     for check_no in range(1000):
-        wakeup_epoch = clusterlib_obj.g_query.get_epoch()
-        if wakeup_epoch != exp_epoch:
+        tip = clusterlib_obj.g_query.get_tip()
+        wakeup_epoch = int(tip["epoch"])
+        if wakeup_epoch > exp_epoch:
+            msg = f"Waited for epoch number {exp_epoch} and current epoch is number {wakeup_epoch}."
+            raise exceptions.CLIError(msg)
+        if wakeup_epoch < exp_epoch:
+            stall_tracker.update(slot=int(tip["slot"]))
             time.sleep(3)
             continue
         # We are in the expected epoch right from the beginning, we'll skip padding seconds
-        if check_no == 0:
-            break
-        if padding_seconds:
+        if check_no > 0 and padding_seconds:
             time.sleep(padding_seconds)
-            break
+        break
+    else:
+        msg = f"Failed to wait for epoch number {exp_epoch} after 1000 checks."
+        raise exceptions.CLIError(msg)
 
 
 def wait_for_epoch(

@@ -279,7 +279,14 @@ class ClusterLib:
             with subprocess.Popen(
                 cli_args_strs, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             ) as p:
-                stdout, stderr = p.communicate(timeout=timeout)
+                try:
+                    stdout, stderr = p.communicate(timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    # The child is not killed on timeout, and `Popen.__exit__` would wait for it
+                    # indefinitely
+                    p.kill()
+                    p.communicate()
+                    raise
                 retcode = p.returncode
 
             if retcode == 0:
@@ -350,40 +357,36 @@ class ClusterLib:
 
         Returns:
             int: A slot number of last block.
+
+        Raises:
+            exceptions.CLIError: If no new block is created for
+                `clusterlib_helpers.NEXT_BLOCK_TIMEOUT_SLOTS` slots' worth of wall-clock time.
         """
         min_sleep = 1.5  # in sec
         long_sleep = 15  # in sec
-        no_block_time = 0  # in slots
-        next_block_timeout = 300  # in slots
-        last_slot = -1
+        stall_tracker = clusterlib_helpers._StallTracker(
+            clusterlib_obj=self, waiting_for=f"slot number {slot}"
+        )
         printed = False
-        for __ in range(100):
+        # No iteration cap: the loop ends when the slot is reached, or when the stall tracker
+        # detects that no new blocks are being created.
+        while True:
             this_slot = self.g_query.get_slot_no()
 
             slots_diff = slot - this_slot
             if slots_diff <= 0:
                 return this_slot
 
-            if this_slot == last_slot:
-                if no_block_time >= next_block_timeout:
-                    msg = f"Failed to wait for slot number {slot}, no new blocks are being created."
-                    raise exceptions.CLIError(msg)
-            else:
-                no_block_time = 0
+            stall_tracker.update(slot=this_slot)
 
-            _sleep_time = slots_diff * self.slot_length
-            sleep_time = max(min_sleep, _sleep_time)
+            sleep_time = max(min_sleep, slots_diff * self.slot_length)
 
             if not printed and sleep_time > long_sleep:
                 LOGGER.info(f"Waiting for {sleep_time:.2f} sec for slot no {slot}.")
                 printed = True
 
-            last_slot = this_slot
-            no_block_time += slots_diff
-            time.sleep(sleep_time)
-
-        msg = f"Failed to wait for slot number {slot}."
-        raise exceptions.CLIError(msg)
+            # Don't oversleep the timeout
+            time.sleep(min(sleep_time, stall_tracker.time_left()))
 
     def wait_for_new_epoch(self, new_epochs: int = 1, padding_seconds: int = 0) -> int:
         """Wait for new epoch(s).

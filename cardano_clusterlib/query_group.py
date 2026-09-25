@@ -440,17 +440,17 @@ class QueryGroup:
     def get_slot_no(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return slot number of last block that was successfully applied to the ledger."""
         tip = tip or self.get_tip()
-        return int(self.get_tip()["slot"])
+        return int(tip["slot"])
 
     def get_block_no(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return block number of last block that was successfully applied to the ledger."""
         tip = tip or self.get_tip()
-        return int(self.get_tip()["block"])
+        return int(tip["block"])
 
     def get_epoch(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return epoch of last block that was successfully applied to the ledger."""
         tip = tip or self.get_tip()
-        return int(self.get_tip()["epoch"])
+        return int(tip["epoch"])
 
     def get_epoch_slot_no(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return slot number within a given epoch.
@@ -458,17 +458,17 @@ class QueryGroup:
         (of last block successfully applied to the ledger)
         """
         tip = tip or self.get_tip()
-        return int(self.get_tip()["slotInEpoch"])
+        return int(tip["slotInEpoch"])
 
     def get_slots_to_epoch_end(self, tip: dict[str, tp.Any] | None = None) -> int:
         """Return the number of slots left until the epoch end."""
         tip = tip or self.get_tip()
-        return int(self.get_tip()["slotsToEpochEnd"])
+        return int(tip["slotsToEpochEnd"])
 
     def get_era(self, tip: dict[str, tp.Any] | None = None) -> str:
         """Return network era."""
         tip = tip or self.get_tip()
-        era: str = self.get_tip()["era"]
+        era: str = tip["era"]
         return era
 
     def get_address_balance(self, address: str, coin: str = consts.DEFAULT_COIN) -> int:
