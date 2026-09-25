@@ -1,6 +1,5 @@
 """Wrapper for cardano-cli for working with cardano cluster."""
 
-import json
 import logging
 import pathlib as pl
 import subprocess
@@ -76,8 +75,7 @@ class ClusterLib:
         self.pparams_file = self.state_dir / f"pparams-{self._rand_str}.json"
 
         self.genesis_json = clusterlib_helpers._find_genesis_json(clusterlib_obj=self)
-        with open(self.genesis_json, encoding="utf-8") as in_json:
-            self.genesis = json.load(in_json)
+        self.genesis = clusterlib_helpers._read_genesis_json(genesis_json=self.genesis_json)
 
         self.slot_length = self.genesis["slotLength"]
         self.epoch_length = self.genesis["epochLength"]
@@ -97,17 +95,16 @@ class ClusterLib:
         # TODO: proper calculation based on `utxoCostPerWord` needed
         self._min_change_value = 1800_000
 
-        # Conway+ era
-        self.conway_genesis_json: pl.Path | None = None
-        self.conway_genesis: dict = {}
-
-        if self.era_in_use_value >= consts.Eras.CONWAY.value:
-            # Conway genesis
-            self.conway_genesis_json = clusterlib_helpers._find_conway_genesis_json(
-                clusterlib_obj=self
-            )
-            with open(self.conway_genesis_json, encoding="utf-8") as in_json:
-                self.conway_genesis = json.load(in_json)
+        # Era-specific genesis files, loaded only when the command era is the given era or newer
+        self.alonzo_genesis_json, self.alonzo_genesis = clusterlib_helpers._load_era_genesis(
+            clusterlib_obj=self, era=consts.Eras.ALONZO
+        )
+        self.conway_genesis_json, self.conway_genesis = clusterlib_helpers._load_era_genesis(
+            clusterlib_obj=self, era=consts.Eras.CONWAY
+        )
+        self.dijkstra_genesis_json, self.dijkstra_genesis = clusterlib_helpers._load_era_genesis(
+            clusterlib_obj=self, era=consts.Eras.DIJKSTRA
+        )
 
         self.overwrite_outfiles = True
 
