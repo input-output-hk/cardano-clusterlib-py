@@ -9,12 +9,24 @@ import re
 import time
 import typing as tp
 
+from cardano_clusterlib import consts
 from cardano_clusterlib import exceptions
 from cardano_clusterlib import types as itp
 
 LOGGER = logging.getLogger(__name__)
 
 SPECIAL_ARG_CHARS_RE = re.compile("[^A-Za-z0-9/._-]")
+
+# Shelley genesis keys (as key paths) that can be huge, e.g. with many injected pools
+# or UTxOs. The data are under `extraConfig` since cardano-cli 11.2, and under
+# `initialFunds` and `staking` before that.
+GENESIS_BULKY_KEYS: tuple[tuple[str, ...], ...] = (
+    ("initialFunds",),
+    ("staking",),
+    ("extraConfig", "initialFunds"),
+    ("extraConfig", "stakeCredentials"),
+    ("extraConfig", "stakePools"),
+)
 
 # Max number of slots' worth of wall-clock time to wait for a new block
 NEXT_BLOCK_TIMEOUT_SLOTS = 300
@@ -76,27 +88,81 @@ def _find_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
         raise exceptions.CLIError(msg)
 
     genesis_json = potential[0]
-    LOGGER.debug(f"Using shelley genesis JSON file `{genesis_json}")
+    LOGGER.debug(f"Using shelley genesis JSON file `{genesis_json}`")
     return genesis_json
 
 
-def _find_conway_genesis_json(clusterlib_obj: "itp.ClusterLib") -> pl.Path:
-    """Find Conway genesis JSON file in state dir."""
-    default = clusterlib_obj.state_dir / "shelley" / "genesis.conway.json"
+def _read_genesis_json(genesis_json: pl.Path) -> dict:
+    """Read genesis JSON file."""
+    with open(genesis_json, encoding="utf-8") as in_json:
+        genesis: dict = json.load(in_json)
+    return genesis
+
+
+def _load_shelley_genesis(genesis_json: pl.Path) -> dict:
+    """Load Shelley genesis JSON file, without the potentially huge keys.
+
+    Args:
+        genesis_json: A path to Shelley genesis JSON file.
+
+    Returns:
+        dict: The Shelley genesis, without keys listed in `GENESIS_BULKY_KEYS`.
+    """
+    genesis = _read_genesis_json(genesis_json=genesis_json)
+
+    for *parent_keys, key in GENESIS_BULKY_KEYS:
+        parent: tp.Any = genesis
+        for k in parent_keys:
+            parent = parent.get(k) if isinstance(parent, dict) else None
+        if isinstance(parent, dict):
+            parent.pop(key, None)
+
+    return genesis
+
+
+def _find_era_genesis_json(clusterlib_obj: "itp.ClusterLib", era: str) -> pl.Path:
+    """Find era-specific (Alonzo+) genesis JSON file in state dir.
+
+    Args:
+        clusterlib_obj: An instance of `ClusterLib`.
+        era: A lowercase name of the era (e.g. "conway").
+    """
+    default = clusterlib_obj.state_dir / "shelley" / f"genesis.{era}.json"
     if default.exists():
         return default
 
     potential = [
-        *clusterlib_obj.state_dir.glob("*conway*genesis.json"),
-        *clusterlib_obj.state_dir.glob("*genesis*conway.json"),
+        *clusterlib_obj.state_dir.glob(f"*{era}*genesis.json"),
+        *clusterlib_obj.state_dir.glob(f"*genesis*{era}.json"),
     ]
+    era_title = era.title()
     if not potential:
-        msg = f"Conway genesis JSON file not found in `{clusterlib_obj.state_dir}`."
+        msg = f"{era_title} genesis JSON file not found in `{clusterlib_obj.state_dir}`."
         raise exceptions.CLIError(msg)
 
     genesis_json = potential[0]
-    LOGGER.debug(f"Using Conway genesis JSON file `{genesis_json}")
+    LOGGER.debug(f"Using {era_title} genesis JSON file `{genesis_json}`")
     return genesis_json
+
+
+def _load_era_genesis(
+    clusterlib_obj: "itp.ClusterLib", era: consts.Eras
+) -> tuple[pl.Path | None, dict]:
+    """Find and load era-specific (Alonzo+) genesis, if the command era is `era` or newer.
+
+    Args:
+        clusterlib_obj: An instance of `ClusterLib`.
+        era: The era the genesis belongs to.
+
+    Returns:
+        tuple[pl.Path | None, dict]: A path to the genesis JSON file and the loaded genesis,
+            or `None` and an empty dict when the command era is older than `era`.
+    """
+    if clusterlib_obj.era_in_use_value < era.value:
+        return None, {}
+
+    genesis_json = _find_era_genesis_json(clusterlib_obj=clusterlib_obj, era=era.name.lower())
+    return genesis_json, _read_genesis_json(genesis_json=genesis_json)
 
 
 def _check_files_exist(*out_files: itp.FileType, clusterlib_obj: "itp.ClusterLib") -> None:
