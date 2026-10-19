@@ -1094,6 +1094,8 @@ def _get_script_args(  # noqa: C901
                 grouped_args.append("--spending-plutus-script-v2")
             elif tin.reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--spending-plutus-script-v3")
+            elif tin.reference_type == consts.ScriptTypes.PLUTUS_V4:
+                grouped_args.append("--spending-plutus-script-v4")
 
             if with_execution_units and tin.execution_units:
                 grouped_args.extend(
@@ -1180,6 +1182,8 @@ def _get_script_args(  # noqa: C901
                 grouped_args.append("--mint-plutus-script-v2")
             elif mrec_reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--mint-plutus-script-v3")
+            elif mrec_reference_type == consts.ScriptTypes.PLUTUS_V4:
+                grouped_args.append("--mint-plutus-script-v4")
 
             if with_execution_units and mrec.execution_units:
                 grouped_args.extend(
@@ -1248,6 +1252,8 @@ def _get_script_args(  # noqa: C901
                 grouped_args.append("--certificate-plutus-script-v2")
             if crec_reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--certificate-plutus-script-v3")
+            if crec_reference_type == consts.ScriptTypes.PLUTUS_V4:
+                grouped_args.append("--certificate-plutus-script-v4")
 
             if with_execution_units and crec.execution_units:
                 grouped_args.extend(
@@ -1356,6 +1362,8 @@ def _get_script_args(  # noqa: C901
                 grouped_args.append("--withdrawal-plutus-script-v2")
             elif wrec_reference_type == consts.ScriptTypes.PLUTUS_V3:
                 grouped_args.append("--withdrawal-plutus-script-v3")
+            elif wrec_reference_type == consts.ScriptTypes.PLUTUS_V4:
+                grouped_args.append("--withdrawal-plutus-script-v4")
 
             if with_execution_units and wrec.execution_units:
                 grouped_args.extend(
