@@ -24,6 +24,8 @@ jobs:
         python3 -m venv .venv
         source .venv/bin/activate
         make install
+    - name: Run unit tests
+      run: .venv/bin/python -m pytest tests
     - name: Load cached pre-commit env
       id: cached-pre-commit
       uses: actions/cache@v6

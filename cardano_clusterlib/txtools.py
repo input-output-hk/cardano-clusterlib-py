@@ -417,6 +417,8 @@ def _get_reference_txins(
     mint: structs.OptionalMint,
     complex_certs: structs.OptionalScriptCerts,
     script_withdrawals: structs.OptionalScriptWithdrawals,
+    complex_proposals: structs.OptionalScriptProposals = (),
+    script_votes: structs.OptionalScriptVotes = (),
 ) -> list[structs.UTXOData]:
     """Get list of reference txins."""
     script_ref_txins = [
@@ -426,6 +428,8 @@ def _get_reference_txins(
             *mint,
             *complex_certs,
             *script_withdrawals,
+            *complex_proposals,
+            *script_votes,
         )
         if r.reference_txin
     ]
@@ -1313,6 +1317,41 @@ def _get_script_args(  # noqa: C901
             if prec.redeemer_value:
                 grouped_args.extend(["--proposal-redeemer-value", str(prec.redeemer_value)])
 
+        if prec.reference_txin:
+            grouped_args.extend(
+                [
+                    "--proposal-tx-in-reference",
+                    f"{prec.reference_txin.utxo_hash}#{prec.reference_txin.utxo_ix}",
+                ]
+            )
+
+            prec_reference_type = prec.reference_type or consts.ScriptTypes.PLUTUS_V3
+            if prec_reference_type == consts.ScriptTypes.PLUTUS_V3:
+                grouped_args.append("--proposal-plutus-script-v3")
+            elif prec_reference_type == consts.ScriptTypes.PLUTUS_V4:
+                grouped_args.append("--proposal-plutus-script-v4")
+
+            if with_execution_units and prec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--proposal-reference-tx-in-execution-units",
+                        f"({prec.execution_units[0]},{prec.execution_units[1]})",
+                    ]
+                )
+
+            if prec.redeemer_file:
+                grouped_args.extend(
+                    ["--proposal-reference-tx-in-redeemer-file", str(prec.redeemer_file)]
+                )
+            if prec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--proposal-reference-tx-in-redeemer-cbor-file", str(prec.redeemer_cbor_file)]
+                )
+            if prec.redeemer_value:
+                grouped_args.extend(
+                    ["--proposal-reference-tx-in-redeemer-value", str(prec.redeemer_value)]
+                )
+
     # Withdrawals
     for wrec in script_withdrawals:
         wrec_collaterals = {f"{c.utxo_hash}#{c.utxo_ix}" for c in wrec.collaterals}
@@ -1422,6 +1461,41 @@ def _get_script_args(  # noqa: C901
                 grouped_args.extend(["--vote-redeemer-cbor-file", str(vrec.redeemer_cbor_file)])
             if vrec.redeemer_value:
                 grouped_args.extend(["--vote-redeemer-value", str(vrec.redeemer_value)])
+
+        if vrec.reference_txin:
+            grouped_args.extend(
+                [
+                    "--vote-tx-in-reference",
+                    f"{vrec.reference_txin.utxo_hash}#{vrec.reference_txin.utxo_ix}",
+                ]
+            )
+
+            vrec_reference_type = vrec.reference_type or consts.ScriptTypes.PLUTUS_V3
+            if vrec_reference_type == consts.ScriptTypes.PLUTUS_V3:
+                grouped_args.append("--vote-plutus-script-v3")
+            elif vrec_reference_type == consts.ScriptTypes.PLUTUS_V4:
+                grouped_args.append("--vote-plutus-script-v4")
+
+            if with_execution_units and vrec.execution_units:
+                grouped_args.extend(
+                    [
+                        "--vote-reference-tx-in-execution-units",
+                        f"({vrec.execution_units[0]},{vrec.execution_units[1]})",
+                    ]
+                )
+
+            if vrec.redeemer_file:
+                grouped_args.extend(
+                    ["--vote-reference-tx-in-redeemer-file", str(vrec.redeemer_file)]
+                )
+            if vrec.redeemer_cbor_file:
+                grouped_args.extend(
+                    ["--vote-reference-tx-in-redeemer-cbor-file", str(vrec.redeemer_cbor_file)]
+                )
+            if vrec.redeemer_value:
+                grouped_args.extend(
+                    ["--vote-reference-tx-in-redeemer-value", str(vrec.redeemer_value)]
+                )
 
     # Add unique collaterals
     grouped_args.extend(
