@@ -19,6 +19,26 @@ from cardano_clusterlib import types as itp
 LOGGER = logging.getLogger(__name__)
 
 
+def _get_pool_params_top(pool_state: dict) -> structs.PoolParamsTop:
+    """Normalize nested and flattened pool query records."""
+    retiring = pool_state.get("retiring")
+    pool_params = pool_state.get("poolParams")
+    if "poolParams" not in pool_state:
+        pool_params = {
+            k: v
+            for k, v in pool_state.items()
+            if k not in ("retiring", "futurePoolParams", "futureStakePoolParams")
+        }
+
+    return structs.PoolParamsTop(
+        pool_params=pool_params or {},
+        future_pool_params=pool_state.get("futureStakePoolParams")
+        or pool_state.get("futurePoolParams")
+        or {},
+        retiring=int(retiring) if retiring is not None else None,
+    )
+
+
 class QueryGroup:
     def __init__(self, clusterlib_obj: "itp.ClusterLib") -> None:
         self._clusterlib_obj = clusterlib_obj
@@ -176,9 +196,12 @@ class QueryGroup:
 
     def get_registered_stake_pools_ledger_state(self) -> dict:
         """Return ledger state info for registered stake pools."""
-        registered_pools_details: dict = self.get_ledger_state()["stateBefore"]["esLState"][
-            "delegationState"
-        ]["pstate"]["pParams pState"]
+        pool_state: dict = self.get_ledger_state()["stateBefore"]["esLState"]["delegationState"][
+            "pstate"
+        ]
+        registered_pools_details: dict = (
+            pool_state["stakePools"] if "stakePools" in pool_state else pool_state["pParams pState"]
+        )
         return registered_pools_details
 
     def get_stake_snapshot(
@@ -209,13 +232,13 @@ class QueryGroup:
         self,
         stake_pool_id: str,
     ) -> structs.PoolParamsTop:
-        """Return a pool parameters.
+        """Return current and future pool parameters and the retirement epoch.
 
         Args:
             stake_pool_id: An ID of the stake pool (Bech32-encoded or hex-encoded).
 
         Returns:
-            dict: A pool parameters.
+            PoolParamsTop: Pool parameters normalized from nested or flattened query output.
         """
         warnings.warn(
             "`pool-params` deprecated by `pool-state` for node 1.35.4+",
@@ -231,25 +254,19 @@ class QueryGroup:
         if pool_params and "poolParams" not in pool_params:
             pool_params = next(iter(pool_params.values()))
 
-        retiring = pool_params.get("retiring")  # pool retiring epoch
-        pparams_top = structs.PoolParamsTop(
-            pool_params=pool_params.get("poolParams") or {},
-            future_pool_params=pool_params.get("futurePoolParams") or {},
-            retiring=int(retiring) if retiring is not None else None,
-        )
-        return pparams_top
+        return _get_pool_params_top(pool_params)
 
     def get_pool_state(
         self,
         stake_pool_id: str,
     ) -> structs.PoolParamsTop:
-        """Return a pool state.
+        """Return current and future pool parameters and the retirement epoch.
 
         Args:
             stake_pool_id: An ID of the stake pool (Bech32-encoded or hex-encoded).
 
         Returns:
-            dict: A pool parameters.
+            PoolParamsTop: Pool parameters normalized from nested or flattened query output.
         """
         pool_state: dict = json.loads(
             self.query_cli(["pool-state", "--stake-pool-id", stake_pool_id])
@@ -259,13 +276,7 @@ class QueryGroup:
         if pool_state:
             pool_state = next(iter(pool_state.values()))
 
-        retiring = pool_state.get("retiring")  # pool retiring epoch
-        pparams_top = structs.PoolParamsTop(
-            pool_params=pool_state.get("poolParams") or {},
-            future_pool_params=pool_state.get("futurePoolParams") or {},
-            retiring=int(retiring) if retiring is not None else None,
-        )
-        return pparams_top
+        return _get_pool_params_top(pool_state)
 
     def get_stake_addr_info(self, stake_addr: str) -> structs.StakeAddrInfo:
         """Return the current delegations and reward accounts filtered by stake address.
