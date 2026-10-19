@@ -269,6 +269,83 @@ class TxRawOutput:
     # Hashes of signing keys that are required for the transaction
     required_signer_hashes: list[str] | tuple[()] = ()
     combined_reference_txins: OptionalUTXOData = ()  # All reference tx inputs
+    signed_sub_tx_files: itp.OptionalFiles = ()  # Embedded signed sub-transactions, in order
+    collateral_txins: OptionalUTXOData = ()  # Explicit parent collateral inputs
+
+
+@dataclasses.dataclass(frozen=True, order=True)
+class TxGuard:
+    """A transaction guard. Specify exactly one credential source.
+
+    Plutus scripts require a redeemer and execution units; native scripts and keys do not.
+    Verification keys and key files must be payment keys; hashes accept any Shelley key role.
+    """
+
+    verification_key: str = ""
+    verification_key_file: itp.FileType = ""
+    key_hash: str = ""
+    script_hash: str = ""
+    script_file: itp.FileType = ""
+    redeemer_file: itp.FileType = ""
+    redeemer_cbor_file: itp.FileType = ""
+    redeemer_value: str = ""
+    execution_units: tuple[int, int] | None = None
+
+
+@dataclasses.dataclass(frozen=True, order=True)
+class RequiredTopLevelGuard:
+    """A required enclosing guard, not a witness. Plutus requirements carry a datum."""
+
+    verification_key: str = ""
+    verification_key_file: itp.FileType = ""
+    key_hash: str = ""
+    script_hash: str = ""
+    script_file: itp.FileType = ""
+    datum_file: itp.FileType = ""
+    datum_cbor_file: itp.FileType = ""
+    datum_value: str = ""
+
+
+@dataclasses.dataclass(frozen=True, order=True)
+class SubTxRawOutput:
+    """An unsigned sub-transaction and its build details, with no fee or collateral."""
+
+    txins: list[UTXOData]
+    txouts: list[TxOut]
+    txouts_count: int
+    tx_files: TxFiles
+    out_file: pl.Path
+    build_args: list[str]
+    era: str = "dijkstra"
+    script_txins: OptionalScriptTxIn = ()
+    readonly_reference_txins: OptionalUTXOData = ()
+    combined_reference_txins: OptionalUTXOData = ()
+    mint: OptionalMint = ()
+    complex_certs: OptionalScriptCerts = ()
+    complex_proposals: OptionalScriptProposals = ()
+    withdrawals: OptionalTxOuts = ()
+    script_withdrawals: OptionalScriptWithdrawals = ()
+    script_votes: OptionalScriptVotes = ()
+    direct_deposits: OptionalTxOuts = ()
+    guards: list[TxGuard] | tuple[()] = ()
+    top_level_guards: list[RequiredTopLevelGuard] | tuple[()] = ()
+    invalid_before: int | None = None
+    invalid_hereafter: int | None = None
+    current_treasury_value: int | None = None
+    treasury_donation: int | None = None
+
+
+@dataclasses.dataclass(frozen=True, order=True)
+class SignedSubTx:
+    """Signed file and matching build details for batch balancing.
+
+    Supply the net certificate/proposal deposit explicitly when either is present.
+    The caller must ensure the build details describe the signed file unchanged.
+    """
+
+    out_file: itp.FileType
+    tx_raw_output: SubTxRawOutput
+    deposit: int | None = None
 
 
 @dataclasses.dataclass(frozen=True, order=True)

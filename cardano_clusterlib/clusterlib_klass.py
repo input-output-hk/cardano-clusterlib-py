@@ -22,6 +22,7 @@ from cardano_clusterlib import query_group
 from cardano_clusterlib import stake_address_group
 from cardano_clusterlib import stake_pool_group
 from cardano_clusterlib import structs
+from cardano_clusterlib import sub_transaction_group
 from cardano_clusterlib import transaction_group
 from cardano_clusterlib import types as itp
 
@@ -113,6 +114,7 @@ class ClusterLib:
 
         # Groups of commands
         self._transaction_group: transaction_group.TransactionGroup | None = None
+        self._sub_transaction_group: sub_transaction_group.SubTransactionGroup | None = None
         self._query_group: query_group.QueryGroup | None = None
         self._address_group: address_group.AddressGroup | None = None
         self._stake_address_group: stake_address_group.StakeAddressGroup | None = None
@@ -163,6 +165,13 @@ class ClusterLib:
         if not self._transaction_group:
             self._transaction_group = transaction_group.TransactionGroup(clusterlib_obj=self)
         return self._transaction_group
+
+    @property
+    def g_sub_transaction(self) -> sub_transaction_group.SubTransactionGroup:
+        """Dijkstra sub-transaction commands (availability checked when used)."""
+        if self._sub_transaction_group is None:
+            self._sub_transaction_group = sub_transaction_group.SubTransactionGroup(self)
+        return self._sub_transaction_group
 
     @property
     def g_query(self) -> query_group.QueryGroup:
