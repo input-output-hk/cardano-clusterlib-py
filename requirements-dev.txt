@@ -1,5 +1,7 @@
 -e .
 
+pytest
+
 # linting
 mypy~=1.19.0
 pre-commit~=4.5.0
