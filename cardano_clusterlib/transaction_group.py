@@ -430,6 +430,8 @@ class TransactionGroup:
                 mint=mint,
                 complex_certs=complex_certs,
                 script_withdrawals=script_withdrawals,
+                complex_proposals=complex_proposals,
+                script_votes=script_votes,
             ),
         )
 
@@ -1053,6 +1055,8 @@ class TransactionGroup:
                 mint=mint,
                 complex_certs=complex_certs,
                 script_withdrawals=script_withdrawals,
+                complex_proposals=complex_proposals,
+                script_votes=script_votes,
             ),
         )
 
@@ -1335,6 +1339,8 @@ class TransactionGroup:
                 mint=mint,
                 complex_certs=complex_certs,
                 script_withdrawals=script_withdrawals,
+                complex_proposals=complex_proposals,
+                script_votes=script_votes,
             ),
         )
 

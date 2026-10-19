@@ -156,6 +156,8 @@ class ComplexProposal:
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
+    reference_txin: UTXOData | None = None
+    reference_type: str = ""
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -170,6 +172,8 @@ class ScriptVote:
     redeemer_file: itp.FileType = ""
     redeemer_cbor_file: itp.FileType = ""
     redeemer_value: str = ""
+    reference_txin: UTXOData | None = None
+    reference_type: str = ""
 
 
 @dataclasses.dataclass(frozen=True, order=True)
