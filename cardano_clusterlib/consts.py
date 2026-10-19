@@ -60,6 +60,7 @@ class ScriptTypes:
     PLUTUS_V1: tp.Final[str] = "plutus_v1"
     PLUTUS_V2: tp.Final[str] = "plutus_v2"
     PLUTUS_V3: tp.Final[str] = "plutus_v3"
+    PLUTUS_V4: tp.Final[str] = "plutus_v4"
 
 
 class Votes(enum.Enum):
