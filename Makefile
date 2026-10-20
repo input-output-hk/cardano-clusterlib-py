@@ -97,7 +97,8 @@ upload: ## Upload package distributions to PyPI
 	twine upload --skip-existing dist/*
 
 .PHONY: release
-release: build upload ## Build and upload package distributions to PyPI
+release: build ## Build and upload package distributions to PyPI
+	$(MAKE) upload
 
 ## ---------------------------------------------------------------------------
 ## Documentation
