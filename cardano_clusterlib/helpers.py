@@ -35,10 +35,10 @@ def _prepend_flag(flag: str, contents: itp.UnpackableSequence) -> list[str]:
     Returns:
         list[str]: A list of flag followed by content, see below.
 
-    >>> ClusterLib._prepend_flag(None, "--foo", [1, 2, 3])
+    >>> _prepend_flag("--foo", [1, 2, 3])
     ['--foo', '1', '--foo', '2', '--foo', '3']
     """
-    return list(itertools.chain.from_iterable([flag, str(x)] for x in contents))
+    return list(itertools.chain.from_iterable([flag, str(x)] for x in contents if x is not None))
 
 
 def _check_outfiles(*out_files: itp.FileType) -> None:

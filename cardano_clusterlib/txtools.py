@@ -668,6 +668,7 @@ def _get_tx_ins_outs(
     src_addr_utxos: list[structs.UTXOData] | None = None,
     skip_asset_balancing: bool = False,
     balance_adjustments: dict[str, int] | None = None,
+    reserved_txins: structs.OptionalUTXOData = (),
 ) -> tuple[list[structs.UTXOData], list[structs.TxOut]]:
     """Return list of transaction's inputs and outputs.
 
@@ -683,9 +684,12 @@ def _get_tx_ins_outs(
         treasury_donation: A donation to the treasury to perform (optional).
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
         mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
-        src_addr_utxos: A list of UTxOs for the source address (optional).
+        src_addr_utxos: A complete candidate list for the source address (optional).
+            Only None triggers a query; an empty list means there are no candidates.
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
             (`build` command balance the assets automatically in newer versions).
+        reserved_txins: UTxOs excluded by hash and index during automatic input selection.
+            Explicit `txins` are used unchanged.
 
     Returns:
         tuple[list, list]: A tuple of list of transaction inputs and list of transaction
@@ -713,9 +717,18 @@ def _get_tx_ins_outs(
     txins_all = list(txins)
     if not txins_all:
         # No txins were provided, so we'll select them from the source address
-        address_utxos = src_addr_utxos or clusterlib_obj.g_query.get_utxo(address=src_address)
+        address_utxos = (
+            src_addr_utxos
+            if src_addr_utxos is not None
+            else clusterlib_obj.g_query.get_utxo(address=src_address)
+        )
         if not address_utxos:
             msg = f"No UTxO returned for '{src_address}'."
+            raise exceptions.CLIError(msg)
+        reserved_ids = {(t.utxo_hash, t.utxo_ix) for t in reserved_txins}
+        address_utxos = [t for t in address_utxos if (t.utxo_hash, t.utxo_ix) not in reserved_ids]
+        if not address_utxos:
+            msg = f"No unreserved UTxO available for '{src_address}'."
             raise exceptions.CLIError(msg)
         txins_all = _get_usable_utxos(address_utxos=address_utxos, coins=outcoins_all)
 
@@ -840,11 +853,13 @@ def collect_data_for_build(
             data (optional).
         deposit: A deposit amount needed by the transaction (optional).
         treasury_donation: A donation to the treasury to perform (optional).
-        src_addr_utxos: A list of UTxOs for the source address (optional).
+        src_addr_utxos: A complete candidate list for the source address (optional).
+            Only None triggers a query; an empty list means there are no candidates.
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
             (`build` command balance the assets automatically in newer versions).
         sub_transactions: Signed children with matching build details for batch balancing.
-        reserved_txins: Inputs excluded from automatic parent selection for batches.
+        reserved_txins: UTxOs excluded by hash and index during automatic input selection,
+            with or without sub-transactions. Explicit `txins` are used unchanged.
 
     Returns:
         structs.DataForBuild: A data container with data for build(-raw) commands.
@@ -857,24 +872,14 @@ def collect_data_for_build(
         if any((t.utxo_hash, t.utxo_ix) in child_inputs for t in parent_inputs):
             msg = "Parent and sub-transactions cannot spend the same input."
             raise ValueError(msg)
-        if not parent_inputs:
-            candidates = (
-                src_addr_utxos
-                if src_addr_utxos is not None
-                else clusterlib_obj.g_query.get_utxo(address=src_address)
-            )
-            reserved = {(t.utxo_hash, t.utxo_ix) for t in reserved_txins}
-            reserved.update(
-                (t.utxo_hash, t.utxo_ix)
-                for s in sub_transactions
-                for t in s.tx_raw_output.combined_reference_txins
-            )
-            src_addr_utxos = [
-                t for t in candidates if (t.utxo_hash, t.utxo_ix) not in child_inputs | reserved
-            ]
-            if not src_addr_utxos:
-                msg = "No parent inputs remain after excluding sub-transaction inputs."
-                raise ValueError(msg)
+
+    # Pass reservations, not a prefiltered candidate cache, to the shared selection layer.
+    combined_reserved_txins = list(reserved_txins)
+    for sub in sub_transactions:
+        body = sub.tx_raw_output
+        combined_reserved_txins.extend(body.txins)
+        combined_reserved_txins.extend(t for s in body.script_txins for t in s.txins)
+        combined_reserved_txins.extend(body.combined_reference_txins)
 
     withdrawals, script_withdrawals, withdrawals_txouts = _get_withdrawals(
         clusterlib_obj=clusterlib_obj,
@@ -920,6 +925,7 @@ def collect_data_for_build(
         src_addr_utxos=src_addr_utxos,
         skip_asset_balancing=skip_asset_balancing,
         balance_adjustments=balance_adjustments,
+        reserved_txins=combined_reserved_txins,
     )
 
     payment_txins = txins or txins_copy

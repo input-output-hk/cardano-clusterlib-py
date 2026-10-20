@@ -12,6 +12,7 @@ Changes in releases up to v0.10.6 are listed in the [GitHub releases](https://gi
 - Ordered embedding in `build_raw_tx_bare` and batch balancing in `build_raw_tx`, `calculate_tx_fee`, and `send_tx` using `SignedSubTx` records.
 - File-only embedding through `build_raw_tx(sub_transaction_files=...)` with explicit inputs and manually balanced outputs, without automatic input selection or change.
 - Explicit parent `collateral_txins` for raw transactions, including batches with Plutus sub-transactions.
+- General reserved-input exclusion in `collect_data_for_build` and the shared input-selection helper, including for transactions without sub-transactions. An explicitly empty source UTxO cache no longer triggers a fallback query.
 
 ## [0.10.7]
 

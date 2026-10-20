@@ -323,18 +323,19 @@ class TransactionGroup:
 
         misc_args = []
 
-        if invalid_before is not None:
-            misc_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is not None:
             misc_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
         elif ttl is not None:
             # `--ttl` and `--invalid-hereafter` are the same
             misc_args.extend(["--ttl", str(ttl)])
 
-        if current_treasury_value is not None:
-            misc_args.extend(["--current-treasury-value", str(current_treasury_value)])
-        if treasury_donation is not None:
-            misc_args.extend(["--treasury-donation", str(treasury_donation)])
+        for flag, val in (
+            ("--invalid-before", invalid_before),
+            ("--current-treasury-value", current_treasury_value),
+            ("--treasury-donation", treasury_donation),
+        ):
+            if val is not None:
+                misc_args.extend([flag, str(val)])
 
         if not script_valid:
             misc_args.append("--script-invalid")

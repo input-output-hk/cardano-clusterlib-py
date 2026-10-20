@@ -22,11 +22,13 @@ class SubTransactionGroup:
         era = self._clusterlib_obj.command_era
         if self._supported_era == era:
             return
+
         try:
             self._clusterlib_obj.cli(["sub-transaction", "--help"])
         except exceptions.CLIError as exc:
             msg = f"Sub-transactions are unavailable in command era '{era}' with this CLI."
             raise exceptions.CLIError(msg) from exc
+
         self._supported_era = era
 
     def build_raw_tx_bare(
@@ -66,20 +68,26 @@ class SubTransactionGroup:
         Canonicalization, if requested, happens before signing.
         """
         self._check_supported()
+
         out_file = pl.Path(out_file).expanduser()
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
         tx_files = tx_files or structs.TxFiles()
+
         if any(o.amount < 0 for o in txouts):
             msg = "Sub-transaction outputs must have explicit nonnegative amounts."
             raise ValueError(msg)
+
         if any(o.coin != consts.DEFAULT_COIN or o.amount <= 0 for o in direct_deposits):
             msg = "Direct deposits require positive lovelace amounts."
             raise ValueError(msg)
+
         withdrawals, script_withdrawals, __ = txtools._get_withdrawals(
             clusterlib_obj=self._clusterlib_obj,
             withdrawals=withdrawals,
             script_withdrawals=script_withdrawals,
         )
+
         script_args = txtools._get_script_args(
             script_txins=script_txins,
             mint=mint,
@@ -89,24 +97,29 @@ class SubTransactionGroup:
             script_votes=script_votes,
             for_sub_transaction=True,
         )
+
         guard_args = list(
             itertools.chain.from_iterable(
                 txtools._get_guard_args(g) for g in (*guards, *top_level_guards)
             )
         )
+
         txout_args, processed_txouts, txouts_count = txtools._process_txouts(
             txouts=list(txouts),
             join_txouts=join_txouts,
         )
+
         misc_args: list[str] = []
-        for flag, amount in (
+
+        for flag, val in (
             ("--invalid-before", invalid_before),
             ("--invalid-hereafter", invalid_hereafter),
             ("--current-treasury-value", current_treasury_value),
             ("--treasury-donation", treasury_donation),
         ):
-            if amount is not None:
-                misc_args.extend([flag, str(amount)])
+            if val is not None:
+                misc_args.extend([flag, str(val)])
+
         if protocol_params_file:
             misc_args.extend(["--protocol-params-file", str(protocol_params_file)])
         elif (
@@ -116,13 +129,17 @@ class SubTransactionGroup:
         ):
             self._clusterlib_obj.create_pparams_file()
             misc_args.extend(["--protocol-params-file", str(self._clusterlib_obj.pparams_file)])
+
         minted = [f"{o.amount} {o.coin}" for m in mint for o in m.txouts]
         if minted:
             misc_args.extend(["--mint", "+".join(minted)])
+
         if out_canonical_cbor:
             misc_args.append("--out-canonical-cbor")
+
         if tx_files.metadata_json_files and tx_files.metadata_json_detailed_schema:
             misc_args.append("--json-metadata-detailed-schema")
+
         cli_args = [
             "sub-transaction",
             "build-raw",
@@ -160,8 +177,10 @@ class SubTransactionGroup:
             "--out-file",
             str(out_file),
         ]
+
         self._clusterlib_obj.cli(cli_args)
         helpers._check_outfiles(out_file)
+
         return structs.SubTxRawOutput(
             txins=list(txins),
             txouts=processed_txouts,
@@ -208,8 +227,10 @@ class SubTransactionGroup:
         produces the signed envelope required for embedding script-authorized children.
         """
         self._check_supported()
+
         out_file = pl.Path(destination_dir).expanduser() / f"{tx_name}_sub_tx.signed"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
+
         self._clusterlib_obj.cli(
             [
                 "sub-transaction",
@@ -221,6 +242,7 @@ class SubTransactionGroup:
                 str(out_file),
             ]
         )
+
         helpers._check_outfiles(out_file)
         return out_file
 
@@ -233,8 +255,11 @@ class SubTransactionGroup:
         if bool(sub_tx_file) == bool(signed_sub_tx_file):
             msg = "Specify exactly one of sub_tx_file and signed_sub_tx_file."
             raise ValueError(msg)
+
         self._check_supported()
+
         flag = "--sub-tx-file" if sub_tx_file else "--signed-sub-tx-file"
+
         return (
             self._clusterlib_obj.cli(
                 [
