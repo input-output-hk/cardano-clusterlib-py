@@ -65,6 +65,14 @@ install: ## Install cardano-clusterlib and its dependencies into a virtual envir
 	@echo "Virtual environment ready. Activate with: source $(VENV)/bin/activate"
 
 ## ---------------------------------------------------------------------------
+## Testing
+## ---------------------------------------------------------------------------
+
+.PHONY: tests
+tests: .check-venv-exists ## Run unit tests
+	$(VENV_ENV) $(PY) -m pytest tests
+
+## ---------------------------------------------------------------------------
 ## Linting
 ## ---------------------------------------------------------------------------
 

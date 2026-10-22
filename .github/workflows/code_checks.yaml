@@ -25,7 +25,7 @@ jobs:
         source .venv/bin/activate
         make install
     - name: Run unit tests
-      run: .venv/bin/python -m pytest tests
+      run: make tests
     - name: Load cached pre-commit env
       id: cached-pre-commit
       uses: actions/cache@v6
@@ -44,6 +44,4 @@ jobs:
         fi
         exit "$retval"
     - name: Run pre-commit linters
-      run: |
-        source .venv/bin/activate
-        pre-commit run -a --show-diff-on-failure --color=always
+      run: make lint
