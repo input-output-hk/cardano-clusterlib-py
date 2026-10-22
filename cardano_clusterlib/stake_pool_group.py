@@ -40,7 +40,7 @@ class StakePoolGroup:
         cold_vkey_file: itp.FileType,
         owner_stake_vkey_files: itp.FileTypeList,
         reward_account_vkey_file: itp.FileType | None = None,
-        bls_signing_key_file: itp.FileType | None = None,
+        bls_skey_file: itp.FileType | None = None,
         destination_dir: itp.FileType = ".",
     ) -> pl.Path:
         """Generate a stake pool registration certificate.
@@ -51,7 +51,7 @@ class StakePoolGroup:
             cold_vkey_file: A path to pool cold vkey file.
             owner_stake_vkey_files: A list of paths to pool owner stake vkey files.
             reward_account_vkey_file: A path to pool reward account vkey file (optional).
-            bls_signing_key_file: A path to pool BLS signing key file (required in Dijkstra+ eras).
+            bls_skey_file: A path to pool BLS signing key file (required in Dijkstra+ eras).
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -70,9 +70,7 @@ class StakePoolGroup:
                 str(pool_data.pool_metadata_hash),
             ]
 
-        bls_key_cmd = (
-            ["--bls-signing-key-file", str(bls_signing_key_file)] if bls_signing_key_file else []
-        )
+        bls_key_cmd = ["--bls-signing-key-file", str(bls_skey_file)] if bls_skey_file else []
 
         relay_cmd = []
         if pool_data.pool_relay_dns:
@@ -244,7 +242,7 @@ class StakePoolGroup:
             reward_account_vkey_file=reward_account_key_pair.vkey_file
             if reward_account_key_pair
             else None,
-            bls_signing_key_file=node_bls.skey_file if node_bls else None,
+            bls_skey_file=node_bls.skey_file if node_bls else None,
             destination_dir=destination_dir,
         )
 
@@ -269,7 +267,7 @@ class StakePoolGroup:
         cold_key_pair: structs.ColdKeyPair,
         tx_name: str,
         reward_account_vkey_file: itp.FileType | None = None,
-        bls_signing_key_file: itp.FileType | None = None,
+        bls_skey_file: itp.FileType | None = None,
         deposit: int | None = None,
         destination_dir: itp.FileType = ".",
     ) -> tuple[pl.Path, structs.TxRawOutput]:
@@ -284,7 +282,7 @@ class StakePoolGroup:
                 and the counter.
             tx_name: A name of the transaction.
             reward_account_vkey_file: A path to reward account vkey file (optional).
-            bls_signing_key_file: A path to pool BLS signing key file (required in Dijkstra+ eras).
+            bls_skey_file: A path to pool BLS signing key file (required in Dijkstra+ eras).
             deposit: A deposit amount needed by the transaction (optional).
             destination_dir: A path to directory for storing artifacts (optional).
 
@@ -299,7 +297,7 @@ class StakePoolGroup:
             cold_vkey_file=cold_key_pair.vkey_file,
             owner_stake_vkey_files=[p.stake.vkey_file for p in pool_owners],
             reward_account_vkey_file=reward_account_vkey_file,
-            bls_signing_key_file=bls_signing_key_file,
+            bls_skey_file=bls_skey_file,
             destination_dir=destination_dir,
         )
 
