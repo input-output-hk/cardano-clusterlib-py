@@ -119,7 +119,9 @@ class QueryGroup:
         elif tx_raw_output:
             sort_results = True
             change_txout_num = 1 if tx_raw_output.change_address else 0
-            return_collateral_txout_num = 1 if tx_raw_output.script_txins else 0
+            return_collateral_txout_num = (
+                1 if tx_raw_output.script_txins or tx_raw_output.return_collateral_txouts else 0
+            )
             num_of_txouts = (
                 tx_raw_output.txouts_count + change_txout_num + return_collateral_txout_num
             )

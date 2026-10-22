@@ -631,6 +631,29 @@ def _process_txouts(
     return _list_txouts(txouts=txouts), txouts, len(txouts)
 
 
+def _validate_batch_funds(
+    txins_db: dict[str, list[structs.UTXOData]],
+    txouts_db: dict[str, list[structs.TxOut]],
+    mint_db: dict[str, list[structs.TxOut]],
+    withdrawals: structs.OptionalTxOuts,
+    fee: int,
+    deposit: int,
+    donation: int,
+) -> None:
+    """Reject insufficient batch funds rather than building an unbalanced parent."""
+    for coin in set(txins_db) | set(txouts_db) | set(mint_db):
+        available = sum(t.amount for t in txins_db.get(coin, []))
+        needed = sum(max(0, t.amount) for t in txouts_db.get(coin, []))
+        if coin == consts.DEFAULT_COIN:
+            available += sum(t.amount for t in withdrawals)
+            needed += max(0, fee) + deposit + donation
+        else:
+            available += sum(t.amount for t in mint_db.get(coin, []))
+        if available < needed:
+            msg = f"Insufficient batch funds for '{coin}': {available} available, {needed} needed."
+            raise ValueError(msg)
+
+
 def _get_tx_ins_outs(
     clusterlib_obj: "itp.ClusterLib",
     src_address: str,
@@ -644,10 +667,13 @@ def _get_tx_ins_outs(
     mint_txouts: structs.OptionalTxOuts = (),
     src_addr_utxos: list[structs.UTXOData] | None = None,
     skip_asset_balancing: bool = False,
+    balance_adjustments: dict[str, int] | None = None,
+    reserved_txins: structs.OptionalUTXOData = (),
 ) -> tuple[list[structs.UTXOData], list[structs.TxOut]]:
     """Return list of transaction's inputs and outputs.
 
     Args:
+        balance_adjustments: Per-asset net credits/debits from embedded sub-transactions.
         clusterlib_obj: An instance of `ClusterLib`.
         src_address: An address used for fee and inputs (if inputs not specified by `txins`).
         tx_files: A `structs.TxFiles` data container containing files needed for the transaction.
@@ -658,14 +684,31 @@ def _get_tx_ins_outs(
         treasury_donation: A donation to the treasury to perform (optional).
         withdrawals: A list (iterable) of `TxOuts`, specifying reward withdrawals (optional).
         mint_txouts: A list (iterable) of `TxOuts`, specifying minted tokens (optional).
-        src_addr_utxos: A list of UTxOs for the source address (optional).
+        src_addr_utxos: A complete candidate list for the source address (optional).
+            Only None triggers a query; an empty list means there are no candidates.
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
             (`build` command balance the assets automatically in newer versions).
+        reserved_txins: UTxOs excluded by hash and index during automatic input selection.
+            Explicit `txins` are used unchanged.
 
     Returns:
         tuple[list, list]: A tuple of list of transaction inputs and list of transaction
             outputs.
     """
+    # Batch credits/debits affect balancing only, never emitted withdrawal/mint arguments.
+    if balance_adjustments:
+        withdrawals = [
+            *withdrawals,
+            structs.TxOut(address="", amount=balance_adjustments.get(consts.DEFAULT_COIN, 0)),
+        ]
+        mint_txouts = [
+            *mint_txouts,
+            *[
+                structs.TxOut(address="", amount=amount, coin=coin)
+                for coin, amount in balance_adjustments.items()
+                if coin != consts.DEFAULT_COIN
+            ],
+        ]
     txouts_passed_db: dict[str, list[structs.TxOut]] = _organize_tx_ins_outs_by_coin(txouts)
     txouts_mint_db: dict[str, list[structs.TxOut]] = _organize_tx_ins_outs_by_coin(mint_txouts)
     outcoins_all = {consts.DEFAULT_COIN, *txouts_mint_db.keys(), *txouts_passed_db.keys()}
@@ -674,9 +717,18 @@ def _get_tx_ins_outs(
     txins_all = list(txins)
     if not txins_all:
         # No txins were provided, so we'll select them from the source address
-        address_utxos = src_addr_utxos or clusterlib_obj.g_query.get_utxo(address=src_address)
+        address_utxos = (
+            src_addr_utxos
+            if src_addr_utxos is not None
+            else clusterlib_obj.g_query.get_utxo(address=src_address)
+        )
         if not address_utxos:
             msg = f"No UTxO returned for '{src_address}'."
+            raise exceptions.CLIError(msg)
+        reserved_ids = {(t.utxo_hash, t.utxo_ix) for t in reserved_txins}
+        address_utxos = [t for t in address_utxos if (t.utxo_hash, t.utxo_ix) not in reserved_ids]
+        if not address_utxos:
+            msg = f"No unreserved UTxO available for '{src_address}'."
             raise exceptions.CLIError(msg)
         txins_all = _get_usable_utxos(address_utxos=address_utxos, coins=outcoins_all)
 
@@ -726,6 +778,17 @@ def _get_tx_ins_outs(
         msg = "Cannot build transaction, empty `txins`."
         raise exceptions.CLIError(msg)
 
+    if balance_adjustments:
+        _validate_batch_funds(
+            txins_db=txins_db_filtered,
+            txouts_db=txouts_passed_db,
+            mint_db=txouts_mint_db,
+            withdrawals=withdrawals,
+            fee=fee,
+            deposit=tx_deposit,
+            donation=tx_treasury_donation,
+        )
+
     # Balance the transaction
     txouts_balanced = _balance_txouts(
         # Return change to `src_address`.
@@ -766,6 +829,8 @@ def collect_data_for_build(
     treasury_donation: int | None = None,
     src_addr_utxos: list[structs.UTXOData] | None = None,
     skip_asset_balancing: bool = False,
+    sub_transactions: list[structs.SignedSubTx] | tuple[()] = (),
+    reserved_txins: structs.OptionalUTXOData = (),
 ) -> structs.DataForBuild:
     """Collect data (txins, txouts, withdrawals) needed for building a transaction.
 
@@ -788,14 +853,33 @@ def collect_data_for_build(
             data (optional).
         deposit: A deposit amount needed by the transaction (optional).
         treasury_donation: A donation to the treasury to perform (optional).
-        src_addr_utxos: A list of UTxOs for the source address (optional).
+        src_addr_utxos: A complete candidate list for the source address (optional).
+            Only None triggers a query; an empty list means there are no candidates.
         skip_asset_balancing: A bool indicating if assets balancing should be skipped
             (`build` command balance the assets automatically in newer versions).
+        sub_transactions: Signed children with matching build details for batch balancing.
+        reserved_txins: UTxOs excluded by hash and index during automatic input selection,
+            with or without sub-transactions. Explicit `txins` are used unchanged.
 
     Returns:
         structs.DataForBuild: A data container with data for build(-raw) commands.
     """
     tx_files = tx_files or structs.TxFiles()
+
+    balance_adjustments, child_inputs = _get_sub_tx_balance(sub_transactions)
+    if child_inputs:
+        parent_inputs = [*txins, *[t for s in script_txins for t in s.txins]]
+        if any((t.utxo_hash, t.utxo_ix) in child_inputs for t in parent_inputs):
+            msg = "Parent and sub-transactions cannot spend the same input."
+            raise ValueError(msg)
+
+    # Pass reservations, not a prefiltered candidate cache, to the shared selection layer.
+    combined_reserved_txins = list(reserved_txins)
+    for sub in sub_transactions:
+        body = sub.tx_raw_output
+        combined_reserved_txins.extend(body.txins)
+        combined_reserved_txins.extend(t for s in body.script_txins for t in s.txins)
+        combined_reserved_txins.extend(body.combined_reference_txins)
 
     withdrawals, script_withdrawals, withdrawals_txouts = _get_withdrawals(
         clusterlib_obj=clusterlib_obj,
@@ -840,6 +924,8 @@ def collect_data_for_build(
         mint_txouts=mint_txouts,
         src_addr_utxos=src_addr_utxos,
         skip_asset_balancing=skip_asset_balancing,
+        balance_adjustments=balance_adjustments,
+        reserved_txins=combined_reserved_txins,
     )
 
     payment_txins = txins or txins_copy
@@ -853,6 +939,48 @@ def collect_data_for_build(
         withdrawals=withdrawals,
         script_withdrawals=script_withdrawals,
     )
+
+
+def _get_sub_tx_balance(
+    sub_transactions: list[structs.SignedSubTx] | tuple[()],
+) -> tuple[dict[str, int], set[tuple[str, int]]]:
+    """Compute per-asset batch credits from caller-supplied, unchanged build details."""
+    balance: dict[str, int] = {}
+    spent: set[tuple[str, int]] = set()
+    for sub in sub_transactions:
+        body = sub.tx_raw_output
+        if (
+            body.tx_files.certificate_files
+            or body.complex_certs
+            or body.tx_files.proposal_files
+            or body.complex_proposals
+        ) and sub.deposit is None:
+            msg = "Supply an explicit net deposit for sub-transactions with certificates/proposals."
+            raise ValueError(msg)
+        inputs = [*body.txins, *[t for s in body.script_txins for t in s.txins]]
+        # A UTxO has one record per asset and can also appear in both input lists.
+        inputs = list({(t.utxo_hash, t.utxo_ix, t.coin): t for t in inputs}.values())
+        ids = {(t.utxo_hash, t.utxo_ix) for t in inputs}
+        if not ids:
+            msg = "Sub-transaction build details must include spending inputs."
+            raise ValueError(msg)
+        if spent.intersection(ids):
+            msg = "Sub-transactions cannot spend the same input."
+            raise ValueError(msg)
+        spent.update(ids)
+        for records, sign in (
+            (inputs, 1),
+            (body.txouts, -1),
+            ([t for m in body.mint for t in m.txouts], 1),
+            ([*body.withdrawals, *[s.txout for s in body.script_withdrawals]], 1),
+            (body.direct_deposits, -1),
+        ):
+            for record in records:
+                balance[record.coin] = balance.get(record.coin, 0) + sign * record.amount
+        balance[consts.DEFAULT_COIN] = (
+            balance.get(consts.DEFAULT_COIN, 0) - (sub.deposit or 0) - (body.treasury_donation or 0)
+        )
+    return balance, spent
 
 
 def get_utxo(
@@ -1019,6 +1147,54 @@ def filter_utxos(
     return filtered_utxos
 
 
+def _get_guard_args(guard: structs.TxGuard | structs.RequiredTopLevelGuard) -> list[str]:
+    """Format a transaction guard or an enclosing-transaction guard requirement.
+
+    Keep each credential and its associated data together and preserve the caller's
+    guard order. This formatting is shared by transaction and sub-transaction builders.
+    """
+    top_level = isinstance(guard, structs.RequiredTopLevelGuard)
+    prefix = "--top-level-guard" if top_level else "--guard"
+    sources = {
+        "verification-key": guard.verification_key,
+        "verification-key-file": guard.verification_key_file,
+        "key-hash": guard.key_hash,
+        "script-hash": guard.script_hash,
+        "script-file": guard.script_file,
+    }
+    selected = [(name, value) for name, value in sources.items() if value]
+    if len(selected) != 1:
+        msg = "Specify exactly one credential source for each guard."
+        raise ValueError(msg)
+    name, value = selected[0]
+    args = [f"{prefix}-{name}", str(value)]
+    if isinstance(guard, structs.RequiredTopLevelGuard):
+        data = {
+            "datum-file": guard.datum_file,
+            "datum-cbor-file": guard.datum_cbor_file,
+            "datum-value": guard.datum_value,
+        }
+    else:
+        data = {
+            "redeemer-file": guard.redeemer_file,
+            "redeemer-cbor-file": guard.redeemer_cbor_file,
+            "redeemer-value": guard.redeemer_value,
+        }
+        if bool(any(data.values())) != (guard.execution_units is not None):
+            msg = "Guard redeemer and execution units must be supplied together."
+            raise ValueError(msg)
+        if guard.execution_units is not None:
+            steps, memory = guard.execution_units
+            args.extend([f"{prefix}-execution-units", f"({steps},{memory})"])
+    selected_data = [(key, val) for key, val in data.items() if val]
+    if len(selected_data) > 1 or (selected_data and not name.startswith("script-")):
+        msg = "Guard data requires a script credential and exactly one data source."
+        raise ValueError(msg)
+    for key, val in selected_data:
+        args.extend([f"{prefix}-{key}", str(val)])
+    return args
+
+
 def _get_script_args(  # noqa: C901
     script_txins: structs.OptionalScriptTxIn,
     mint: structs.OptionalMint,
@@ -1027,7 +1203,28 @@ def _get_script_args(  # noqa: C901
     script_withdrawals: structs.OptionalScriptWithdrawals,
     script_votes: structs.OptionalScriptVotes,
     with_execution_units: bool = True,
+    for_sub_transaction: bool = False,
 ) -> list[str]:
+    if for_sub_transaction:
+        records = [
+            *script_txins,
+            *mint,
+            *complex_certs,
+            *complex_proposals,
+            *script_withdrawals,
+            *script_votes,
+        ]
+        for record in records:
+            if record.collaterals:
+                msg = "Sub-transactions cannot have collateral. Supply it in the parent."
+                raise ValueError(msg)
+            if record.reference_txin and record.reference_type not in (
+                consts.ScriptTypes.SIMPLE_V1,
+                consts.ScriptTypes.SIMPLE_V2,
+                consts.ScriptTypes.PLUTUS_V4,
+            ):
+                msg = "Sub-transaction reference scripts require an explicit native or V4 type."
+                raise ValueError(msg)
     grouped_args: list[str] = []
     collaterals_all = set()
 

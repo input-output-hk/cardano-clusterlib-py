@@ -232,6 +232,8 @@ class TransactionGroup:
         treasury_donation: int | None = None,
         script_valid: bool = True,
         join_txouts: bool = True,
+        signed_sub_tx_files: itp.OptionalFiles = (),
+        collateral_txins: structs.OptionalUTXOData = (),
     ) -> structs.TxRawOutput:
         """Build a raw transaction.
 
@@ -271,10 +273,16 @@ class TransactionGroup:
             script_valid: A bool indicating that the script is valid (True by default).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
+            signed_sub_tx_files: Signed sub-transactions to embed in order (Dijkstra only).
+                Inputs and outputs must be balanced across the entire batch by the caller.
+            collateral_txins: Explicit parent collateral inputs, including for child scripts.
 
         Returns:
             structs.TxRawOutput: A data container with transaction output details.
         """
+        if signed_sub_tx_files:
+            self._clusterlib_obj.g_sub_transaction._check_supported()
+
         if (treasury_donation is not None) != (current_treasury_value is not None):
             msg = (
                 "Both `treasury_donation` and `current_treasury_value` must be specified together."
@@ -315,18 +323,19 @@ class TransactionGroup:
 
         misc_args = []
 
-        if invalid_before is not None:
-            misc_args.extend(["--invalid-before", str(invalid_before)])
         if invalid_hereafter is not None:
             misc_args.extend(["--invalid-hereafter", str(invalid_hereafter)])
         elif ttl is not None:
             # `--ttl` and `--invalid-hereafter` are the same
             misc_args.extend(["--ttl", str(ttl)])
 
-        if current_treasury_value is not None:
-            misc_args.extend(["--current-treasury-value", str(current_treasury_value)])
-        if treasury_donation is not None:
-            misc_args.extend(["--treasury-donation", str(treasury_donation)])
+        for flag, val in (
+            ("--invalid-before", invalid_before),
+            ("--current-treasury-value", current_treasury_value),
+            ("--treasury-donation", treasury_donation),
+        ):
+            if val is not None:
+                misc_args.extend([flag, str(val)])
 
         if not script_valid:
             misc_args.append("--script-invalid")
@@ -337,6 +346,13 @@ class TransactionGroup:
 
         for txin in readonly_reference_txins:
             misc_args.extend(["--read-only-tx-in-reference", f"{txin.utxo_hash}#{txin.utxo_ix}"])
+
+        misc_args.extend(
+            helpers._prepend_flag(
+                flag="--tx-in-collateral",
+                contents=sorted({f"{t.utxo_hash}#{t.utxo_ix}" for t in collateral_txins}),
+            )
+        )
 
         grouped_args = txtools._get_script_args(
             script_txins=script_txins,
@@ -394,6 +410,7 @@ class TransactionGroup:
             *helpers._prepend_flag("--withdrawal", withdrawal_strings),
             *txtools._get_return_collateral_txout_args(txouts=return_collateral_txouts),
             *misc_args,
+            *helpers._prepend_flag(flag="--signed-sub-tx-file", contents=signed_sub_tx_files),
         ]
 
         self._clusterlib_obj.cli(cli_args)
@@ -405,6 +422,8 @@ class TransactionGroup:
             tx_files=tx_files,
             out_file=out_file,
             fee=fee,
+            signed_sub_tx_files=signed_sub_tx_files,
+            collateral_txins=collateral_txins,
             build_args=cli_args,
             era=self._clusterlib_obj.era_in_use,
             script_txins=script_txins,
@@ -464,9 +483,16 @@ class TransactionGroup:
         script_valid: bool = True,
         src_addr_utxos: list[structs.UTXOData] | None = None,
         join_txouts: bool = True,
+        sub_transactions: list[structs.SignedSubTx] | tuple[()] = (),
+        collateral_txins: structs.OptionalUTXOData = (),
+        sub_transaction_files: itp.OptionalFiles = (),
         destination_dir: itp.FileType = ".",
     ) -> structs.TxRawOutput:
-        """Balance inputs and outputs and build a raw transaction.
+        """Build a raw transaction, balancing unless file-only children are supplied.
+
+        With `sub_transaction_files`, the caller must balance the whole batch: inputs
+        are used as supplied, and no change is added. `src_address`, `src_addr_utxos`,
+        and `deposit` do not participate in balancing in this mode.
 
         Args:
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
@@ -507,6 +533,12 @@ class TransactionGroup:
             src_addr_utxos: A list of UTxOs for the source address (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
+            sub_transactions: Signed children with matching unchanged build details, used
+                for batch balancing. Explicit net deposits are required for child certs/proposals.
+            collateral_txins: Explicit parent collateral inputs, including for child scripts.
+            sub_transaction_files: Signed child files without build details. Disables
+                balancing and requires explicit spending inputs and nonnegative output
+                amounts (no -1 sentinel). Mutually exclusive with `sub_transactions`.
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -516,26 +548,73 @@ class TransactionGroup:
         out_file = destination_dir / f"{tx_name}_tx.body"
         clusterlib_helpers._check_files_exist(out_file, clusterlib_obj=self._clusterlib_obj)
 
+        if sub_transactions and sub_transaction_files:
+            msg = "Use either sub_transactions or sub_transaction_files, not both."
+            raise ValueError(msg)
+
+        if sub_transactions or sub_transaction_files:
+            self._clusterlib_obj.g_sub_transaction._check_supported()
+
         tx_files = tx_files or structs.TxFiles()
 
-        collected_data = txtools.collect_data_for_build(
-            clusterlib_obj=self._clusterlib_obj,
-            src_address=src_address,
-            txins=txins,
-            txouts=txouts,
-            script_txins=script_txins,
-            mint=mint,
-            tx_files=tx_files,
-            complex_certs=complex_certs,
-            complex_proposals=complex_proposals,
-            fee=fee,
-            withdrawals=withdrawals,
-            script_withdrawals=script_withdrawals,
-            deposit=deposit,
-            treasury_donation=treasury_donation,
-            src_addr_utxos=src_addr_utxos,
-            skip_asset_balancing=False,
-        )
+        if sub_transaction_files:
+            if not txins and not any(s.txins for s in script_txins):
+                msg = "File-only sub-transactions require explicit parent spending inputs."
+                raise ValueError(msg)
+            if any(o.amount < 0 for o in txouts):
+                msg = "File-only sub-transactions require explicit nonnegative parent outputs."
+                raise ValueError(msg)
+            collected_data = structs.DataForBuild(
+                txins=list(txins),
+                txouts=list(txouts),
+                withdrawals=withdrawals,
+                script_withdrawals=script_withdrawals,
+            )
+        else:
+            collected_data = txtools.collect_data_for_build(
+                clusterlib_obj=self._clusterlib_obj,
+                src_address=src_address,
+                txins=txins,
+                txouts=txouts,
+                script_txins=script_txins,
+                mint=mint,
+                tx_files=tx_files,
+                complex_certs=complex_certs,
+                complex_proposals=complex_proposals,
+                fee=fee,
+                withdrawals=withdrawals,
+                script_withdrawals=script_withdrawals,
+                deposit=deposit,
+                treasury_donation=treasury_donation,
+                src_addr_utxos=src_addr_utxos,
+                skip_asset_balancing=False,
+                sub_transactions=sub_transactions,
+                reserved_txins=[
+                    *collateral_txins,
+                    *readonly_reference_txins,
+                    *txtools._get_reference_txins(
+                        readonly_reference_txins=(),
+                        script_txins=script_txins,
+                        mint=mint,
+                        complex_certs=complex_certs,
+                        script_withdrawals=script_withdrawals,
+                        complex_proposals=complex_proposals,
+                        script_votes=script_votes,
+                    ),
+                    *[
+                        t
+                        for r in (
+                            *script_txins,
+                            *mint,
+                            *complex_certs,
+                            *complex_proposals,
+                            *script_withdrawals,
+                            *script_votes,
+                        )
+                        for t in r.collaterals
+                    ],
+                ],
+            )
 
         if (
             ttl is None
@@ -568,6 +647,8 @@ class TransactionGroup:
             treasury_donation=treasury_donation,
             script_valid=script_valid,
             join_txouts=join_txouts,
+            signed_sub_tx_files=sub_transaction_files or [s.out_file for s in sub_transactions],
+            collateral_txins=collateral_txins,
         )
 
         helpers._check_outfiles(out_file)
@@ -655,6 +736,8 @@ class TransactionGroup:
         byron_witness_count: int = 0,
         reference_script_size: int = 0,
         join_txouts: bool = True,
+        sub_transactions: list[structs.SignedSubTx] | tuple[()] = (),
+        collateral_txins: structs.OptionalUTXOData = (),
         destination_dir: itp.FileType = ".",
     ) -> int:
         """Build "dummy" transaction and calculate (estimate) its fee.
@@ -701,6 +784,8 @@ class TransactionGroup:
             reference_script_size: A size in bytes of transaction reference scripts (optional).
             join_txouts: A bool indicating whether to aggregate transaction outputs
                 by payment address (True by default).
+            sub_transactions: Signed children with matching build details for batch balancing.
+            collateral_txins: Explicit parent collateral inputs, including for child scripts.
             destination_dir: A path to directory for storing artifacts (optional).
 
         Returns:
@@ -744,6 +829,8 @@ class TransactionGroup:
             current_treasury_value=current_treasury_value,
             treasury_donation=treasury_donation,
             join_txouts=join_txouts,
+            sub_transactions=sub_transactions,
+            collateral_txins=collateral_txins,
             destination_dir=destination_dir,
         )
 
@@ -1643,6 +1730,9 @@ class TransactionGroup:
         join_txouts: bool = True,
         verify_tx: bool = True,
         destination_dir: itp.FileType = ".",
+        sub_transactions: list[structs.SignedSubTx] | tuple[()] = (),
+        collateral_txins: structs.OptionalUTXOData = (),
+        reference_script_size: int = 0,
     ) -> structs.TxRawOutput:
         """Build, Sign and Submit a transaction.
 
@@ -1654,6 +1744,9 @@ class TransactionGroup:
         collateral return automatically.
 
         Args:
+            sub_transactions: Signed children with matching build details for batch balancing.
+            collateral_txins: Explicit parent collateral inputs, including for child scripts.
+            reference_script_size: Total reference-script size across the batch, in bytes.
             src_address: An address used for fee and inputs (if inputs not specified by `txins`).
             tx_name: A name of the transaction.
             txins: An iterable of `structs.UTXOData`, specifying input UTxOs (optional).
@@ -1745,6 +1838,9 @@ class TransactionGroup:
                 witness_count_add=witness_count_add,
                 join_txouts=join_txouts,
                 destination_dir=destination_dir,
+                sub_transactions=sub_transactions,
+                collateral_txins=collateral_txins,
+                reference_script_size=reference_script_size,
             )
 
             # Add 10% to the estimated fee, as the estimation is not precise enough, and there
@@ -1778,6 +1874,8 @@ class TransactionGroup:
             src_addr_utxos=src_addr_utxos,
             join_txouts=join_txouts,
             destination_dir=destination_dir,
+            sub_transactions=sub_transactions,
+            collateral_txins=collateral_txins,
         )
         tx_signed_file = self.sign_tx(
             tx_body_file=tx_raw_output.out_file,

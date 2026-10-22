@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Changes in releases up to v0.10.6 are listed in the [GitHub releases](https://github.com/input-output-hk/cardano-clusterlib-py/releases).
 
+## [0.10.9]
+
+- Dijkstra sub-transaction building, signing, and IDs through `ClusterLib.g_sub_transaction`.
+- Reusable `TxGuard` and `RequiredTopLevelGuard` records with shared guard argument formatting. Normal transaction guard support awaits a CLI fix.
+- Ordered embedding in `build_raw_tx_bare` and batch balancing in `build_raw_tx`, `calculate_tx_fee`, and `send_tx` using `SignedSubTx` records.
+- File-only embedding through `build_raw_tx(sub_transaction_files=...)` with explicit inputs and manually balanced outputs, without automatic input selection or change.
+- Explicit parent `collateral_txins` for raw transactions, including batches with Plutus sub-transactions.
+- General reserved-input exclusion in `collect_data_for_build` and the shared input-selection helper, including for transactions without sub-transactions. An explicitly empty source UTxO cache no longer triggers a fallback query.
+
 ## [0.10.7]
 
 ### Added

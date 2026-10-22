@@ -52,7 +52,11 @@ from cardano_clusterlib.structs import PoolUser
 from cardano_clusterlib.structs import ScriptTxIn
 from cardano_clusterlib.structs import ScriptVote
 from cardano_clusterlib.structs import ScriptWithdrawal
+from cardano_clusterlib.structs import SignedSubTx
 from cardano_clusterlib.structs import StakeAddrInfo
+from cardano_clusterlib.structs import RequiredTopLevelGuard
+from cardano_clusterlib.structs import SubTxRawOutput
+from cardano_clusterlib.structs import TxGuard
 from cardano_clusterlib.structs import TxFiles
 from cardano_clusterlib.structs import TxOut
 from cardano_clusterlib.structs import TxRawOutput
