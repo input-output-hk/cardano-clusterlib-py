@@ -3,6 +3,7 @@
 import itertools
 import json
 import logging
+import math
 import pathlib as pl
 import random
 import subprocess
@@ -1553,26 +1554,43 @@ class TransactionGroup:
         helpers._check_outfiles(out_file)
         return out_file
 
-    def submit_tx_bare(self, tx_file: itp.FileType) -> str:
+    def submit_tx_bare(
+        self,
+        tx_file: itp.FileType,
+        *,
+        retry_timeout: float = 180,
+        retry_max_delay: float = 30,
+    ) -> str:
         """Submit a transaction to a mempool.
 
         Doesn't do any verification that the transaction made it to the chain.
 
+        Only explicit `MempoolTxTooSlow` rejections are retried. Each CLI invocation is
+        limited to the remaining budget (at most 300 seconds). Transport timeouts propagate
+        because the transaction might already have been accepted.
+
         Args:
             tx_file: A path to signed transaction file.
+            retry_timeout: Elapsed-time budget in seconds for submission attempts and backoff.
+            retry_max_delay: Maximum exponential backoff delay in seconds. Delays start at
+                1-2 seconds and use jitter. Both settings must be finite and positive.
 
         Returns:
             str: A transaction ID.
         """
-        out = None
+        if not math.isfinite(retry_timeout) or retry_timeout <= 0:
+            msg = "retry_timeout must be finite and positive"
+            raise ValueError(msg)
+        if not math.isfinite(retry_max_delay) or retry_max_delay <= 0:
+            msg = "retry_max_delay must be finite and positive"
+            raise ValueError(msg)
+
+        deadline = time.monotonic() + retry_timeout
+        delay_cap = min(2.0, retry_max_delay)
         err = None
-        attempts = 5
-        for r in range(1, attempts + 1):
-            if r > 1:
-                LOGGER.warning(
-                    f"Mempool failure. Resubmitting transaction (from '{tx_file}'). "
-                    f"Attempt {r}/{attempts}."
-                )
+        attempts = 0
+        while (remaining := deadline - time.monotonic()) > 0:
+            attempts += 1
 
             try:
                 out = self._clusterlib_obj.cli(
@@ -1583,36 +1601,42 @@ class TransactionGroup:
                         *self._clusterlib_obj.socket_args,
                         "--tx-file",
                         str(tx_file),
-                    ]
+                    ],
+                    timeout=min(300.0, remaining),
                 )
-                break
             except exceptions.CLIError as exc:
-                # Retry only on `MempoolTxTooSlow`, which is a wallclock soft-timeout in the node's
-                # mempool. It is transient when caused by GC pauses, snapshot writes, or CPU spikes;
-                # backoff must outlast those. If it persists after a few retries, the cause is not
-                # transient (expensive tx or overloaded node) and further retries won't help.
+                # Local clients receive this rejection for both soft and hard mempool timeouts.
                 exc_str = str(exc)
                 if "MempoolTxTooSlow" not in exc_str:
                     raise
-                err = exc  # Store the most up-to-date error for the final exception.
+                err = exc
+            else:
+                stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
+                txhash_maybe = stdout_dec.split("\n")[-1]
+                txhash = (
+                    (json.loads(txhash_maybe).get("txhash") or "")
+                    if "txhash" in txhash_maybe
+                    else ""
+                )
+                return txhash
 
-            if r < attempts:
-                # Sleep for 2-10 seconds before the next attempt to avoid hitting
-                # the same mempool failure again.
-                time.sleep(random.uniform(2, 10))
-        else:
-            msg = (
-                f"Failed to submit the transaction after {attempts} attempts due to "
-                f"MempoolTxTooSlow errors (from '{tx_file}')."
+            # Equal jitter keeps retries spread out without allowing near-zero delays.
+            delay = random.uniform(delay_cap / 2, delay_cap)
+            if delay >= deadline - time.monotonic():
+                break
+            LOGGER.warning(
+                f"MempoolTxTooSlow on attempt {attempts} (from '{tx_file}'); "
+                f"retrying in {delay:.2f}s: {err}"
             )
-            if err is not None:
-                raise exceptions.CLIError(msg) from err
-            raise exceptions.CLIError(msg)
+            time.sleep(delay)
+            delay_cap = min(delay_cap * 2, retry_max_delay)
 
-        stdout_dec = out.stdout.strip().decode("utf-8") if out.stdout else ""
-        txhash_maybe = stdout_dec.split("\n")[-1]
-        txhash = (json.loads(txhash_maybe).get("txhash") or "") if "txhash" in txhash_maybe else ""
-        return txhash
+        msg = (
+            f"Failed to submit the transaction after {attempts} attempts within the "
+            f"{retry_timeout:g}s retry budget due to MempoolTxTooSlow errors "
+            f"(from '{tx_file}'). Last rejection: {err}"
+        )
+        raise exceptions.CLIError(msg) from err
 
     def submit_tx(
         self,

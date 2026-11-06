@@ -258,12 +258,14 @@ class ClusterLib:
 
         Args:
             cli_args: A list of arguments for cardano-cli.
-            timeout: A timeout for the command, in seconds (optional).
+            timeout: Total timeout in seconds, including internal retries and backoff
+                (optional). Subprocess cleanup may take additional time after expiry.
             add_default_args: Whether to add default arguments to the command (optional).
 
         Returns:
             structs.CLIOut: A data container containing command stdout and stderr.
         """
+        deadline = time.monotonic() + timeout if timeout is not None else 0.0
         cli_args_strs_all = [str(arg) for arg in cli_args]
 
         if add_default_args:
@@ -281,13 +283,18 @@ class ClusterLib:
         # or
         # MuxError (MuxIOException writev: resource vanished (Broken pipe)) "(sendAll errored)"
         err_msg = ""
-        for __ in range(3):
+        attempts = 3
+        for attempt in range(attempts):
+            if timeout is not None and time.monotonic() >= deadline:
+                exc = subprocess.TimeoutExpired(cli_args_strs, timeout)
+                raise exc
             retcode = None
             with subprocess.Popen(
                 cli_args_strs, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             ) as p:
                 try:
-                    stdout, stderr = p.communicate(timeout=timeout)
+                    remaining = max(0, deadline - time.monotonic()) if timeout is not None else None
+                    stdout, stderr = p.communicate(timeout=remaining)
                 except subprocess.TimeoutExpired:
                     # The child is not killed on timeout, and `Popen.__exit__` would wait for it
                     # indefinitely
@@ -306,7 +313,11 @@ class ClusterLib:
             )
             if "resource exhausted" in stderr_dec or "resource vanished" in stderr_dec:
                 LOGGER.error(err_msg)
-                time.sleep(0.4)
+                if attempt < attempts - 1:
+                    delay = 0.4
+                    if timeout is not None:
+                        delay = min(delay, max(0, deadline - time.monotonic()))
+                    time.sleep(delay)
                 continue
             raise exceptions.CLIError(err_msg)
         else:
